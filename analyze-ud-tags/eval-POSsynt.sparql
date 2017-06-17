@@ -1,0 +1,24 @@
+# eval POSsynt => table
+
+PREFIX conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#>
+PREFIX fn: <http://www.w3.org/2005/xpath-functions#>
+PREFIX nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?word ?upos ?udep ?POSsynt_UPOS ?POSsynt_UDEP ?match
+WHERE {
+	?x 	conll:WORD ?word;
+		conll:UPOS ?upos;
+		conll:EDGE ?udep;
+		conll:POSsynt_match ?match.
+	{ SELECT ?x (GROUP_CONCAT(DISTINCT ?p) AS ?POSsynt_UPOS)
+	  WHERE { ?x conll:POSsynt_UPOS ?p }
+	  GROUP BY ?x ORDER BY ?x ?p
+	}
+	{ SELECT ?x (GROUP_CONCAT(DISTINCT ?p) AS ?POSsynt_UDEP)
+	  WHERE { ?x conll:POSsynt_UD ?p }
+	  GROUP BY ?x ORDER BY ?x ?p
+	}
+}

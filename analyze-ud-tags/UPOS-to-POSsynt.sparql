@@ -1,0 +1,66 @@
+# for every UPOS create POSsynt_UPOS
+
+PREFIX conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#>
+PREFIX fn: <http://www.w3.org/2005/xpath-functions#>
+PREFIX nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+INSERT {
+	?word conll:POSsynt_UPOS "N".
+} WHERE {
+	?word conll:UPOS ?upos.
+	FILTER(regex(str(?upos),"NOUN|PROPN|PRON"))
+}; 
+INSERT {
+	?word conll:POSsynt_UPOS "V".
+} WHERE {
+	?word conll:UPOS ?upos.
+	FILTER(NOT EXISTS { ?word conll:POSsynt_UPOS [] })
+	FILTER(regex(str(?upos),"VERB|AUX"))
+}; 
+INSERT {
+	?word conll:POSsynt_UPOS "AN".
+} WHERE {
+	?word conll:UPOS ?upos.
+	FILTER(NOT EXISTS { ?word conll:POSsynt_UPOS [] })
+	FILTER(regex(str(?upos),"ADJ|DET|NUM"))
+}; 
+INSERT {
+	?word conll:POSsynt_UPOS "AV".
+} WHERE {
+	?word conll:UPOS ?upos.
+	FILTER(NOT EXISTS { ?word conll:POSsynt_UPOS [] })
+	FILTER(regex(str(?upos),"ADV|PART"))
+}; 
+INSERT {
+	?word conll:POSsynt_UPOS "RN",	# true value
+	"AN".							# UD simplification
+} WHERE {
+	?word conll:UPOS "ADP".
+	FILTER(NOT EXISTS { ?word conll:POSsynt_UPOS [] })
+#	FILTER(regex(str(?upos),"ADP"))
+}; 
+INSERT {
+	?word conll:POSsynt_UPOS "RV",	# true value
+	"AV".							# UD simplification
+} WHERE {
+	?word conll:UPOS "SCONJ".
+	FILTER(NOT EXISTS { ?word conll:POSsynt_UPOS [] })
+#	FILTER(regex(str(?upos),"SCONJ"))
+}; 
+INSERT {
+	?word conll:POSsynt_UPOS "RM".
+} WHERE {
+	?word conll:UPOS "CONJ".
+	FILTER(NOT EXISTS { ?word conll:POSsynt_UPOS [] })
+#	FILTER(regex(str(?upos),"CONJ"))
+}; 
+INSERT {
+	?word conll:POSsynt_UPOS "X".
+} WHERE {
+	?word conll:UPOS ?upos.
+	FILTER(NOT EXISTS { ?word conll:POSsynt_UPOS [] })
+	FILTER(regex(str(?upos),"^(INTJ|PUNCT|SYM|X)$"))
+}

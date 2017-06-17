@@ -1,0 +1,28 @@
+# load OLiA Annotation Model for UD POS annotation and the Linking Model
+# find all OLiA Concepts which are superclasses of UD Concepts with the given tag
+
+CREATE SILENT GRAPH <http://purl.org/olia/ud-pos-all.owl>;
+LOAD <file:/D:/_SVN/olia-sf/trunk/owl/experimental/univ_dep/all/ud-pos-all.owl> INTO GRAPH <http://purl.org/olia/ud-pos-all.owl>;
+LOAD <file:/D:/_SVN/olia-sf/trunk/owl/experimental/univ_dep/all/ud-pos-all-link.rdf> INTO GRAPH <http://purl.org/olia/ud-pos-all.owl>;
+
+PREFIX conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#>
+PREFIX olia: <http://purl.org/olia/olia.owl#>
+PREFIX oliasys: <http://purl.org/olia/system.owl#>
+PREFIX ud: <http://fginter.github.io/docs/u/pos/all.html#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+INSERT {
+	?a a ?oliaConcept.
+} 
+WHERE {
+	?a conll:UPOS ?pos.
+	GRAPH <http://purl.org/olia/ud-pos-all.owl> {
+		?x oliasys:hasTag ?pos.
+		?x a ?concept.
+		?concept (rdfs:subClassOf|owl:intersectionOf|owl:unionOf|(rdf:rest*/rdf:first)|owl:equivalentClass|^owl:equivalentClass)* ?oliaConcept.
+		FILTER(strstarts(str(?oliaConcept), "http://purl.org/olia/olia"))
+	}
+};
+
+DROP GRAPH <http://purl.org/olia/ud-pos-all.owl>

@@ -1,0 +1,11 @@
+# create conll:SHIFT properties
+
+PREFIX conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#>
+PREFIX nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#>
+
+# (1) for every nif:nextWord, create a conll:SHIFT property
+INSERT {
+	?a conll:SHIFT ?b.
+} WHERE {
+	?a nif:nextWord ?b.
+};

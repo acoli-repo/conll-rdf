@@ -1,0 +1,150 @@
+# a simple, deterministic rule-based SR-parser for English
+# languages normally differ wrt. positioning the syntactic head, only this part is language-specific
+# requires OLiA loaded and inferences calculated and conll:SHIFT relations
+
+PREFIX conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#>
+PREFIX nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX olia: <http://purl.org/olia/olia.owl#>
+
+###################################################################
+# 3rd generation rules (require 2nd generation rules to complete) #
+# clausal arguments												  #
+###################################################################
+
+# (7) attach preposition of: matrix must be nominal, wait for (1), (3), (4), (5), (6) to complete
+DELETE {
+	?head conll:SHIFT ?dep.
+	?pp   conll:SHIFT ?dep.
+	?dep  conll:SHIFT ?next.
+} INSERT {
+	?dep  conll:REDUCE ?head.
+	?head conll:SHIFT ?next.
+	?dep  conll:EDGE "nmod".
+} WHERE {
+	?head a olia:Noun.
+	{ 
+		?head conll:SHIFT ?dep. # if head is np
+	} UNION {
+		?head conll:REDUCE ?pp.
+		?pp a olia:Preposition. # if head is pp
+		?pp conll:SHIFT ?dep.
+	}
+	?dep conll:LEMMA "of".
+	
+	OPTIONAL { ?dep conll:SHIFT ?next}
+
+	FILTER((!BOUND(?next)) ||
+		((NOT EXISTS{ ?next a olia:Noun }) &&	 	   # wait for (1)/(6) to complete
+		 (NOT EXISTS{ ?next a olia:Adjective }) && 	   # wait for (3) to complete
+	     (NOT EXISTS{ ?next a olia:Gerund }) &&		   # -"-
+	     (NOT EXISTS{ ?next a olia:Deteriner}) &&	   # wait for (4) to complete
+	     (NOT EXISTS{ ?next a olia:CardinalNumber}) && # wait for (5) to complete
+	     (NOT EXISTS{ ?next a olia:Pronoun })))		   # wait for (6) to complete
+};
+
+# (8) subject: NP (no PP) preceding a finite verb, wait for (1), (3), (4), (5), (6) to complete
+DELETE {
+	?last conll:SHIFT ?sbj.
+	?sbj conll:SHIFT ?vfin.
+} INSERT {
+	?last conll:SHIFT ?vfin.
+	?sbj conll:REDUCE ?vfin.
+	?sbj conll:EDGE "sbj".
+} WHERE {
+	?vfin a olia:FiniteVerb.
+	?sbj conll:SHIFT ?vfin.
+	{ ?sbj a olia:Noun. } UNION { ?sbj a olia:Pronoun. }
+
+	OPTIONAL { ?last conll:SHIFT ?sbj }.
+	FILTER((!BOUND(?last)) ||
+		((NOT EXISTS{ ?last a olia:Noun }) &&	 	   # wait for (1)/(6) to complete
+		 (NOT EXISTS{ ?last a olia:Adjective }) && 	   # wait for (3) to complete
+	     (NOT EXISTS{ ?last a olia:Gerund }) &&		   # -"-
+	     (NOT EXISTS{ ?last a olia:Deteriner}) &&	   # wait for (4) to complete
+	     (NOT EXISTS{ ?last a olia:CardinalNumber}) && # wait for (5) to complete
+	     (NOT EXISTS{ ?last a olia:Pronoun })))		   # wait for (6) to complete
+};
+
+# (9) obj: NPs following a finite verb, wait for (1) to complete 
+# this is actually a 2nd generation rule ;)
+# but put here for analogy with (8)
+DELETE {
+	?vfin conll:SHIFT ?obj.
+	?obj conll:SHIFT ?next.
+} INSERT {
+	?vfin conll:SHIFT ?next.
+	?obj conll:REDUCE ?vfin.
+	?obj conll:EDGE "obj".
+} WHERE {
+	?vfin a olia:FiniteVerb.
+	?vfin conll:SHIFT ?obj.
+	OPTIONAL { ?obj conll:SHIFT ?next }.
+	
+	{ 
+		?obj a olia:Pronoun. 
+	} UNION { 
+		?obj a olia:Noun. 
+	
+		FILTER(
+			(!BOUND(?next)) ||
+			((NOT EXISTS{ ?next a olia:Noun })))	 	   # wait for (1) to complete
+	}
+};
+
+# (10) adverbials: postverbal PPs/ADVs assigned to finite verbs, wait for (7) (etc) to complete
+DELETE {
+	?vfin conll:SHIFT ?adv.
+	?adv conll:SHIFT ?next.
+} INSERT {
+	?adv conll:REDUCE ?vfin.
+	?adv conll:EDGE "adv".
+	?vfin conll:SHIFT ?next.
+} WHERE {
+	?vfin a olia:FiniteVerb.
+	?vfin conll:SHIFT ?adv.
+	OPTIONAL { 
+		?adv conll:SHIFT ?next.
+	}
+	
+	{
+		?adv a olia:Adverb.
+		FILTER(
+			(!BOUND(?next)) ||
+			(NOT EXISTS{ ?next a olia:Adjective }))					# wait for (2) to complete
+	} UNION { 
+		?adv a olia:Preposition.
+		[] conll:REDUCE ?adv.
+		FILTER(!BOUND(?next))
+	} UNION {
+		?adv a olia:Preposition.
+		[] conll:REDUCE ?adv.
+		FILTER(NOT EXISTS { ?adv conll:SHIFT/conll:LEMMA "of" })	# wait for (7) to complete
+	}
+};
+
+# (11) adverbials: preverbal PPs/ADVs assigned to finite verbs, wait for (7) (etc) to complete
+DELETE {
+	?last conll:SHIFT ?adv.
+	?adv conll:SHIFT ?vfin.
+} INSERT {
+	?last conll:SHIFT ?vfin.
+	?adv conll:REDUCE ?vfin.
+	?adv conll:EDGE "adv".
+} WHERE {
+	?vfin a olia:FiniteVerb.
+	?adv conll:SHIFT ?vfin.
+	OPTIONAL { 
+		?last conll:SHIFT ?adv.
+	}
+	
+	{
+		?adv a olia:Adverb.
+	} UNION { 
+		?adv a olia:Preposition.
+		[] conll:REDUCE ?adv.
+		?adv conll:LEMMA ?lemma.
+		FILTER(?lemma != "of")	# cf. (7)
+	}
+};
+

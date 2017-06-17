@@ -1,0 +1,13 @@
+# replace conll:REDUCE by conll:HEAD properties
+
+PREFIX conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#>
+
+DELETE {
+	?a conll:HEAD ?head.
+	?a conll:REDUCE ?b
+} INSERT {
+	?a conll:HEAD ?b.
+} WHERE {
+	?a conll:REDUCE ?b.
+	?a conll:HEAD ?head.
+};

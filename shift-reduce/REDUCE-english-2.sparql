@@ -1,0 +1,99 @@
+# a simple, deterministic rule-based SR-parser for English
+# languages normally differ wrt. positioning the syntactic head, only this part is language-specific
+# requires OLiA loaded and inferences calculated and conll:SHIFT relations
+
+PREFIX conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#>
+PREFIX nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX olia: <http://purl.org/olia/olia.owl#>
+
+###################################################################
+# 2nd generation rules (require 1st generation rules to complete) #
+# noun phrases and prepositional phrases						  #
+###################################################################
+
+# (3) adjectival modification: adjective not affected by (2), noun not affected by (1)
+DELETE {
+	?last conll:SHIFT ?dep.
+	?dep conll:SHIFT ?head.
+} INSERT {
+	?last conll:SHIFT ?head.
+	?dep conll:REDUCE ?head.
+	?dep conll:EDGE "nmod".
+} WHERE {
+	{ ?dep a olia:Adjective. } UNION { ?dep a olia:Gerund. }
+	?dep conll:SHIFT ?head.
+	?head a olia:Noun.
+	
+	OPTIONAL { ?last conll:SHIFT ?dep }
+	OPTIONAL { ?head conll:SHIFT ?next }
+	
+	FILTER(!BOUND(?last) || NOT EXISTS{ ?last a olia:Adverb }) # wait for (2) to complete
+	FILTER(!BOUND(?next) || NOT EXISTS{ ?next a olia:Noun }) # wait for (1) to complete
+};
+
+# (4) determiner - noun, if noun not affected by (1)
+DELETE {
+	?last conll:SHIFT ?dep.
+	?dep conll:SHIFT ?head.
+} INSERT {
+	?last conll:SHIFT ?head.
+	?dep conll:REDUCE ?head.
+	?dep conll:EDGE "det".
+} WHERE {
+	?dep a olia:Determiner.
+	?dep conll:SHIFT ?head.
+	?head a olia:Noun.
+	
+	OPTIONAL { ?last conll:SHIFT ?dep }
+	OPTIONAL { ?head conll:SHIFT ?next }
+	
+	FILTER(!BOUND(?next) || NOT EXISTS{ ?next a olia:Noun }) # wait for (1) to complete
+};
+
+# (5) cardinal nr - noun, if noun not affected by (1)
+DELETE {
+	?last conll:SHIFT ?dep.
+	?dep conll:SHIFT ?head.
+} INSERT {
+	?last conll:SHIFT ?head.
+	?dep conll:REDUCE ?head.
+	?dep conll:EDGE "num".
+} WHERE {
+	?dep a olia:CardinalNumber.
+	?dep conll:SHIFT ?head.
+	?head a olia:Noun.
+	
+	OPTIONAL { ?last conll:SHIFT ?dep }
+	OPTIONAL { ?head conll:SHIFT ?next }
+	
+	FILTER(!BOUND(?next) || NOT EXISTS{ ?next a olia:Noun }) # wait for (1) to complete
+};
+
+# (6) preposition - (pro)noun, if noun not affected by (1)
+DELETE {
+	?head conll:SHIFT ?dep.
+	?dep conll:SHIFT ?next.
+} INSERT {
+	?dep conll:REDUCE ?head.
+	?head conll:SHIFT ?next.
+	?dep conll:EDGE "np".
+} WHERE {
+	?head a olia:Preposition.
+	?head conll:SHIFT ?dep.
+
+	OPTIONAL { ?last conll:SHIFT ?head }	
+	OPTIONAL { ?dep  conll:SHIFT ?next }	
+	
+	{
+		?dep a olia:Pronoun
+	} UNION { 
+		?dep a olia:Noun.	
+		FILTER((!BOUND(?next)) ||
+			((NOT EXISTS{ ?next a olia:Noun }) &&	 	   # wait for (1)/(6) to complete
+			 (NOT EXISTS{ ?next a olia:Adjective }) && 	   # wait for (3) to complete
+			 (NOT EXISTS{ ?next a olia:Gerund }) &&		   # -"-
+			 (NOT EXISTS{ ?next a olia:Deteriner}) &&	   # wait for (4) to complete
+			 (NOT EXISTS{ ?next a olia:CardinalNumber})))  # wait for (5) to complete
+	}
+};

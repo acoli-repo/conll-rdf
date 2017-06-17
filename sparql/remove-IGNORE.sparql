@@ -1,0 +1,8 @@
+# any single column we want to ignore from the conll format can be given the label IGNORE and then removed with this UPDATE
+PREFIX conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#>
+DELETE {
+	?a conll:IGNORE ?id
+}
+WHERE {
+	?a conll:IGNORE ?id
+}

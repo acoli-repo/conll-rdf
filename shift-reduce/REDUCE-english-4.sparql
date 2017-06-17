@@ -1,0 +1,47 @@
+# a simple, deterministic rule-based SR-parser for English
+# languages normally differ wrt. positioning the syntactic head, only this part is language-specific
+# requires OLiA loaded and inferences calculated and conll:SHIFT relations
+
+PREFIX conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#>
+PREFIX nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX olia: <http://purl.org/olia/olia.owl#>
+
+##########################################
+# 4th generation rules                   #
+# multi-clausal structures               #
+##########################################
+
+# (12) relative clauses with "to", i.e., "to" preceding a verb
+DELETE {
+	?to conll:SHIFT ?verb.
+	?verb conll:SHIFT ?next.
+} INSERT {
+	?verb conll:REDUCE ?to.
+	?verb conll:EDGE "cls".
+	?to conll:SHIFT ?next.
+} WHERE {
+	?to conll:LEMMA "to".
+	FILTER(NOT EXISTS { [] conll:REDUCE ?to })
+	
+	?to conll:SHIFT ?verb.
+	?verb a olia:Verb.
+	OPTIONAL { ?verb conll:SHIFT ?next. }
+};
+
+# (13) attach relative clauses with "to" to the preceding finite verb
+DELETE {
+	?matrixv conll:SHIFT ?to.
+	?to conll:SHIFT ?next.
+} INSERT {
+	?to conll:REDUCE ?matrixv.
+	?to conll:EDGE "to".
+	?matrixv conll:SHIFT ?next.
+} WHERE {
+	?verb conll:EDGE "cls".
+	?verb conll:REDUCE ?to.
+	?to conll:LEMMA "to".
+	?matrixv conll:SHIFT ?to.
+	?matrixv a olia:FiniteVerb.
+	OPTIONAL { ?to conll:SHIFT ?next }
+}

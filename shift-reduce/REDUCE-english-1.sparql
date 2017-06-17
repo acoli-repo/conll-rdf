@@ -1,0 +1,70 @@
+# a simple, deterministic rule-based SR-parser for English
+# languages normally differ wrt. positioning the syntactic head, only this part is language-specific
+# requires OLiA loaded and inferences calculated and conll:SHIFT relations
+
+PREFIX conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#>
+PREFIX nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX olia: <http://purl.org/olia/olia.owl#>
+
+#########################################################
+# 1st generation rules (applicable without constraints) #
+# multi-word expressions, adjective phrases				#
+#########################################################
+
+# (0a) compounds: resolve hyphens (NOTE: non-OLiA)
+DELETE {
+	?last conll:SHIFT ?dep.
+	?dep conll:SHIFT ?hyphen.
+	?hyphen conll:SHIFT ?head.
+} INSERT {
+	?last conll:SHIFT ?head.
+	?dep conll:REDUCE ?head.
+	?dep conll:EDGE "mwe".
+	?hyphen conll:REDUCE ?dep.
+	?hyphen conll:EDGE "hyph".
+} WHERE {
+	?hyphen conll:POS "HYPH".
+	?dep conll:SHIFT ?hyphen.
+	?hyphen conll:SHIFT ?head.
+	
+	OPTIONAL { ?last conll:SHIFT ?dep }
+};
+
+# (1) nominal multi-word expressions, incl. compounds
+# in sequences of nouns, make the left(-most) noun the head
+DELETE {
+	?last conll:SHIFT ?dep.
+	?dep conll:SHIFT ?head.
+} INSERT {
+	?last conll:SHIFT ?head.
+	?dep conll:REDUCE ?head.
+	?dep conll:EDGE "nmod".
+} WHERE {
+	# selectional context
+	?dep a olia:Noun.
+	?dep conll:SHIFT ?head.
+	?head a olia:Noun.
+	
+	OPTIONAL { ?head conll:SHIFT ?next. }
+	OPTIONAL { ?last conll:SHIFT ?dep. }
+
+	# contextual filters, rule-specific
+	{ FILTER(!BOUND(?next) || NOT EXISTS { ?next a olia:Noun })} # => the right-most will become head	
+};
+
+# (2) adverb-adjective: make adjective head
+DELETE {
+	?last conll:SHIFT ?dep.
+	?dep conll:SHIFT ?head.
+} INSERT {
+	?last conll:SHIFT ?head.
+	?dep conll:REDUCE ?head.
+	?dep conll:EDGE "amod".
+} WHERE {
+	?dep a olia:Adverb.
+	?dep conll:SHIFT ?head.
+	{ ?head a olia:Adjective. } UNION { ?head a olia:Gerund. }
+	
+	OPTIONAL { ?last conll:SHIFT ?dep }
+};

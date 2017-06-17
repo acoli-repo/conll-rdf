@@ -1,0 +1,40 @@
+# compare POSsynt_UD and POSsynt_UPOS, if one contains multiple
+
+PREFIX conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#>
+PREFIX fn: <http://www.w3.org/2005/xpath-functions#>
+PREFIX nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+# (1) if there is a match between one POSsynt_UD and one POSsynt_UPOS, but alternatives to these, remove the alternatives
+DELETE {
+	?word conll:POSsynt_UD ?otherUD.
+} WHERE {
+	?word conll:POSsynt_UD ?upos.
+	?word conll:POSsynt_UPOS ?upos.
+	?word conll:POSsynt_UD ?otherUD. FILTER(?otherUD != ?upos)
+};
+
+DELETE {
+	?word conll:POSsynt_UPOS ?otherUPOS.
+} WHERE {
+	?word conll:POSsynt_UD ?upos.
+	?word conll:POSsynt_UPOS ?upos.
+	?word conll:POSsynt_UPOS ?otherUPOS. FILTER(?otherUPOS != ?upos)
+};
+
+# (2) add conll:POSsynt_match
+INSERT {
+	?word conll:POSsynt_match "1".
+} WHERE {
+	?word conll:POSsynt_UD ?upos.
+	?word conll:POSsynt_UPOS ?upos.
+};
+
+INSERT {
+	?word conll:POSsynt_match "0".
+} WHERE {
+	?word a nif:Word.
+	FILTER(NOT EXISTS { ?word conll:POSsynt_match [] })
+}
