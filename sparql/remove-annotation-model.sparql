@@ -1,0 +1,8 @@
+# remove OLiA concepts and properties other than from the OLiA Reference Model
+DELETE {
+	?a ?b ?c
+} WHERE {
+	{ ?a ?b ?c FILTER(contains(str(?a),'http://purl.org/olia') && !contains(str(?a),'http://purl.org/olia/olia.owl')) } UNION
+	{ ?a ?b ?c FILTER(contains(str(?b),'http://purl.org/olia') && !contains(str(?b),'http://purl.org/olia/olia.owl')) } UNION
+	{ ?a ?b ?c FILTER(contains(str(?c),'http://purl.org/olia') && !contains(str(?c),'http://purl.org/olia/olia.owl')) }
+}

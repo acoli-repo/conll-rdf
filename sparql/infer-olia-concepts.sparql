@@ -1,0 +1,19 @@
+# load OLiA Annotation Model for PTB POS annotation, the linking model and the Reference Model
+# right now, we do have a validity issue
+
+PREFIX olia: <http://purl.org/olia/olia.owl#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+#CREATE SILENT GRAPH <http://purl.org/olia/olia.owl>;
+#LOAD <http://purl.org/olia/olia.owl> INTO GRAPH <http://purl.org/olia/olia.owl>;
+INSERT {
+	?x a ?super.
+} WHERE {
+	?x a ?c.
+	FILTER(contains(str(?c),'http://purl.org/olia/olia.owl'))
+	GRAPH <http://purl.org/olia/olia.owl> {
+		?c (rdfs:subClassOf|owl:equivalentClass)+ ?super.
+		FILTER(contains(str(?super),'http://purl.org/olia/olia.owl'))
+	}
+}

@@ -105,8 +105,17 @@ public class CoNLLRDFUpdater {
 			i++;
 			while(i<argv.length && !argv[i].toLowerCase().matches("^-+updates$")) i++;
 			i++;
-			while(i<argv.length && !argv[i].toLowerCase().matches("^-+.*$"))
-				updates.add(argv[i++]);
+			while(i<argv.length && !argv[i].toLowerCase().matches("^-+.*$")) {
+				int freq = 1;
+				try {
+					freq = Integer.parseInt(argv[i].replaceFirst(".*\\{([0-9]+)\\}$", "$1"));
+				} catch (NumberFormatException e) {}
+				String update =argv[i++].replaceFirst("\\{[0-9]+\\}$", "");
+				while(freq>0) {
+					updates.add(update);
+					freq--;
+				}
+			}
 
 			for(i = 0; i<updates.size(); i++) {
 				Reader sparqlreader = new StringReader(updates.get(i));
