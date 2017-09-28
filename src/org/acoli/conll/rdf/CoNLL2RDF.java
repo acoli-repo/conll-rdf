@@ -1,3 +1,5 @@
+package org.acoli.conll.rdf;
+
 import java.io.*;
 import java.nio.charset.*;
 import java.util.*;

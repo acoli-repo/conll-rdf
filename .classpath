@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="lib/httpclient-4.2.6.jar"/>
+	<classpathentry kind="lib" path="lib/httpclient-cache-4.2.6.jar"/>
+	<classpathentry kind="lib" path="lib/httpcore-4.2.5.jar"/>
+	<classpathentry kind="lib" path="lib/jcl-over-slf4j-1.7.6.jar"/>
+	<classpathentry kind="lib" path="lib/jena-arq-2.11.2.jar"/>
+	<classpathentry kind="lib" path="lib/jena-core-2.11.2.jar"/>
+	<classpathentry kind="lib" path="lib/jena-iri-1.0.2.jar"/>
+	<classpathentry kind="lib" path="lib/jena-sdb-1.4.2.jar"/>
+	<classpathentry kind="lib" path="lib/jena-tdb-1.0.2.jar"/>
+	<classpathentry kind="lib" path="lib/slf4j-api-1.7.6.jar"/>
+	<classpathentry kind="lib" path="lib/xercesImpl-2.11.0.jar"/>
+	<classpathentry kind="lib" path="lib/xml-apis-1.4.01.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

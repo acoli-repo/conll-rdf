@@ -1,3 +1,5 @@
+package org.acoli.conll.rdf;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
