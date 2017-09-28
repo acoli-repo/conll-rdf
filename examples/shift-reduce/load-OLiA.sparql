@@ -1,6 +1,0 @@
-# load OLiA Reference Model
-
-PREFIX olia: <http://purl.org/olia/olia.owl#>
-
-CREATE SILENT GRAPH <http://purl.org/olia/olia.owl>;
-LOAD <http://purl.org/olia/olia.owl> INTO GRAPH <http://purl.org/olia/olia.owl>;

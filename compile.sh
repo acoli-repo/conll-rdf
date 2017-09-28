@@ -1,6 +1,6 @@
 #!/bin/bash
 # determines the classpath, updates class files if necessary and runs the specified java class with the provided arguments
-CLASSPATH=".:"`find lib | perl -pe 's/\n/:/g;' | sed s/':$'//`;
+CLASSPATH="bin:"`find lib | perl -pe 's/\n/:/g;' | sed s/':$'//`;
 if [ $OSTYPE = "cygwin" ]; then
 	CLASSPATH=`echo $CLASSPATH | sed s/':'/';'/g;`;
 fi;

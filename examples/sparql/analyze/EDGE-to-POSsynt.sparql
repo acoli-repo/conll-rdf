@@ -1,4 +1,4 @@
-# for UD deps create POSsynt_UD
+# extrapolate (syntactic) POS type from dependency labels =: POSsynt_UD
 
 PREFIX conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#>
 PREFIX fn: <http://www.w3.org/2005/xpath-functions#>
@@ -6,6 +6,10 @@ PREFIX nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#>
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+#########################
+# (1) verbs and adverbs #
+#########################
 
 INSERT {
 	?word conll:POSsynt_UD "N".
@@ -43,6 +47,21 @@ INSERT {
 };
 
 INSERT {
+	?word conll:POSsynt_UD "AV".
+} WHERE {
+	?word conll:EDGE ?edge.
+	?word conll:HEAD ?head.
+	FILTER(regex(str(?edge),"^(neg)"))
+	FILTER(NOT EXISTS{?word conll:POSsynt_UD []})
+	?head conll:POSsynt_UD [].
+	FILTER(NOT EXISTS{?head conll:POSsynt_UD "N"})
+};
+
+###############################
+# (2) nominals and adnominals #
+###############################
+
+INSERT {
 	?word conll:POSsynt_UD "N".
 	?head conll:POSsynt_UD "N".
 } WHERE {
@@ -70,6 +89,19 @@ INSERT {
 };
 
 INSERT {
+	?word conll:POSsynt_UD "AN".
+} WHERE {
+	?word conll:EDGE ?edge.
+	?word conll:HEAD ?head.
+	FILTER(regex(str(?edge),"^(neg)"))
+	?head conll:POSsynt_UD "N".
+};
+
+#############
+# (3) other #
+#############
+
+INSERT {
 	?word conll:POSsynt_UD "X".
 } WHERE {
 	?word conll:EDGE ?edge.
@@ -85,25 +117,9 @@ INSERT {
 	FILTER(regex(str(?edge),"^(cc)"))
 };
 
-INSERT {
-	?word conll:POSsynt_UD "AN".
-} WHERE {
-	?word conll:EDGE ?edge.
-	?word conll:HEAD ?head.
-	FILTER(regex(str(?edge),"^(neg)"))
-	?head conll:POSsynt_UD "N".
-};
-
-INSERT {
-	?word conll:POSsynt_UD "AV".
-} WHERE {
-	?word conll:EDGE ?edge.
-	?word conll:HEAD ?head.
-	FILTER(regex(str(?edge),"^(neg)"))
-	FILTER(NOT EXISTS{?word conll:POSsynt_UD []})
-	?head conll:POSsynt_UD [].
-	FILTER(NOT EXISTS{?head conll:POSsynt_UD "N"})
-};
+#########################
+# (4) propagation rules #
+#########################
 
 INSERT {
 	?word conll:POSsynt_UD ?POSsynt.
@@ -127,7 +143,11 @@ INSERT {
 	{ ?head conll:POSsynt_UD ?POSsynt. FILTER(NOT EXISTS { ?word conll:POSsynt_UD [] }) }
 };
 
-INSERT {
+############
+# (5) root #
+############
+
+INSERT {	# most roots are verbal, however, many unclassified roots are just fragments
 	?word conll:POSsynt_UD "V".
 } WHERE {
 	?word conll:EDGE ?edge.

@@ -1,4 +1,4 @@
-# eval POSsynt => table
+# build a table to evaluate syntactic POS (POSsynt) as extrapolated from UD POS and UD EDGE
 
 PREFIX conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#>
 PREFIX fn: <http://www.w3.org/2005/xpath-functions#>
