@@ -3,7 +3,7 @@
 # CoNLL-RDF EXAMPLE: convert a corpus to RDF
 # 
 # example pipeline for the RDF edition of Universal Dependencies (UD) corpora 
-# cf. olia-linking.sh for linking such data
+# cf. link-ud.sh for linking such data
 
 HOME=`echo $0 | sed -e s/'^[^\/]*$'/'.'/g -e s/'\/[^\/]*$'//`;
 ROOT=$HOME/..;
