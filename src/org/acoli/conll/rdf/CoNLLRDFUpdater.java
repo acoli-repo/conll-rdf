@@ -71,7 +71,7 @@ public class CoNLLRDFUpdater {
 	}
 
 	public static void main(String[] argv) throws IOException, URISyntaxException {
-		System.err.println("synopsis: CoNLLRDFFormatter [-custom [-model URI [GRAPH]]* -updates [UPDATE]]+\n"
+		System.err.println("synopsis: CoNLLRDFUpdater [-custom [-model URI [GRAPH]]* -updates [UPDATE]]+\n"
 				+ "\t-custom  use custom update scripts. Use -model to load additional Models into local graph\n"
 				+ "read TTL from stdin => update CoNLL-RDF");
 		String args = Arrays.asList(argv).toString().replaceAll("[\\[\\], ]+"," ").trim().toLowerCase();
