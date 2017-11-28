@@ -17,17 +17,22 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
+import javafx.util.Pair;
 
 import com.hp.hpl.jena.query.Dataset;
 import com.hp.hpl.jena.query.DatasetAccessor;
 import com.hp.hpl.jena.query.DatasetAccessorFactory;
 import com.hp.hpl.jena.query.DatasetFactory;
+import com.hp.hpl.jena.rdf.listeners.ChangedListener;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.update.UpdateAction;
 import com.hp.hpl.jena.update.UpdateFactory;
 
 public class CoNLLRDFUpdater {
+	
+	static final int MAXITERATE = 999; // maximum update iterations allowed until the update loop is canceled and an error msg is thrown - to prevent faulty update scripts running in an endless loop
+	
 	public static final Dataset memDataset = DatasetFactory.createMem();
 	public static final DatasetAccessor memAccessor = DatasetAccessorFactory.create(memDataset);
 
@@ -62,11 +67,32 @@ public class CoNLLRDFUpdater {
 		memAccessor.deleteDefault();
 	}
 
-	public static void executeUpdate(List<String> updates) {
-		for(String update : updates) {
+	public static void executeUpdate(List<Pair<String,String>> updates) {
+		for(Pair<String,String> update : updates) {
 			//System.err.println("executing...");
 			//System.err.println(update);
-			UpdateAction.execute(UpdateFactory.create(update), memDataset);
+			Model defaultModel = memAccessor.getModel();
+			ChangedListener cL = new ChangedListener();
+			defaultModel.register(cL);
+			int frq = 0;
+			boolean change = false;
+			try {
+				frq = Integer.parseInt(update.getValue());
+			} catch (NumberFormatException e) {
+				if ("*".equals(update.getValue()))
+					change = true;
+				else
+					throw e;
+			}
+			while(frq > 0 || change && ((frq * -1) < MAXITERATE)) {
+				System.err.println(frq);
+				//defaultModel.write(System.err, "TURTLE");
+				UpdateAction.execute(UpdateFactory.create(update.getKey()), memDataset);
+				if (change) change = cL.hasChanged();
+				frq--;
+			}
+			if ((frq * -1) == MAXITERATE)
+				System.err.println("Warning: MAXITERATE reached.");
 		}
 	}
 
@@ -80,7 +106,7 @@ public class CoNLLRDFUpdater {
 			System.err.println("Please specify update script.");
 		}
 
-		List<String> updates = new ArrayList<String>();
+		List<Pair<String, String>> updates = new ArrayList<Pair<String, String>>();
 		List<String> models = new ArrayList<String>();
 
 		if(CUSTOM) {
@@ -108,23 +134,22 @@ public class CoNLLRDFUpdater {
 			while(i<argv.length && !argv[i].toLowerCase().matches("^-+updates$")) i++;
 			i++;
 			while(i<argv.length && !argv[i].toLowerCase().matches("^-+.*$")) {
-				int freq = 1;
-				try {
-					freq = Integer.parseInt(argv[i].replaceFirst(".*\\{([0-9]+)\\}$", "$1"));
-				} catch (NumberFormatException e) {}
-				String update =argv[i++].replaceFirst("\\{[0-9]+\\}$", "");
-				while(freq>0) {
-					updates.add(update);
-					freq--;
-				}
+				String freq;
+				freq = argv[i].replaceFirst(".*\\{([0-9u*]+)\\}$", "$1");
+				if (argv[i].equals(freq))
+					freq = "1";
+				if (freq.equals("u"))
+					freq = "*";
+				String update =argv[i++].replaceFirst("\\{[0-9u*]+\\}$", "");
+				updates.add(new Pair(update, freq));
 			}
 
 			for(i = 0; i<updates.size(); i++) {
-				Reader sparqlreader = new StringReader(updates.get(i));
-				File f = new File(updates.get(i));
+				Reader sparqlreader = new StringReader(updates.get(i).getKey());
+				File f = new File(updates.get(i).getKey());
 				URL u = null;
 				try {
-					u = new URL(updates.get(i));
+					u = new URL(updates.get(i).getKey());
 				} catch (MalformedURLException e) {}
 
 				if(f.exists()) {			// can be read from a file
@@ -137,10 +162,10 @@ public class CoNLLRDFUpdater {
 					} catch (Exception e) {}
 				}
 
-				updates.set(i,"");
+				updates.set(i,new Pair("", updates.get(i).getValue()));
 				BufferedReader in = new BufferedReader(sparqlreader);
 				for(String line = in.readLine(); line!=null; line=in.readLine())
-					updates.set(i,updates.get(i)+line+"\n");
+					updates.set(i,new Pair(updates.get(i).getKey()+line+"\n",updates.get(i).getValue()));
 				System.err.print(".");
 			}
 
