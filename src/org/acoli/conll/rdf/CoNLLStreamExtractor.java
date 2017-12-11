@@ -170,12 +170,12 @@ public class CoNLLStreamExtractor {
 					throw e;
 			}
 			while(frq > 0 || change && ((frq * -1) < MAXITERATE)) {
+				if(frq<0&&frq%50==0) System.err.println(frq + " * iteration frequency.");
 				UpdateAction.execute(UpdateFactory.create(update.getKey()), m);
-				if (change)
-					change = cL.hasChanged();
-				if (frq > 0)
-					frq--;
+				if (change) change = cL.hasChanged();
+				frq--;
 			}
+			if(frq<0) System.err.println(frq + " * iteration frequency.");
 			if ((frq * -1) == MAXITERATE)
 				System.err.println("Warning: MAXITERATE reached.");
 			result.add(System.currentTimeMillis() - startTime);

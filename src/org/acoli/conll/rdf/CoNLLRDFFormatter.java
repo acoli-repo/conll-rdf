@@ -515,7 +515,7 @@ public class CoNLLRDFFormatter {
 					+ "if no parameters are supplied, -conllrdf is inferred");
 			String args = Arrays.asList(argv).toString().replaceAll("[\\[\\], ]+"," ").trim().toLowerCase();
 			boolean CONLLRDF = args.contains("-rdf");
-			boolean CONLL = args.contains("-conll ");
+			boolean CONLL = args.contains("-conll");
 			boolean DEBUG = args.contains("-debug");
 			boolean SPARQLTSV = args.contains("-sparqltsv");
 			boolean GRAMMAR = args.contains("-grammar");
@@ -590,7 +590,12 @@ public class CoNLLRDFFormatter {
 					if((line.startsWith("@") || line.startsWith("#")) && !lastLine.startsWith("@") && !lastLine.startsWith("#")) { //!buffer.matches("@[^\n]*\n?$")) {
 						if(CONLLRDF) System.out.println(reorderTTLBuffer(buffer, conllrdfcols));
 						if(DEBUG) System.err.println(colorTTL(reorderTTLBuffer(buffer, conllrdfcols)));
-						if(CONLL) printSparql(buffer, columnsAsSelect(conllcols), new OutputStreamWriter(System.out));
+						if(CONLL) {
+							if (conllcols.size() < 1) 
+								throw new IOException("-conll argument needs at least one COL to export!"); 
+							else 
+								printSparql(buffer, columnsAsSelect(conllcols), new OutputStreamWriter(System.out));
+						}
 						if(SPARQLTSV) printSparql(buffer, select, new OutputStreamWriter(System.out));
 						if(GRAMMAR) System.out.println(extractCoNLLGraph(buffer,true));
 						if(SEMANTICS) System.out.println(extractTermGraph(buffer,!GRAMMAR));

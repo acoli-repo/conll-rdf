@@ -1,0 +1,21 @@
+
+PREFIX nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#>
+PREFIX conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+select ?sentID (group_concat(?word) as ?sentence) 
+where {
+    {
+    select ?sentID ?ID ?word
+    where {
+		?sX_X a nif:Word .
+  		?sX_X conll:WORD ?word .
+    	BIND(xsd:integer(replace(str(?sX_X), ".*s\\d+_(\\d+)$", "$1")) AS ?ID)
+      	BIND(xsd:integer(replace(str(?sX_X), ".*s(\\d+)_\\d+$", "$1")) AS ?sentID)
+   	} order by ?sentID ?ID
+  	}
+} 
+group by ?sentID
+order by ?sentID

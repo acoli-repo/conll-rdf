@@ -69,8 +69,6 @@ public class CoNLLRDFUpdater {
 
 	public static void executeUpdate(List<Pair<String,String>> updates) {
 		for(Pair<String,String> update : updates) {
-			//System.err.println("executing...");
-			//System.err.println(update);
 			Model defaultModel = memAccessor.getModel();
 			ChangedListener cL = new ChangedListener();
 			defaultModel.register(cL);
@@ -85,12 +83,12 @@ public class CoNLLRDFUpdater {
 					throw e;
 			}
 			while(frq > 0 || change && ((frq * -1) < MAXITERATE)) {
-				System.err.println(frq);
-				//defaultModel.write(System.err, "TURTLE");
+				if(frq<0&&frq%50==0) System.err.println(frq + " * iteration frequency.");
 				UpdateAction.execute(UpdateFactory.create(update.getKey()), memDataset);
 				if (change) change = cL.hasChanged();
 				frq--;
 			}
+			if(frq<0) System.err.println(frq + " * iteration frequency.");
 			if ((frq * -1) == MAXITERATE)
 				System.err.println("Warning: MAXITERATE reached.");
 		}
