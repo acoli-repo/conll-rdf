@@ -624,6 +624,12 @@ public class CoNLLRDFFormatter {
 			
 			if(CONLLRDF) System.out.println(reorderTTLBuffer(buffer, conllrdfcols));
 			if(DEBUG) System.err.println(colorTTL(reorderTTLBuffer(buffer, conllrdfcols)));
+			if(CONLL) {
+				if (conllcols.size() < 1) 
+					throw new IOException("-conll argument needs at least one COL to export!"); 
+				else 
+					printSparql(buffer, columnsAsSelect(conllcols), new OutputStreamWriter(System.out));
+			}
 			if(SPARQLTSV) printSparql(buffer, select, new OutputStreamWriter(System.out));
 			if(GRAMMAR) System.out.println(extractCoNLLGraph(buffer,true));
 			if(SEMANTICS) System.out.println(extractTermGraph(buffer,!GRAMMAR));
