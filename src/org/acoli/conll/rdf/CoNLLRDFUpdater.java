@@ -15,8 +15,8 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Hashtable;
 import java.util.List;
+
 import javafx.util.Pair;
 
 import com.hp.hpl.jena.query.Dataset;
@@ -72,24 +72,22 @@ public class CoNLLRDFUpdater {
 			Model defaultModel = memAccessor.getModel();
 			ChangedListener cL = new ChangedListener();
 			defaultModel.register(cL);
-			int frq = 0;
-			boolean change = false;
+			int frq = MAXITERATE, v = 0;
+			boolean change = true;
 			try {
 				frq = Integer.parseInt(update.getValue());
 			} catch (NumberFormatException e) {
-				if ("*".equals(update.getValue()))
-					change = true;
-				else
+				if (!"*".equals(update.getValue()))
 					throw e;
 			}
-			while(frq > 0 || change && ((frq * -1) < MAXITERATE)) {
-				if(frq<0&&frq%50==0) System.err.println(frq + " * iteration frequency.");
+			while(v < frq && change) {
+				//if(v>0&&v%50==0) System.err.println(frq + " * iteration frequency."); //move to debug logging - also add iterations times summary like in CoNLLStreamExtractor
 				UpdateAction.execute(UpdateFactory.create(update.getKey()), memDataset);
 				if (change) change = cL.hasChanged();
-				frq--;
+				v++;
 			}
-			if(frq<0) System.err.println(frq + " * iteration frequency.");
-			if ((frq * -1) == MAXITERATE)
+			//if(v>0) System.err.println(frq + " * iteration frequency."); //move to debug logging
+			if (v == MAXITERATE)
 				System.err.println("Warning: MAXITERATE reached.");
 		}
 	}
@@ -134,12 +132,12 @@ public class CoNLLRDFUpdater {
 			while(i<argv.length && !argv[i].toLowerCase().matches("^-+.*$")) {
 				String freq;
 				freq = argv[i].replaceFirst(".*\\{([0-9u*]+)\\}$", "$1");
-				if (argv[i].equals(freq))
+				if (argv[i].equals(freq)) // update script without iterations in curly brackets defaults to 1
 					freq = "1";
-				if (freq.equals("u"))
+				else if (freq.equals("u"))
 					freq = "*";
 				String update =argv[i++].replaceFirst("\\{[0-9u*]+\\}$", "");
-				updates.add(new Pair(update, freq));
+				updates.add(new Pair<String, String>(update, freq));
 			}
 
 			for(i = 0; i<updates.size(); i++) {
@@ -160,10 +158,10 @@ public class CoNLLRDFUpdater {
 					} catch (Exception e) {}
 				}
 
-				updates.set(i,new Pair("", updates.get(i).getValue()));
+				updates.set(i,new Pair<String, String>("", updates.get(i).getValue()));
 				BufferedReader in = new BufferedReader(sparqlreader);
 				for(String line = in.readLine(); line!=null; line=in.readLine())
-					updates.set(i,new Pair(updates.get(i).getKey()+line+"\n",updates.get(i).getValue()));
+					updates.set(i,new Pair<String, String>(updates.get(i).getKey()+line+"\n",updates.get(i).getValue()));
 				System.err.print(".");
 			}
 

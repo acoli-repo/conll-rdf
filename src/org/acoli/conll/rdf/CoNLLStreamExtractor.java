@@ -25,7 +25,8 @@ public class CoNLLStreamExtractor {
 			"\tFIELDi        CoNLL field label, cf. CoNLL2RDF\n"+
 			"\tSPARQL_UPDATE SPARQL UPDATE (DELETE/INSERT) query, either literally or its location (file/uri)\n"+
 			"\t              can be followed by an optional integer in {}-parentheses = number of repetitions\n"+
-			"\t              or optional asterisk {*} to repeat until there are no more changes in the model\n"+
+			"\t              or {u} to repeat unlimited (capped at 999)\n"+
+			"\t              both option run until there are no more changes in the model\n"+
 			"\tSPARQL_SELECT SPARQL SELECT statement to produce TSV output\n"+
 			"reads CoNLL from stdin, "
 			+ "splits sentences, "
@@ -43,11 +44,13 @@ public class CoNLLStreamExtractor {
 		while(i<argv.length && argv[i].toLowerCase().matches("^-+u$")) i++;
 		while(i<argv.length && !argv[i].toLowerCase().matches("^-+s$")) {
 			String freq;
-			freq = argv[i].replaceFirst(".*\\{([0-9*]+)\\}$", "$1");
+			freq = argv[i].replaceFirst(".*\\{([0-9u*]+)\\}$", "$1");
 			if (argv[i].equals(freq))
 				freq = "1";
+			else if (freq.equals("u"))
+				freq = "*";
 			String update =argv[i++].replaceFirst("\\{[0-9*]+\\}$", "");
-			updates.add(new Pair(update, freq));
+			updates.add(new Pair<String, String>(update, freq));
 		}
 		while(i<argv.length && argv[i].toLowerCase().matches("^-+s$")) i++;
 		if(i<argv.length)
@@ -81,10 +84,10 @@ public class CoNLLStreamExtractor {
 				} catch (Exception e) {}
 			}
 
-			updates.set(i,new Pair("", updates.get(i).getValue()));
+			updates.set(i,new Pair<String, String>("", updates.get(i).getValue()));
 			BufferedReader in = new BufferedReader(sparqlreader);
 			for(String line = in.readLine(); line!=null; line=in.readLine())
-				updates.set(i,new Pair(updates.get(i).getKey()+line+"\n",updates.get(i).getValue()));
+				updates.set(i,new Pair<String, String>(updates.get(i).getKey()+line+"\n",updates.get(i).getValue()));
 			System.err.print(".");
 		}
 		System.err.print(".");
@@ -159,24 +162,22 @@ public class CoNLLStreamExtractor {
 			Long startTime = System.currentTimeMillis();
 			ChangedListener cL = new ChangedListener();
 			m.register(cL);
-			int frq = 0;
-			boolean change = false;
+			int frq = MAXITERATE, v = 0;
+			boolean change = true;
 			try {
 				frq = Integer.parseInt(update.getValue());
 			} catch (NumberFormatException e) {
-				if ("*".equals(update.getValue()))
-					change = true;
-				else
+				if (!"*".equals(update.getValue()))
 					throw e;
 			}
-			while(frq > 0 || change && ((frq * -1) < MAXITERATE)) {
-				if(frq<0&&frq%50==0) System.err.println(frq + " * iteration frequency.");
+			while(v < frq && change) {
+				//if(v>0&&v%50==0) System.err.println(frq + " * iteration frequency.");
 				UpdateAction.execute(UpdateFactory.create(update.getKey()), m);
 				if (change) change = cL.hasChanged();
-				frq--;
+				v++;
 			}
-			if(frq<0) System.err.println(frq + " * iteration frequency.");
-			if ((frq * -1) == MAXITERATE)
+			//if(v>0) System.err.println(frq + " * iteration frequency.");
+			if (v == MAXITERATE)
 				System.err.println("Warning: MAXITERATE reached.");
 			result.add(System.currentTimeMillis() - startTime);
 		}
