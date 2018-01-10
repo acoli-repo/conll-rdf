@@ -2,7 +2,7 @@
 # determines the classpath, updates class files if necessary and runs the specified java class with the provided arguments
 # we also add org.acoli.conll.rdf as package, so, call the class by local name, only, see examples
 
-HOME=`echo $0 | sed -e s/'[^\/]*$'//`'/';
+HOME=`echo $0 | sed -e s/'[^\/]*$'//`'.';
 cd $HOME
 HOME=`pwd -P`;
 cd - >&/dev/null;
