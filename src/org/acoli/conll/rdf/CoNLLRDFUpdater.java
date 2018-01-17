@@ -1,3 +1,18 @@
+/*
+ * Copyright [2017] [ACoLi Lab, Prof. Dr. Chiarcos, Goethe University Frankfurt]
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.acoli.conll.rdf;
 
 import java.io.BufferedReader;
@@ -30,6 +45,10 @@ import org.apache.jena.update.UpdateAction;
 import org.apache.jena.update.UpdateFactory;
 import org.apache.log4j.Logger;
 
+/**
+ *  @author Christian Chiarcos {@literal chiarcos@informatik.uni-frankfurt.de}
+ *  @author Christian Fäth {@literal faeth@em.uni-frankfurt.de}
+ */
 public class CoNLLRDFUpdater {
 	
 	static final int MAXITERATE = 999; // maximum update iterations allowed until the update loop is canceled and an error msg is thrown - to prevent faulty update scripts running in an endless loop

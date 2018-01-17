@@ -19,7 +19,7 @@ All required java libraries are contained in [lib/](./lib).
 ### How it works
 
 
-Getting **conll-rdf** ready can be acomplished easily, see [Installing](#Installing). In general, we read data line by line from `stdin`, process it and write results to `stdout`. For quick setup we recommend using .sh scripts to direct your data through your pipeline. Then, each pipeline element can be called via `./run $CLASS [args]`. A variety of sample scripts can be found in [cmd/](./cmd/) which you can adapt to your needs. Of course you can also use the provided classes within java as any other library.
+Getting **conll-rdf** ready can be acomplished easily, see [Installing](#Installing). In general, we read data line by line from `stdin`, process it and write results to `stdout`. For quick setup we recommend using .sh scripts to direct your data through your pipeline. Then, each pipeline element can be called via `./run $CLASS [args]`. A variety of sample scripts can be found in [examples/](./examples) which you can adapt to your needs. Of course you can also use the provided classes within java as any other library.
 
 ### What it can do
 
@@ -50,7 +50,7 @@ This will create a new file `example.ttl` in conll-rdf by simply providing
 
 In this chapter you can find detailed information on all functionalities of **conll-rdf**.
 
-All relevant classes are in [src/](./src). Sample scripts in [cmd/](./cmd). These convert data found in [data/](./data). In case your corpus directly corresponds to a format found there you can directly convert it with given scripts into conll-rdf. 
+All relevant classes are in [src/](./src/org/acoli/conll/rdf). Sample scripts in [examples/](./examples). These convert data found in [data/](./data/ud/UD_English-master). In case your corpus directly corresponds to a format found there you can directly convert it with given scripts into conll-rdf. 
 
 ### CoNLLStreamExtractor
 

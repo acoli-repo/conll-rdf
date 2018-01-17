@@ -1,3 +1,18 @@
+/*
+ * Copyright [2017] [ACoLi Lab, Prof. Dr. Chiarcos, Goethe University Frankfurt]
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.acoli.conll.rdf;
 
 import java.io.*;
@@ -18,6 +33,8 @@ import org.apache.log4j.Logger;
  * e.g., <code>:s1.2 a nif:Word; conll:word "nsiirin"</code><br>
  * Note: setting BASE to base URI and using empty prefix for conll would be more compact but less readable<br>
  * e.g., <code>&lt;#s1.2&gt; a nif:Word; :word "nsiirin"</code>.
+ * @author Christian Chiarcos {@literal chiarcos@informatik.uni-frankfurt.de}
+ * @author Christian Fäth {@literal faeth@em.uni-frankfurt.de}
  **/
 public class CoNLL2RDF {
 	
