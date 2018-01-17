@@ -21,7 +21,7 @@ if [ $OSTYPE = "cygwin" ]; then
 fi;
 
 JAVAS=$(
-	for java in `find  | sed s/'^\.\/'// | egrep 'java$'`; do
+	for java in `find . | sed s/'^\.\/'// | egrep 'java$'`; do
 		class=`echo $java | sed s/'java$'/'class'/;`
 		if [ ! -e $class ]; then
 			echo $java;
@@ -32,7 +32,7 @@ JAVAS=$(
 	done;
 	)
 for propertiesFile in `find ./src | sed s/'^\.\/'// | egrep 'properties$'`; do
-	cp -u $propertiesFile ${propertiesFile/'src'/'bin'};
+	cp -f $propertiesFile ${propertiesFile/'src'/'bin'};
 done;
 if
 	if echo $JAVAS | grep java >/dev/null; then
