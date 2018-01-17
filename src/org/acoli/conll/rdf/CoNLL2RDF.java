@@ -5,8 +5,9 @@ import java.nio.charset.*;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.lang.reflect.*;
-// import org.apache.jena.rdf.model.*;	// Jena 3.x
-import com.hp.hpl.jena.rdf.model.*;		// Jena 2.x
+import org.apache.jena.rdf.model.*;	// Jena 3.x
+//import com.hp.hpl.jena.rdf.model.*;		// Jena 2.x
+import org.apache.log4j.Logger;
 
 
 
@@ -19,6 +20,8 @@ import com.hp.hpl.jena.rdf.model.*;		// Jena 2.x
  * e.g., <code>&lt;#s1.2&gt; a nif:Word; :word "nsiirin"</code>.
  **/
 public class CoNLL2RDF {
+	
+	private static Logger LOG = Logger.getLogger(CoNLL2RDF.class.getName());
 	
 	/** can be null */
 	private final BufferedWriter out;
@@ -166,11 +169,12 @@ public class CoNLL2RDF {
 			System.err.println(help);
 			return;
 		} else 
-			System.err.println(synopsis);
+			LOG.info(synopsis);
 
-		System.out.print("# created with CoNLL2RDF");
-		for(String a : argv) System.out.print(" "+a);
-		System.out.println();
+		LOG.info("# created with CoNLL2RDF");
+		StringBuilder sb = new StringBuilder();
+		for(String a : argv) sb.append(" "+a);
+		LOG.info(sb.toString());
 
 		CoNLL2RDF converter = new CoNLL2RDF(argv[0], Arrays.copyOfRange(argv, 1, argv.length), new OutputStreamWriter(System.out));
 		converter.conll2ttl(new InputStreamReader(System.in));
@@ -186,7 +190,7 @@ public class CoNLL2RDF {
 			return ModelFactory.createDefaultModel().read(new StringReader(stringWriter.toString()),baseURI, "TTL");
 		} catch (Exception e) {
 			e.printStackTrace();
-			System.err.println("while processing the following input:\n<code>"+stringWriter.toString()+"</code>");			
+			LOG.info("while processing the following input:\n<code>"+stringWriter.toString()+"</code>");			
 			return null;
 		}
 	}
@@ -315,7 +319,7 @@ public class CoNLL2RDF {
 					for(int i = 0; i<predicates.size(); i++)
 						sentence=sentence.replaceAll("\\?"+col2field.get(col2field.size()-1).replaceFirst("[\\-_]*[Aa][rR][gG][sS]$","+"+i),predicates.get(i));
 				out.write(sentence+"\n");
-			System.out.println();
+			out.write("\n");
 			for(String p : headSubProperties) 
 				out.write(p.trim()+"\n");
 			out.write("\n");

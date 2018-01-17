@@ -3,9 +3,10 @@ package org.acoli.conll.rdf;
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import com.hp.hpl.jena.rdf.model.*;		// Jena 2.x
-import com.hp.hpl.jena.update.*;
-import com.hp.hpl.jena.query.*;
+import org.apache.jena.rdf.model.*;		// Jena 2.x
+import org.apache.jena.update.*;
+import org.apache.log4j.Logger;
+import org.apache.jena.query.*;
 
 
 /** a simple, shell-based annotator for CoNLL-RDF, requires Un*x shells with color highlighting<br/>
@@ -15,9 +16,11 @@ import com.hp.hpl.jena.query.*;
  *  a pre-provided macro facilitates annotating dependency syntax (i.e. HEAD+EDGE combinations)
  */
 public class CoNLLRDFAnnotator extends CoNLLRDFFormatter {
+	
+		private static Logger LOG = Logger.getLogger(CoNLLRDFAnnotator.class.getName());
 
 		public static void main(String[] argv) throws IOException {
-			System.err.println("synopsis: CoNLLRDFAnnotator file.ttl \n"
+			LOG.info("synopsis: CoNLLRDFAnnotator file.ttl \n"
 					+ "read canonically formatted CoNLL TTL sentence-wise\n"
 					+ "visualize like CoNLLRDFFormatter -grammar\n"
 					+ "manual, text-based annotation\n"
@@ -100,7 +103,8 @@ public class CoNLLRDFAnnotator extends CoNLLRDFFormatter {
 				lastLine=line;
 			}
 			cmds.close();
-			System.err.println("done");
+			in.close();
+			LOG.info("done");
 	}
 
   protected static String applyMacros(String macros, String cmd) {
@@ -120,7 +124,7 @@ public class CoNLLRDFAnnotator extends CoNLLRDFFormatter {
 		if(cmd==null || cmd.trim().length()==0)
 			return conllRDFBuffer;
 		if(!cmd.matches("^[0-9]+/[^=]*=.*")) {
-			System.err.println("CoNLLRDFAnnotator.updateBuffer(String,\""+cmd+"\") with invalid command");
+			LOG.warn("CoNLLRDFAnnotator.updateBuffer(String,\""+cmd+"\") with invalid command");
 			return conllRDFBuffer;
 		}
 		String prolog = "";
@@ -170,7 +174,7 @@ public class CoNLLRDFAnnotator extends CoNLLRDFFormatter {
 
 			} catch (Exception e) {
 				e.printStackTrace();
-				System.err.println("while processing \""+address+"/"+op);
+				LOG.error("while processing \""+address+"/"+op);
 			}
 		}
 

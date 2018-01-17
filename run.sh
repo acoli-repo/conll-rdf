@@ -39,5 +39,5 @@ if
 		./compile.sh;
 	fi 2>&1;
 then 
-	java -Dfile.encoding=UTF8 -classpath $CLASSPATH org.acoli.conll.rdf.$*; 
+	java -Dfile.encoding=UTF8 -classpath $CLASSPATH org.acoli.conll.rdf.$*; #could also add  -Dlog4j.configuration=file:'src/log4j.properties' for another log4j config
 fi;

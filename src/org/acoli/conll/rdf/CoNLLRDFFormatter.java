@@ -3,14 +3,17 @@ package org.acoli.conll.rdf;
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import com.hp.hpl.jena.rdf.model.*;		// Jena 2.x
-import com.hp.hpl.jena.update.*;
-import com.hp.hpl.jena.query.*;
+import org.apache.jena.rdf.model.*;		// Jena 2.x
+import org.apache.jena.update.*;
+import org.apache.log4j.Logger;
+import org.apache.jena.query.*;
 
 
 /** reads CoNLL-RDF from stdin, writes it formatted to stdout (requires a Un*x shell)<br>
  *  this is basically for diagnostic purposes */
 public class CoNLLRDFFormatter {
+	
+	private static Logger LOG = Logger.getLogger(CoNLLRDFFormatter.class.getName());
 		
 	public static final String ANSI_RESET    = "\u001B[0m";
 	public static final String ANSI_BRIGHTER = "\u001B[1m";
@@ -53,7 +56,7 @@ public class CoNLLRDFFormatter {
 				m = ModelFactory.createDefaultModel().read(new StringReader(buffer),null, "TTL");
 			} catch (org.apache.jena.riot.RiotException e) {
 				e.printStackTrace();
-				System.err.println("while reading:\n"+buffer);
+				LOG.error("while reading:\n"+buffer);
 			}
 			Vector<String> ids = new Vector<String>();
 			Vector<String> words = new Vector<String>();
@@ -84,7 +87,7 @@ public class CoNLLRDFFormatter {
 										"SELECT ?word WHERE { <"+word+"> conll:WORD ?word } LIMIT 1",
 										m).execSelect().next().get("?word").toString());
 					} catch (NoSuchElementException e) {
-						System.err.println("Warning: no conll:WORD (WORD column) found");
+						LOG.warn("Warning: no conll:WORD (WORD column) found");
 						words.add("");
 					}
 					maxWordLength=Math.max(maxWordLength, words.get(words.size()-1).length());
@@ -503,7 +506,7 @@ public class CoNLLRDFFormatter {
 		}
 		
 		public static void main(String[] argv) throws IOException {
-			System.err.println("synopsis: CoNLLRDFFormatter [-rdf [COLS]] [-debug] [-grammar] [-semantics] [-conll COLS] [-sparqltsv SPARQL]\n"
+			LOG.info("synopsis: CoNLLRDFFormatter [-rdf [COLS]] [-debug] [-grammar] [-semantics] [-conll COLS] [-sparqltsv SPARQL]\n"
 					+ "\t-rdf  write formatted CoNLL-RDF to stdout (sorted by list of CoNLL COLS, if provided)\n"
 					+ "\t-conll  write formatted CoNLL to stdout (only specified COLS)\n"
 					+ "\t-debug     write formatted, color-highlighted full turtle to stderr\n"
@@ -565,11 +568,11 @@ public class CoNLLRDFFormatter {
 				
 				if(f.exists()) {			// can be read from a file
 					sparqlreader = new FileReader(f);
-					System.err.print("f");
+					LOG.debug("f");
 				} else if(u!=null) {
 					try {
 						sparqlreader = new InputStreamReader(u.openStream());
-						System.err.print("u");
+						LOG.debug("u");
 					} catch (Exception e) {}
 				}
 

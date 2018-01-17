@@ -2,7 +2,7 @@
 # determines the classpath, updates class files if necessary and runs the specified java class with the provided arguments
 # must be run from $HOME: do not call directly, indirectly evoked via ./run.sh
 
-HOME=`echo $0 | sed -e s/'[^\/]*$'//`'/';
+HOME=`echo $0 | sed -e s/'[^\/]*$'//`'.';
 cd $HOME
 HOME=`pwd -P`;
 cd - >&/dev/null;
@@ -31,6 +31,9 @@ JAVAS=$(
 		fi;
 	done;
 	)
+for propertiesFile in `find ./src | sed s/'^\.\/'// | egrep 'properties$'`; do
+	cp -u $propertiesFile ${propertiesFile/'src'/'bin'};
+done;
 if
 	if echo $JAVAS | grep java >/dev/null; then
 		javac -d $TGT -classpath $CLASSPATH $JAVAS;

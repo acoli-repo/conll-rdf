@@ -19,33 +19,47 @@ import java.util.List;
 
 import javafx.util.Pair;
 
-import com.hp.hpl.jena.query.Dataset;
-import com.hp.hpl.jena.query.DatasetAccessor;
-import com.hp.hpl.jena.query.DatasetAccessorFactory;
-import com.hp.hpl.jena.query.DatasetFactory;
-import com.hp.hpl.jena.rdf.listeners.ChangedListener;
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
-import com.hp.hpl.jena.update.UpdateAction;
-import com.hp.hpl.jena.update.UpdateFactory;
+import org.apache.jena.query.Dataset;
+import org.apache.jena.query.DatasetAccessor;
+import org.apache.jena.query.DatasetAccessorFactory;
+import org.apache.jena.query.DatasetFactory;
+import org.apache.jena.rdf.listeners.ChangedListener;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.update.UpdateAction;
+import org.apache.jena.update.UpdateFactory;
+import org.apache.log4j.Logger;
 
 public class CoNLLRDFUpdater {
 	
 	static final int MAXITERATE = 999; // maximum update iterations allowed until the update loop is canceled and an error msg is thrown - to prevent faulty update scripts running in an endless loop
 	
-	public static final Dataset memDataset = DatasetFactory.createMem();
+	public static final Dataset memDataset = DatasetFactory.create();
 	public static final DatasetAccessor memAccessor = DatasetAccessorFactory.create(memDataset);
 
+	private static Logger LOG = Logger.getLogger(CoNLLRDFUpdater.class.getName());
+
+	private static class Triple<F, S, M> {
+		public final F first;
+		public final S second;
+		public final M third;
+		public Triple (F first, S second, M third) {
+			this.first = first;
+			this.second = second;
+			this.third = third;
+		}
+	}
+	
 	public static void loadGraph(URI url, URI graph) {
-		System.err.println("loading...");
-		System.err.println(url +" into "+ graph);
+		LOG.info("loading...");
+		LOG.info(url +" into "+ graph);
 		if (graph == null) {
 			graph = url;
 		}
 		Model m = ModelFactory.createDefaultModel();
 		m.read(url.toString());
 		memAccessor.add(graph.toString(), m);
-		System.err.println("done...");
+		LOG.info("done...");
 	}
 
 	public static void loadBuffer(String buffer) {
@@ -67,42 +81,46 @@ public class CoNLLRDFUpdater {
 		memAccessor.deleteDefault();
 	}
 
-	public static void executeUpdate(List<Pair<String,String>> updates) {
-		for(Pair<String,String> update : updates) {
+	public static List<Pair<Integer, Long> > executeUpdate(List<Triple<String, String, String>> updates) {
+		List<Pair<Integer,Long> > result = new ArrayList<Pair<Integer,Long> >();
+		for(Triple<String, String, String> update : updates) {
+			Long startTime = System.currentTimeMillis();
 			Model defaultModel = memAccessor.getModel();
 			ChangedListener cL = new ChangedListener();
 			defaultModel.register(cL);
 			int frq = MAXITERATE, v = 0;
 			boolean change = true;
 			try {
-				frq = Integer.parseInt(update.getValue());
+				frq = Integer.parseInt(update.third);
 			} catch (NumberFormatException e) {
-				if (!"*".equals(update.getValue()))
+				if (!"*".equals(update.third))
 					throw e;
 			}
 			while(v < frq && change) {
-				//if(v>0&&v%50==0) System.err.println(frq + " * iteration frequency."); //move to debug logging - also add iterations times summary like in CoNLLStreamExtractor
-				UpdateAction.execute(UpdateFactory.create(update.getKey()), memDataset);
+				UpdateAction.execute(UpdateFactory.create(update.second), memDataset);
 				if (change) change = cL.hasChanged();
 				v++;
 			}
-			//if(v>0) System.err.println(frq + " * iteration frequency."); //move to debug logging
 			if (v == MAXITERATE)
-				System.err.println("Warning: MAXITERATE reached.");
+				LOG.warn("Warning: MAXITERATE reached for " + update.first + ".\n");
+			result.add(new Pair<Integer, Long>(v, System.currentTimeMillis() - startTime));
 		}
+		return result;
 	}
 
 	public static void main(String[] argv) throws IOException, URISyntaxException {
-		System.err.println("synopsis: CoNLLRDFUpdater [-custom [-model URI [GRAPH]]* -updates [UPDATE]]+\n"
-				+ "\t-custom  use custom update scripts. Use -model to load additional Models into local graph\n"
-				+ "read TTL from stdin => update CoNLL-RDF");
+		LOG.info("synopsis: CoNLLRDFUpdater [-custom [-model URI [GRAPH]]* -updates [UPDATE]]+\n"
+				+ "\t\t-custom  use custom update scripts\n"
+				+ "\t\t-model to load additional Models into local graph\n"
+				+ "\t\t-updates followed by SPARQL scripts paired with {iterations/u}\n"
+				+ "\t\tread TTL from stdin => update CoNLL-RDF");
 		String args = Arrays.asList(argv).toString().replaceAll("[\\[\\], ]+"," ").trim().toLowerCase();
 		boolean CUSTOM = args.contains("-custom ");
 		if(!CUSTOM ) { // no default possible here
-			System.err.println("Please specify update script.");
+			LOG.error("Please specify update script.");
 		}
 
-		List<Pair<String, String>> updates = new ArrayList<Pair<String, String>>();
+		List<Triple<String, String, String>> updates = new ArrayList<Triple<String, String, String>>();
 		List<String> models = new ArrayList<String>();
 
 		if(CUSTOM) {
@@ -137,45 +155,53 @@ public class CoNLLRDFUpdater {
 				else if (freq.equals("u"))
 					freq = "*";
 				String update =argv[i++].replaceFirst("\\{[0-9u*]+\\}$", "");
-				updates.add(new Pair<String, String>(update, freq));
+				updates.add(new Triple<String, String, String>(update, update, freq));
 			}
 
+			StringBuilder sb = new StringBuilder();
 			for(i = 0; i<updates.size(); i++) {
-				Reader sparqlreader = new StringReader(updates.get(i).getKey());
-				File f = new File(updates.get(i).getKey());
+				Reader sparqlreader = new StringReader(updates.get(i).second);
+				File f = new File(updates.get(i).second);
 				URL u = null;
 				try {
-					u = new URL(updates.get(i).getKey());
+					u = new URL(updates.get(i).second);
 				} catch (MalformedURLException e) {}
-
 				if(f.exists()) {			// can be read from a file
 					sparqlreader = new FileReader(f);
-					System.err.print("f");
+					sb.append("f");
 				} else if(u!=null) {
 					try {
 						sparqlreader = new InputStreamReader(u.openStream());
-						System.err.print("u");
+						sb.append("u");
 					} catch (Exception e) {}
 				}
-
-				updates.set(i,new Pair<String, String>("", updates.get(i).getValue()));
+				updates.set(i,new Triple<String, String, String>(updates.get(i).first, "", updates.get(i).third));
 				BufferedReader in = new BufferedReader(sparqlreader);
 				for(String line = in.readLine(); line!=null; line=in.readLine())
-					updates.set(i,new Pair<String, String>(updates.get(i).getKey()+line+"\n",updates.get(i).getValue()));
-				System.err.print(".");
+					updates.set(i,new Triple<String, String, String>(updates.get(i).first, updates.get(i).second+line+"\n",updates.get(i).third));
+				sb.append(".");
 			}
+			LOG.debug(sb.toString());
 
 			BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 			String line;
 			String lastLine ="";
 			String buffer="";
+			List<Pair<Integer,Long> > dRTs = new ArrayList<Pair<Integer,Long> >(); // iterations and execution time of each update in seconds
 			while((line = in.readLine())!=null) {
 				line=line.replaceAll("[\t ]+"," ").trim();
 
 				if(!buffer.trim().equals(""))
 					if((line.startsWith("@") || line.startsWith("#")) && !lastLine.startsWith("@") && !lastLine.startsWith("#")) { //!buffer.matches("@[^\n]*\n?$")) {
 						loadBuffer(buffer);
-						if(CUSTOM) executeUpdate(updates);
+						if(CUSTOM) {
+							List<Pair<Integer,Long> > ret = executeUpdate(updates);
+							if (dRTs.isEmpty())
+								dRTs = ret;
+							else
+								for (int x = 0; x < ret.size(); ++x)
+									dRTs.set(x, new Pair<Integer, Long>(dRTs.get(x).getKey() + ret.get(x).getKey(), dRTs.get(x).getValue() + ret.get(x).getValue()));
+						}
 						unloadBuffer(buffer, new OutputStreamWriter(System.out));
 						buffer="";
 					}
@@ -193,8 +219,16 @@ public class CoNLLRDFUpdater {
 				lastLine=line;
 			}
 			loadBuffer(buffer);
-			if(CUSTOM) executeUpdate(updates);
+			if(CUSTOM) {
+				List<Pair<Integer,Long> > ret = executeUpdate(updates);
+				if (dRTs.isEmpty())
+					dRTs = ret;
+				else
+					for (int x = 0; x < ret.size(); ++x)
+						dRTs.set(x, new Pair<Integer, Long>(dRTs.get(x).getKey() + ret.get(x).getKey(), dRTs.get(x).getValue() + ret.get(x).getValue()));
+			}
 			unloadBuffer(buffer, new OutputStreamWriter(System.out));
+			LOG.debug("Done - List of interations and execution times for the updates done (in given order):\n\t\t" + dRTs.toString());
 		}
 	}
 }
