@@ -17,10 +17,8 @@ package org.acoli.conll.rdf;
 
 import java.io.*;
 import java.net.*;
-import java.util.*; 
-// import org.apache.jena.rdf.model.*;	// Jena 3.x
-import org.apache.jena.rdf.listeners.ChangedListener;
-import org.apache.jena.rdf.model.*;		// Jena 2.x
+import java.util.*;
+import org.apache.jena.rdf.model.*;
 import org.apache.jena.update.*;
 import org.apache.log4j.Logger;
 import org.apache.jena.query.*;
@@ -172,14 +170,15 @@ public class CoNLLStreamExtractor {
 					dRTs.set(x, new Pair<Integer, Long>(dRTs.get(x).getKey() + ret.get(x).getKey(), dRTs.get(x).getValue() + ret.get(x).getValue()));
 			print(m,select,out);
 		}
-		LOG.debug("Done - List of interations and execution times for the updates done (in given order):\n\t\t" + dRTs.toString());
+		if (!dRTs.isEmpty())
+			LOG.debug("Done - List of interations and execution times for the updates done (in given order):\n\t\t" + dRTs.toString());
 	}
 	
 	public static List<Pair<Integer,Long> > update(Model m, List<Pair<String,String>> updates) {
 		List<Pair<Integer,Long> > result = new ArrayList<Pair<Integer,Long> >();
 		for(Pair<String,String> update : updates) {
 			Long startTime = System.currentTimeMillis();
-			ChangedListener cL = new ChangedListener();
+			ChangeListener cL = new ChangeListener();
 			m.register(cL);
 			int frq = MAXITERATE, v = 0;
 			boolean change = true;
@@ -191,12 +190,13 @@ public class CoNLLStreamExtractor {
 			}
 			while(v < frq && change) {
 				UpdateAction.execute(UpdateFactory.create(update.getKey()), m);
-				if (change) change = cL.hasChanged();
+				change = cL.hasChanged();
 				v++;
 			}
 			if (v == MAXITERATE)
 				LOG.warn("Warning: MAXITERATE reached.");
 			result.add(new Pair<Integer, Long>(v, System.currentTimeMillis() - startTime));
+			m.unregister(cL);
 		}
 		return result;
 	}

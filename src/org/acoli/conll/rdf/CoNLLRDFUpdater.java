@@ -38,7 +38,6 @@ import org.apache.jena.query.Dataset;
 import org.apache.jena.query.DatasetAccessor;
 import org.apache.jena.query.DatasetAccessorFactory;
 import org.apache.jena.query.DatasetFactory;
-import org.apache.jena.rdf.listeners.ChangedListener;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.update.UpdateAction;
@@ -105,7 +104,7 @@ public class CoNLLRDFUpdater {
 		for(Triple<String, String, String> update : updates) {
 			Long startTime = System.currentTimeMillis();
 			Model defaultModel = memAccessor.getModel();
-			ChangedListener cL = new ChangedListener();
+			ChangeListener cL = new ChangeListener();
 			defaultModel.register(cL);
 			int frq = MAXITERATE, v = 0;
 			boolean change = true;
@@ -117,12 +116,13 @@ public class CoNLLRDFUpdater {
 			}
 			while(v < frq && change) {
 				UpdateAction.execute(UpdateFactory.create(update.second), memDataset);
-				if (change) change = cL.hasChanged();
+				change = cL.hasChanged();
 				v++;
 			}
 			if (v == MAXITERATE)
-				LOG.warn("Warning: MAXITERATE reached for " + update.first + ".\n");
+				LOG.warn("Warning: MAXITERATE reached for " + update.first + ".");
 			result.add(new Pair<Integer, Long>(v, System.currentTimeMillis() - startTime));
+			defaultModel.unregister(cL);
 		}
 		return result;
 	}
@@ -247,7 +247,8 @@ public class CoNLLRDFUpdater {
 						dRTs.set(x, new Pair<Integer, Long>(dRTs.get(x).getKey() + ret.get(x).getKey(), dRTs.get(x).getValue() + ret.get(x).getValue()));
 			}
 			unloadBuffer(buffer, new OutputStreamWriter(System.out));
-			LOG.debug("Done - List of interations and execution times for the updates done (in given order):\n\t\t" + dRTs.toString());
+			if (!dRTs.isEmpty())
+				LOG.debug("Done - List of interations and execution times for the updates done (in given order):\n\t\t" + dRTs.toString());
 		}
 	}
 }
