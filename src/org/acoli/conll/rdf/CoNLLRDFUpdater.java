@@ -38,6 +38,7 @@ import org.apache.jena.query.Dataset;
 import org.apache.jena.query.DatasetAccessor;
 import org.apache.jena.query.DatasetAccessorFactory;
 import org.apache.jena.query.DatasetFactory;
+import org.apache.jena.rdf.listeners.ChangedListener;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.update.UpdateAction;
@@ -54,8 +55,12 @@ public class CoNLLRDFUpdater {
 	
 	public static final Dataset memDataset = DatasetFactory.create();
 	public static final DatasetAccessor memAccessor = DatasetAccessorFactory.create(memDataset);
+	
+	@SuppressWarnings("serial")
+	private static List<Integer> CHECKINTERVAL = new ArrayList<Integer>() {{add(3); add(10); add(25); add(50); add(100); add(200); add(500);}};
 
 	private static Logger LOG = Logger.getLogger(CoNLLRDFUpdater.class.getName());
+	
 
 	private static class Triple<F, S, M> {
 		public final F first;
@@ -104,8 +109,9 @@ public class CoNLLRDFUpdater {
 		for(Triple<String, String, String> update : updates) {
 			Long startTime = System.currentTimeMillis();
 			Model defaultModel = memAccessor.getModel();
-			ChangeListener cL = new ChangeListener();
+			ChangedListener cL = new ChangedListener();
 			defaultModel.register(cL);
+			String oldModel = "";
 			int frq = MAXITERATE, v = 0;
 			boolean change = true;
 			try {
@@ -116,7 +122,14 @@ public class CoNLLRDFUpdater {
 			}
 			while(v < frq && change) {
 				UpdateAction.execute(UpdateFactory.create(update.second), memDataset);
-				change = cL.hasChanged();
+				if (oldModel.isEmpty())
+					change = cL.hasChanged();
+				else {
+					change = !defaultModel.toString().equals(oldModel);
+					oldModel = "";
+				}
+				if (CHECKINTERVAL.contains(v))
+					oldModel = defaultModel.toString();
 				v++;
 			}
 			if (v == MAXITERATE)

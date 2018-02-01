@@ -18,6 +18,8 @@ package org.acoli.conll.rdf;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+
+import org.apache.jena.rdf.listeners.ChangedListener;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.update.*;
 import org.apache.log4j.Logger;
@@ -34,6 +36,9 @@ import javafx.util.Pair;
 public class CoNLLStreamExtractor {
 	
 	private static Logger LOG = Logger.getLogger(CoNLLStreamExtractor.class.getName());
+	
+	@SuppressWarnings("serial")
+	private static List<Integer> CHECKINTERVAL = new ArrayList<Integer>() {{add(3); add(10); add(25); add(50); add(100); add(200); add(500);}};
 
 	static final int MAXITERATE = 999; // maximal update iterations allowed until the update loop is canceled and an error msg is thrown - to prevent faulty update scripts running in an endless loop
 	
@@ -178,8 +183,9 @@ public class CoNLLStreamExtractor {
 		List<Pair<Integer,Long> > result = new ArrayList<Pair<Integer,Long> >();
 		for(Pair<String,String> update : updates) {
 			Long startTime = System.currentTimeMillis();
-			ChangeListener cL = new ChangeListener();
+			ChangedListener cL = new ChangedListener();
 			m.register(cL);
+			String oldModel = "";
 			int frq = MAXITERATE, v = 0;
 			boolean change = true;
 			try {
@@ -190,7 +196,14 @@ public class CoNLLStreamExtractor {
 			}
 			while(v < frq && change) {
 				UpdateAction.execute(UpdateFactory.create(update.getKey()), m);
-				change = cL.hasChanged();
+				if (oldModel.isEmpty())
+					change = cL.hasChanged();
+				else {
+					change = !m.toString().equals(oldModel);
+					oldModel = "";
+				}
+				if (CHECKINTERVAL.contains(v))
+					oldModel = m.toString();
 				v++;
 			}
 			if (v == MAXITERATE)
