@@ -141,9 +141,12 @@ See also the list of [contributors](https://github.com/acoli-repo/conll-rdf/grap
 
 This repository has been created in context of 
 * Applied Computational Linguistics ([ACoLi](http://acoli.cs.uni-frankfurt.de))
-* Specialised Information Service Linguistics ([FID](https://www.ub.uni-frankfurt.de/projekte/fid-linguistik_en.html)) - CH1413/2-1
-* Linked Open Dictionaries ([LiODi](http://www.acoli.informatik.uni-frankfurt.de/liodi/)) - 01UG1631
-* QuantQual@CEDIFOR ([QuantQual](http://acoli.cs.uni-frankfurt.de/projects.html#quantqual)) - 01UG1416A
+* Specialised Information Service Linguistics ([FID](https://www.ub.uni-frankfurt.de/projekte/fid-linguistik_en.html))
+  * funded by the German Research Foundation (DFG, funding code CH1413/2-1) 
+* Linked Open Dictionaries ([LiODi](http://www.acoli.informatik.uni-frankfurt.de/liodi/))
+  * funded by the German Federal Ministry of Education and Research (BMBF, funding code 01UG1631)
+* QuantQual@CEDIFOR ([QuantQual](http://acoli.cs.uni-frankfurt.de/projects.html#quantqual)) 
+  * funded by the Centre for the Digital Foundation of Research in the Humanities, Social and Educational Science (CEDIFOR, funding code 01UG1416A) 
 
 
 ## Licenses
