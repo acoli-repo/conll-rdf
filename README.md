@@ -9,6 +9,7 @@ tool package for converting .conll files into conll-rdf and back. We support a v
 
 
 java is required, use `java --version` to check if you have java installed.
+(Java version 8 or 9 is required for logging with log4j)
 
 All required java libraries are contained in [lib/](./lib).
 
