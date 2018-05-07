@@ -32,7 +32,7 @@ JAVAS=$(
 	done;
 	)
 for propertiesFile in `find ./src | sed s/'^\.\/'// | egrep 'properties$'`; do
-	cp -f $propertiesFile ${propertiesFile/'src'/'bin'};
+	cp -f $propertiesFile ${propertiesFile/'src'/'bin'} >& /dev/null;
 done;
 if
 	if echo $JAVAS | grep java >/dev/null; then
