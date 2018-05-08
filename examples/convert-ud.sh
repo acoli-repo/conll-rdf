@@ -22,5 +22,5 @@ for file in `find $DATA/ud | grep 'conllu.gz$'`; do \
 		ID WORD LEMMA UPOS POS FEAT HEAD EDGE DEPS MISC | \
 	\
 # 3. format
-	$ROOT/run.sh CoNLLRDFFormatter -rdf ID WORD LEMMA UPOS POS FEAT HEAD EDGE DEPS MISC $* > $DATA/ud/ttl/$filename.ttl \
+	$ROOT/run.sh CoNLLRDFFormatter -rdf ID WORD LEMMA UPOS POS FEAT HEAD EDGE DEPS MISC $* > $DATA/ud/UD_English-master/$filename.ttl \
 ; done
