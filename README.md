@@ -5,6 +5,8 @@ tool package for converting .conll files into conll-rdf and back. We support a v
 
 ## Getting Started
 
+We also provide a [hands-on tutorial](./examples) which comes with prepared scripts and data.
+
 ### Installing
 
 
