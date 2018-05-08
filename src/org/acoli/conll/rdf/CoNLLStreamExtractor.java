@@ -31,7 +31,7 @@ import javafx.util.Pair;
  *  NOTE: queries can be provided as literal queries, file or as URLs, the latter two are preferred as
  *  a literal query string may be parsed by the JVM/shell
  *  @author Christian Chiarcos {@literal chiarcos@informatik.uni-frankfurt.de}
- *  @author Christian Fäth {@literal faeth@em.uni-frankfurt.de}
+ *  @author Christian Faeth {@literal faeth@em.uni-frankfurt.de}
  */
 public class CoNLLStreamExtractor {
 	

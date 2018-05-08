@@ -34,7 +34,7 @@ import org.apache.log4j.Logger;
  * Note: setting BASE to base URI and using empty prefix for conll would be more compact but less readable<br>
  * e.g., <code>&lt;#s1.2&gt; a nif:Word; :word "nsiirin"</code>.
  * @author Christian Chiarcos {@literal chiarcos@informatik.uni-frankfurt.de}
- * @author Christian Fäth {@literal faeth@em.uni-frankfurt.de}
+ * @author Christian Faeth {@literal faeth@em.uni-frankfurt.de}
  **/
 public class CoNLL2RDF {
 	

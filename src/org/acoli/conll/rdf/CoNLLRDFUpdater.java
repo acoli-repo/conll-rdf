@@ -47,7 +47,7 @@ import org.apache.log4j.Logger;
 
 /**
  *  @author Christian Chiarcos {@literal chiarcos@informatik.uni-frankfurt.de}
- *  @author Christian Fäth {@literal faeth@em.uni-frankfurt.de}
+ *  @author Christian Faeth {@literal faeth@em.uni-frankfurt.de}
  */
 public class CoNLLRDFUpdater {
 	

@@ -27,7 +27,7 @@ import org.apache.jena.query.*;
 /** reads CoNLL-RDF from stdin, writes it formatted to stdout (requires a Un*x shell)<br>
  *  this is basically for diagnostic purposes 
  *  @author Christian Chiarcos {@literal chiarcos@informatik.uni-frankfurt.de}
- *  @author Christian Fäth {@literal faeth@em.uni-frankfurt.de}
+ *  @author Christian Faeth {@literal faeth@em.uni-frankfurt.de}
  */
 public class CoNLLRDFFormatter {
 	
