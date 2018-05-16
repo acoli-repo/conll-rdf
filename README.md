@@ -88,7 +88,8 @@ Synopsis: ```CoNLLRDFUpdater -custom [-model URI [GRAPH]]* -updates [UPDATE]+```
 
 ### CoNLLRDFFormatter
 
-`CoNLLRDFFormatter` expects conll-rdf in `.ttl` and writes to different formats. Can also visualize your data.
+`CoNLLRDFFormatter` expects conll-rdf in `.ttl` and writes to different formats. Can also visualize your data.  
+Synopsis: ```CoNLLRDFFormatter [-rdf [COLS]] [-debug] [-grammar] [-semantics] [-conll COLS] [-sparqltsv SPARQL]```
 
 * `-rdf` (default): writes canonical conll-rdf as .ttl.
 * `-conll [COLS]`: writes .conll of specified columns in order of arguments.  At least one COL must be provided, otherwise writes original conll-rdf.
