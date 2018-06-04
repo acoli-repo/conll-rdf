@@ -1,21 +1,40 @@
+/*
+ * Copyright [2018] [ACoLi Lab, Prof. Dr. Chiarcos, Goethe University Frankfurt]
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
 package org.acoli.conll.rdf;
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
 
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
-import com.hp.hpl.jena.rdf.model.NodeIterator;
-import com.hp.hpl.jena.rdf.model.Property;
-import com.hp.hpl.jena.rdf.model.RDFNode;
-import com.hp.hpl.jena.rdf.model.ResIterator;
-import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.ResourceRequiredException;
-import com.hp.hpl.jena.rdf.model.Statement;
-import com.hp.hpl.jena.rdf.model.StmtIterator;
-import com.hp.hpl.jena.update.UpdateAction;
-import com.hp.hpl.jena.update.UpdateFactory;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.ResIterator;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.ResourceRequiredException;
+import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.rdf.model.StmtIterator;
 
-/* auxiliary class to develop DOT/graphviz viz for CoNLL-RDF */
+/** auxiliary class to develop DOT/graphviz viz for CoNLL-RDF<br/>
+ *  @author Christian Chiarcos {@literal chiarcos@informatik.uni-frankfurt.de}
+*/
 public class CoNLLRDFViz {
 
 	protected static String dotId(Resource r) {
@@ -193,7 +212,7 @@ public class CoNLLRDFViz {
 						if(p.equals("nif:nextWord"))
 							out.write("[color=\"invis\", weight=\"10\"];\n");
 						else if(p.equals("nif:nextSentence")) {
-							out.write("[label=\""+p+"\", color=\"black\"];\n");
+							out.write("[label=\""+p+"\", color=\"gray\"];\n");
 						} else if(p.equals("conll:HEAD")) { // no head, this is dealt with in the conll view
 							String edge = "null";
 							try {
@@ -231,6 +250,9 @@ public class CoNLLRDFViz {
 
 						
 		out.write("}\n\n");
+
+		out.write("}\n\n");
+		out.flush();
 		
 	}
 	
