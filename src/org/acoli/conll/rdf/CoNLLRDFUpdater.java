@@ -17,6 +17,8 @@ package org.acoli.conll.rdf;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -28,9 +30,13 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javafx.util.Pair;
 
@@ -51,16 +57,22 @@ import org.apache.log4j.Logger;
  */
 public class CoNLLRDFUpdater {
 	
-	static final int MAXITERATE = 999; // maximum update iterations allowed until the update loop is canceled and an error msg is thrown - to prevent faulty update scripts running in an endless loop
+	static final int MAXITERATE = 999; // maximum update iterations allowed until the update loop is cancelled and an error message is thrown - to prevent faulty update scripts running in an endless loop
 	
 	public static final Dataset memDataset = DatasetFactory.create();
 	public static final DatasetAccessor memAccessor = DatasetAccessorFactory.create(memDataset);
 	
 	@SuppressWarnings("serial")
-	private static List<Integer> CHECKINTERVAL = new ArrayList<Integer>() {{add(3); add(10); add(25); add(50); add(100); add(200); add(500);}};
+	private static final List<Integer> CHECKINTERVAL = new ArrayList<Integer>() {{add(3); add(10); add(25); add(50); add(100); add(200); add(500);}};
 
-	private static Logger LOG = Logger.getLogger(CoNLLRDFUpdater.class.getName());
+	private static final Logger LOG = Logger.getLogger(CoNLLRDFUpdater.class.getName());
 	
+	private static File GRAPHOUTPUTDIR = null;
+	
+	// get NAME.nam from file:///NAME.nam/
+	private static final Pattern URINAMEPATTERN = Pattern.compile("^.*/(.*)[/#]?$");
+	
+	private static final Pattern FILENAMEENDPATTERN = Pattern.compile("^.*_([^_]*)$");
 
 	private static class Triple<F, S, M> {
 		public final F first;
@@ -103,8 +115,44 @@ public class CoNLLRDFUpdater {
 		out.flush();
 		memAccessor.deleteDefault();
 	}
+	
+	public static void produceDot(Model m, String update) throws IOException {
+		if (GRAPHOUTPUTDIR != null) {
+			String baseURI = "file:///sample.ttl/";
+			String u = m.getNsPrefixURI("");
+			if (u != null) baseURI = u;
+			String updateName = (new File(update)).getName();
+			updateName = (updateName != null && !updateName.isEmpty()) ? updateName : UUID.randomUUID().toString();
+			Matcher ma = URINAMEPATTERN.matcher(baseURI);
+			String baseURIName;
+			if (ma.matches()) baseURIName = ma.group(1); else baseURIName = UUID.randomUUID().toString();
+			File outputFile = getUniqueFileInt(new File(GRAPHOUTPUTDIR, baseURIName+"_"+updateName+"_"+UUID.randomUUID().toString()));
+			Writer w = new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8);
+			CoNLLRDFViz.produceDot(m, w);
+		}		
+	}
+	
+	public static File getUniqueFileInt(File f) {
+		File result = f;
+		if (result.exists()) {
+			Matcher m = FILENAMEENDPATTERN.matcher(result.getName());
+			int i;
+			try {
+				i = Integer.parseInt(m.group(1));
+			} catch (NumberFormatException e) {
+				i = 0;
+			}
+			if (i == 0) {
+				result = getUniqueFileInt(new File(f.getPath() + "_" + Integer.toString(i)));
+			} else {
+				String oldI = Integer.toString(i);
+				result = getUniqueFileInt(new File(f.getPath().substring(0, f.getPath().length() - oldI.length()) + Integer.toString(i + 1)));
+			}
+		}
+		return result;
+	}
 
-	public static List<Pair<Integer, Long> > executeUpdate(List<Triple<String, String, String>> updates) {
+	public static List<Pair<Integer, Long> > executeUpdate(List<Triple<String, String, String>> updates) throws IOException {
 		List<Pair<Integer,Long> > result = new ArrayList<Pair<Integer,Long> >();
 		for(Triple<String, String, String> update : updates) {
 			Long startTime = System.currentTimeMillis();
@@ -122,6 +170,7 @@ public class CoNLLRDFUpdater {
 			}
 			while(v < frq && change) {
 				UpdateAction.execute(UpdateFactory.create(update.second), memDataset);
+				produceDot(defaultModel, update.first);
 				if (oldModel.isEmpty())
 					change = cL.hasChanged();
 				else {
@@ -144,6 +193,7 @@ public class CoNLLRDFUpdater {
 		LOG.info("synopsis: CoNLLRDFUpdater [-custom [-model URI [GRAPH]]* -updates [UPDATE]]+\n"
 				+ "\t\t-custom  use custom update scripts\n"
 				+ "\t\t-model to load additional Models into local graph\n"
+				+ "\t\t-graphsout output directory for the .dot graph files\n"
 				+ "\t\t-updates followed by SPARQL scripts paired with {iterations/u}\n"
 				+ "\t\tread TTL from stdin => update CoNLL-RDF");
 		String args = Arrays.asList(argv).toString().replaceAll("[\\[\\], ]+"," ").trim().toLowerCase();
@@ -177,6 +227,15 @@ public class CoNLLRDFUpdater {
 			i=0;
 			while(i<argv.length && !argv[i].toLowerCase().matches("^-+custom$")) i++;
 			i++;
+			if (args.contains("-graphsout ")) {
+				i = 0;
+				while(i<argv.length && !argv[i].toLowerCase().matches("^-+graphsout$")) i++;
+				i++;
+				GRAPHOUTPUTDIR = new File(argv[i].toLowerCase());
+				if (GRAPHOUTPUTDIR.exists() || GRAPHOUTPUTDIR.mkdirs()) {
+					if (! GRAPHOUTPUTDIR.isDirectory()) throw new IOException("Error: Given -graphsout DIRECTORY is not a valid directory.");
+				} else throw new IOException("Error: Failed to create given -graphsout DIRECTORY.");
+			}
 			while(i<argv.length && !argv[i].toLowerCase().matches("^-+updates$")) i++;
 			i++;
 			while(i<argv.length && !argv[i].toLowerCase().matches("^-+.*$")) {
@@ -209,8 +268,10 @@ public class CoNLLRDFUpdater {
 				}
 				updates.set(i,new Triple<String, String, String>(updates.get(i).first, "", updates.get(i).third));
 				BufferedReader in = new BufferedReader(sparqlreader);
+				String updateBuff = "";
 				for(String line = in.readLine(); line!=null; line=in.readLine())
-					updates.set(i,new Triple<String, String, String>(updates.get(i).first, updates.get(i).second+line+"\n",updates.get(i).third));
+					updateBuff = updateBuff + line + "\n";
+				updates.set(i,new Triple<String, String, String>(updates.get(i).first, updateBuff,updates.get(i).third));
 				sb.append(".");
 			}
 			LOG.debug(sb.toString());

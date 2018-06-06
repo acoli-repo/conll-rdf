@@ -47,9 +47,15 @@ public class CoNLLRDFViz {
 	}
 	
 	public static void produceDot(Reader in, Writer out) throws IOException {
-		
 		Model m = ModelFactory.createDefaultModel().read(in,null,"TTL");
-		
+		produceDot(m, out);
+	}
+	
+	/*
+	 * change in/out to model input output
+	 */
+	public static void produceDot(Model m, Writer out) throws IOException {
+				
 		ResIterator sbjs;
 
 		// header
