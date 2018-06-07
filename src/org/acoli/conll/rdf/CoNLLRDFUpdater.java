@@ -73,6 +73,8 @@ public class CoNLLRDFUpdater {
 	private static final Pattern URINAMEPATTERN = Pattern.compile("^.*/(.*)[/#]?$");
 	
 	private static final Pattern FILENAMEENDPATTERN = Pattern.compile("^.*_([^_]*)$");
+	
+	private static int sent_id = 0;
 
 	private static class Triple<F, S, M> {
 		public final F first;
@@ -116,7 +118,7 @@ public class CoNLLRDFUpdater {
 		memAccessor.deleteDefault();
 	}
 	
-	public static void produceDot(Model m, String update, int upd_id, int iter_id) throws IOException {
+	public static void produceDot(Model m, String update, int sent_id, int upd_id, int iter_id) throws IOException {
 		if (GRAPHOUTPUTDIR != null) {
 			String baseURI = "file:///sample.ttl/";
 			String u = m.getNsPrefixURI("");
@@ -124,9 +126,9 @@ public class CoNLLRDFUpdater {
 			String updateName = (new File(update)).getName();
 			updateName = (updateName != null && !updateName.isEmpty()) ? updateName : UUID.randomUUID().toString();
 			Matcher ma = URINAMEPATTERN.matcher(baseURI);
-			String baseURIName;
-			if (ma.matches()) baseURIName = ma.group(1); else baseURIName = UUID.randomUUID().toString();
-			File outputFile = new File(GRAPHOUTPUTDIR, baseURIName+"_UPD-"+upd_id+"_ITER-"+iter_id+"_"+updateName+".dot");
+			String baseURIName = new String();
+			if (ma.matches()) baseURIName = ma.group(1);
+			File outputFile = new File(GRAPHOUTPUTDIR, baseURIName+"_SNT-"+sent_id+"_UPD-"+upd_id+"_ITER-"+iter_id+"_"+updateName+".dot");
 			Writer w = new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8);
 			CoNLLRDFViz.produceDot(m, w);
 		}		
@@ -169,6 +171,7 @@ public class CoNLLRDFUpdater {
 	}
 
 	public static List<Pair<Integer, Long> > executeUpdate(List<Triple<String, String, String>> updates) throws IOException {
+		sent_id++;
 		List<Pair<Integer,Long> > result = new ArrayList<Pair<Integer,Long> >();
 		int upd_id = 1;
 		int iter_id = 1;
@@ -189,7 +192,7 @@ public class CoNLLRDFUpdater {
 			}
 			while(v < frq && change) {
 				UpdateAction.execute(UpdateFactory.create(update.second), memDataset);
-				produceDot(defaultModel, update.first, upd_id, iter_id); //REMOVE THE PARAMETERS upd_id and iter_id to use deshoe's original file names
+				produceDot(defaultModel, update.first, sent_id, upd_id, iter_id); //REMOVE THE PARAMETERS sent_id, upd_id, iter_id to use deshoe's original file names
 				if (oldModel.isEmpty())
 					change = cL.hasChanged();
 				else {
