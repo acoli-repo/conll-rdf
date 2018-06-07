@@ -116,6 +116,22 @@ public class CoNLLRDFUpdater {
 		memAccessor.deleteDefault();
 	}
 	
+	public static void produceDot(Model m, String update, int upd_id, int iter_id) throws IOException {
+		if (GRAPHOUTPUTDIR != null) {
+			String baseURI = "file:///sample.ttl/";
+			String u = m.getNsPrefixURI("");
+			if (u != null) baseURI = u;
+			String updateName = (new File(update)).getName();
+			updateName = (updateName != null && !updateName.isEmpty()) ? updateName : UUID.randomUUID().toString();
+			Matcher ma = URINAMEPATTERN.matcher(baseURI);
+			String baseURIName;
+			if (ma.matches()) baseURIName = ma.group(1); else baseURIName = UUID.randomUUID().toString();
+			File outputFile = new File(GRAPHOUTPUTDIR, baseURIName+"_UPD-"+upd_id+"_ITER-"+iter_id+"_"+updateName+".dot");
+			Writer w = new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8);
+			CoNLLRDFViz.produceDot(m, w);
+		}		
+	}
+	
 	public static void produceDot(Model m, String update) throws IOException {
 		if (GRAPHOUTPUTDIR != null) {
 			String baseURI = "file:///sample.ttl/";
@@ -154,7 +170,10 @@ public class CoNLLRDFUpdater {
 
 	public static List<Pair<Integer, Long> > executeUpdate(List<Triple<String, String, String>> updates) throws IOException {
 		List<Pair<Integer,Long> > result = new ArrayList<Pair<Integer,Long> >();
+		int upd_id = 1;
+		int iter_id = 1;
 		for(Triple<String, String, String> update : updates) {
+			iter_id = 1;
 			Long startTime = System.currentTimeMillis();
 			Model defaultModel = memAccessor.getModel();
 			ChangedListener cL = new ChangedListener();
@@ -170,7 +189,7 @@ public class CoNLLRDFUpdater {
 			}
 			while(v < frq && change) {
 				UpdateAction.execute(UpdateFactory.create(update.second), memDataset);
-				produceDot(defaultModel, update.first);
+				produceDot(defaultModel, update.first, upd_id, iter_id); //REMOVE THE PARAMETERS upd_id and iter_id to use deshoe's original file names
 				if (oldModel.isEmpty())
 					change = cL.hasChanged();
 				else {
@@ -180,11 +199,13 @@ public class CoNLLRDFUpdater {
 				if (CHECKINTERVAL.contains(v))
 					oldModel = defaultModel.toString();
 				v++;
+				iter_id++;
 			}
 			if (v == MAXITERATE)
 				LOG.warn("Warning: MAXITERATE reached for " + update.first + ".");
 			result.add(new Pair<Integer, Long>(v, System.currentTimeMillis() - startTime));
 			defaultModel.unregister(cL);
+			upd_id++;
 		}
 		return result;
 	}
