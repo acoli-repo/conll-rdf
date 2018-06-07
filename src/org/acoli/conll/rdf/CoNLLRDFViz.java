@@ -38,6 +38,8 @@ import org.apache.jena.rdf.model.StmtIterator;
 public class CoNLLRDFViz {
 
 	protected static String dotId(Resource r) {
+		if(r.isAnon())
+			return "B_"+r.getId();
 		return "B"+r.getNameSpace()+r.getLocalName();
 	}
 	
