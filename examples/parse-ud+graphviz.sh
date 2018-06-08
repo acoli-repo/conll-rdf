@@ -25,7 +25,9 @@ ROOT=$HOME/..;
 DATA=$ROOT/data;
 SPARQL=$HOME/sparql;
 
-mkdir $DATA/ud/graphsout;
+if [ ! -e $DATA/ud/graphsout ]; then
+	mkdir $DATA/ud/graphsout;
+fi;
 
 gunzip -c $DATA/ud/UD_English-master/en-ud-dev.conllu.gz | \
 egrep -m 58 '^' | 										# until line 50, we're ok, increase this limit to analyze more data
@@ -57,5 +59,6 @@ $ROOT/run.sh CoNLLRDFUpdater -custom \
 $ROOT/run.sh CoNLLRDFFormatter -grammar 2>&1 	### use -grammar for formatted output (this is made default here)
 
 for file in `find $DATA/ud/graphsout/ | grep '.dot$'`; do \
-dot -Tpng $file -o $file.png;
+dot -Tpng $file -o $file.png &
+# paralellized because it sometimes fails with a segfault
 done
