@@ -40,6 +40,7 @@ import java.util.regex.Pattern;
 
 import javafx.util.Pair;
 
+import org.apache.jena.atlas.io.IndentedWriter;
 import org.apache.jena.query.Dataset;
 import org.apache.jena.query.DatasetAccessor;
 import org.apache.jena.query.DatasetAccessorFactory;
@@ -47,8 +48,10 @@ import org.apache.jena.query.DatasetFactory;
 import org.apache.jena.rdf.listeners.ChangedListener;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.update.Update;
 import org.apache.jena.update.UpdateAction;
 import org.apache.jena.update.UpdateFactory;
+import org.apache.jena.update.UpdateRequest;
 import org.apache.log4j.Logger;
 
 /**
@@ -68,13 +71,15 @@ public class CoNLLRDFUpdater {
 	private static final Logger LOG = Logger.getLogger(CoNLLRDFUpdater.class.getName());
 	
 	private static File GRAPHOUTPUTDIR = null;
+
+	private static List<String> GRAPHOUTPUT_SNT = new ArrayList<String>();
+	
+	private static int PARSED_SENTENCES = 0;
 	
 	// get NAME.nam from file:///NAME.nam/
 	private static final Pattern URINAMEPATTERN = Pattern.compile("^.*/(.*)[/#]?$");
 	
 	private static final Pattern FILENAMEENDPATTERN = Pattern.compile("^.*_([^_]*)$");
-	
-	private static int sent_id = 0;
 
 	private static class Triple<F, S, M> {
 		public final F first;
@@ -118,22 +123,30 @@ public class CoNLLRDFUpdater {
 		memAccessor.deleteDefault();
 	}
 	
-	public static void produceDot(Model m, String update, int sent_id, int upd_id, int iter_id) throws IOException {
+	public static void produceDot(Model m, String update, String sent, int upd_id, int iter_id, int step) throws IOException {
 		if (GRAPHOUTPUTDIR != null) {
+			/*
 			String baseURI = "file:///sample.ttl/";
 			String u = m.getNsPrefixURI("");
 			if (u != null) baseURI = u;
-			String updateName = (new File(update)).getName();
-			updateName = (updateName != null && !updateName.isEmpty()) ? updateName : UUID.randomUUID().toString();
 			Matcher ma = URINAMEPATTERN.matcher(baseURI);
 			String baseURIName = new String();
 			if (ma.matches()) baseURIName = ma.group(1);
-			File outputFile = new File(GRAPHOUTPUTDIR, baseURIName+"_SNT-"+sent_id+"_UPD-"+upd_id+"_ITER-"+iter_id+"_"+updateName+".dot");
+			*/
+
+			String updateName = (new File(update)).getName();
+			updateName = (updateName != null && !updateName.isEmpty()) ? updateName : UUID.randomUUID().toString();
+			
+			File outputFile = new File(GRAPHOUTPUTDIR, sent
+							+"__U"+String.format("%03d", upd_id)
+							+"_I" +String.format("%04d", iter_id)
+							+"_S" +String.format("%03d", step)
+							+"__" +updateName.replace(".sparql", "")+".dot");
 			Writer w = new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8);
 			CoNLLRDFViz.produceDot(m, w);
 		}		
 	}
-	
+	/*
 	public static void produceDot(Model m, String update) throws IOException {
 		if (GRAPHOUTPUTDIR != null) {
 			String baseURI = "file:///sample.ttl/";
@@ -169,9 +182,26 @@ public class CoNLLRDFUpdater {
 		}
 		return result;
 	}
-
-	public static List<Pair<Integer, Long> > executeUpdate(List<Triple<String, String, String>> updates) throws IOException {
-		sent_id++;
+*/
+	public static List<Pair<Integer, Long>> executeUpdates(List<Triple<String, String, String>> updates) throws IOException {
+		String sent = new String();
+		boolean graphsout = false;
+		if (GRAPHOUTPUTDIR != null) {
+			try {
+			sent = memDataset.getDefaultModel().listSubjectsWithProperty(
+							memDataset.getDefaultModel().getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), 
+							memDataset.getDefaultModel().getProperty("http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Sentence")
+						).next().getLocalName();
+			} catch (Exception e) {
+				sent = "none";
+			}
+			if (GRAPHOUTPUT_SNT.isEmpty() && PARSED_SENTENCES == 1) {
+				graphsout = true;
+			} else if (GRAPHOUTPUT_SNT.contains(sent)){
+				graphsout = true;
+			}
+			if (graphsout) produceDot(memAccessor.getModel(), "INIT", sent, 0, 0, 0);
+		}
 		List<Pair<Integer,Long> > result = new ArrayList<Pair<Integer,Long> >();
 		int upd_id = 1;
 		int iter_id = 1;
@@ -191,8 +221,17 @@ public class CoNLLRDFUpdater {
 					throw e;
 			}
 			while(v < frq && change) {
-				UpdateAction.execute(UpdateFactory.create(update.second), memDataset);
-				produceDot(defaultModel, update.first, sent_id, upd_id, iter_id); //REMOVE THE PARAMETERS sent_id, upd_id, iter_id to use deshoe's original file names
+				UpdateRequest updateRequest = UpdateFactory.create(update.second);
+				if (graphsout) { //execute Update-block step by step and output intermediate results
+					int step = 1;
+					for(Update operation:updateRequest.getOperations()) {
+						UpdateAction.execute(operation, memDataset);
+						produceDot(defaultModel, update.first, sent, upd_id, iter_id, step);
+						step++;
+					}
+				} else { //execute updates en bloc
+					UpdateAction.execute(updateRequest, memDataset); //REMOVE THE PARAMETERS sent_id, upd_id, iter_id to use deshoe's original file names
+				}
 				if (oldModel.isEmpty())
 					change = cL.hasChanged();
 				else {
@@ -214,10 +253,12 @@ public class CoNLLRDFUpdater {
 	}
 
 	public static void main(String[] argv) throws IOException, URISyntaxException {
-		LOG.info("synopsis: CoNLLRDFUpdater [-custom [-model URI [GRAPH]]* -updates [UPDATE]]+\n"
+		LOG.info("synopsis: CoNLLRDFUpdater [-custom [-model URI [GRAPH]]* [-graphsout DIR [SENT_ID]] -updates [UPDATE]]+\n"
 				+ "\t\t-custom  use custom update scripts\n"
 				+ "\t\t-model to load additional Models into local graph\n"
 				+ "\t\t-graphsout output directory for the .dot graph files\n"
+				+ "\t\t\t followed by the IDs of the sentences to be visualized\n"
+				+ "\t\t\t default: first sentence only\n"
 				+ "\t\t-updates followed by SPARQL scripts paired with {iterations/u}\n"
 				+ "\t\tread TTL from stdin => update CoNLL-RDF");
 		String args = Arrays.asList(argv).toString().replaceAll("[\\[\\], ]+"," ").trim().toLowerCase();
@@ -259,6 +300,10 @@ public class CoNLLRDFUpdater {
 				if (GRAPHOUTPUTDIR.exists() || GRAPHOUTPUTDIR.mkdirs()) {
 					if (! GRAPHOUTPUTDIR.isDirectory()) throw new IOException("Error: Given -graphsout DIRECTORY is not a valid directory.");
 				} else throw new IOException("Error: Failed to create given -graphsout DIRECTORY.");
+				i++;
+				while(i<argv.length && !argv[i].toLowerCase().matches("^-+.*$")) {
+					GRAPHOUTPUT_SNT.add(argv[i++]);
+				}
 			}
 			while(i<argv.length && !argv[i].toLowerCase().matches("^-+updates$")) i++;
 			i++;
@@ -281,7 +326,7 @@ public class CoNLLRDFUpdater {
 				try {
 					u = new URL(updates.get(i).second);
 				} catch (MalformedURLException e) {}
-				if(f.exists()) {			// can be read from a file
+				if(f.exists()) {			// can be read from a file 
 					sparqlreader = new FileReader(f);
 					sb.append("f");
 				} else if(u!=null) {
@@ -312,7 +357,8 @@ public class CoNLLRDFUpdater {
 					if((line.startsWith("@") || line.startsWith("#")) && !lastLine.startsWith("@") && !lastLine.startsWith("#")) { //!buffer.matches("@[^\n]*\n?$")) {
 						loadBuffer(buffer);
 						if(CUSTOM) {
-							List<Pair<Integer,Long> > ret = executeUpdate(updates);
+							PARSED_SENTENCES++;
+							List<Pair<Integer,Long> > ret = executeUpdates(updates);
 							if (dRTs.isEmpty())
 								dRTs = ret;
 							else
@@ -337,7 +383,7 @@ public class CoNLLRDFUpdater {
 			}
 			loadBuffer(buffer);
 			if(CUSTOM) {
-				List<Pair<Integer,Long> > ret = executeUpdate(updates);
+				List<Pair<Integer,Long> > ret = executeUpdates(updates);
 				if (dRTs.isEmpty())
 					dRTs = ret;
 				else

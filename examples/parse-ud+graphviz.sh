@@ -40,7 +40,7 @@ $ROOT/run.sh CoNLLRDFUpdater -custom \
 	-model http://purl.org/olia/penn.owl http://purl.org/olia/penn.owl \
 	-model http://purl.org/olia/penn-link.rdf http://purl.org/olia/penn.owl \
 	-model http://purl.org/olia/olia.owl http://purl.org/olia/olia.owl \
-	-graphsout $DATA/ud/graphsout \
+	-graphsout $DATA/ud/graphsout s2_0 s3_0 \
 	-updates \
 	   $SPARQL/remove-ID.sparql \
 	   $SPARQL/remove-IGNORE.sparql \
