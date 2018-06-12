@@ -59,6 +59,6 @@ $ROOT/run.sh CoNLLRDFUpdater -custom \
 $ROOT/run.sh CoNLLRDFFormatter -grammar 2>&1 	### use -grammar for formatted output (this is made default here)
 
 for file in `find $DATA/ud/graphsout/ | grep '.dot$'`; do \
-dot -Tpng $file -o $file.png &
+dot -Tpng $file -o $file.png & sleep 5;
 # paralellized because it sometimes fails with a segfault
 done
