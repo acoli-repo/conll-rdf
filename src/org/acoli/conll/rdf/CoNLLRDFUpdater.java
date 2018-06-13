@@ -31,20 +31,24 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
 
 import javafx.util.Pair;
 
-import org.apache.jena.atlas.io.IndentedWriter;
 import org.apache.jena.query.Dataset;
 import org.apache.jena.query.DatasetAccessor;
 import org.apache.jena.query.DatasetAccessorFactory;
 import org.apache.jena.query.DatasetFactory;
+import org.apache.jena.query.QueryParseException;
 import org.apache.jena.rdf.listeners.ChangedListener;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -92,16 +96,27 @@ public class CoNLLRDFUpdater {
 		}
 	}
 	
-	public static void loadGraph(URI url, URI graph) {
+	public static void loadGraph(URI url, URI graph) throws MalformedURLException, IOException {
 		LOG.info("loading...");
 		LOG.info(url +" into "+ graph);
 		if (graph == null) {
 			graph = url;
 		}
 		Model m = ModelFactory.createDefaultModel();
-		m.read(url.toString());
-		memAccessor.add(graph.toString(), m);
+		m.read(readInURI(url));
+		memAccessor.add(readInURI(graph), m);
 		LOG.info("done...");
+	}
+	
+	private static String readInURI(URI uri) throws MalformedURLException, IOException {
+		String result = uri.toString();
+		if (result != null && result.endsWith(".gz")) {
+			StringBuilder sb = new StringBuilder();
+			BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(uri.toURL().openStream())));
+			for (String line; (line = br.readLine()) != null; sb.append(line));
+			result = sb.toString();
+		}
+		return result;
 	}
 
 	public static void loadBuffer(String buffer) {
@@ -221,7 +236,8 @@ public class CoNLLRDFUpdater {
 					throw e;
 			}
 			while(v < frq && change) {
-				UpdateRequest updateRequest = UpdateFactory.create(update.second);
+				UpdateRequest updateRequest;
+				updateRequest = UpdateFactory.create(update.second);
 				if (graphsout) { //execute Update-block step by step and output intermediate results
 					int step = 1;
 					for(Update operation:updateRequest.getOperations()) {
@@ -340,6 +356,18 @@ public class CoNLLRDFUpdater {
 				String updateBuff = "";
 				for(String line = in.readLine(); line!=null; line=in.readLine())
 					updateBuff = updateBuff + line + "\n";
+				try {
+					UpdateRequest qexec = UpdateFactory.create(updateBuff);
+				} catch (QueryParseException e) {
+					try {
+						Path ha = Paths.get(updateBuff.trim());
+					} catch (InvalidPathException d) {
+						LOG.error("SPARQL parse exception for:\n" + updateBuff); // this is SPARQL code with broken SPARQL syntax
+						System.exit(1);
+					}
+					LOG.error("File not found exception for: " + updates.get(i).first); // this is a faulty SPARQL script file path - if you have written a valid path into your SPARQL script file, it is your own fault
+					System.exit(1);
+				}				
 				updates.set(i,new Triple<String, String, String>(updates.get(i).first, updateBuff,updates.get(i).third));
 				sb.append(".");
 			}
