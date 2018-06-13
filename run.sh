@@ -37,6 +37,7 @@ if
 	if echo $JAVAS | grep java >/dev/null; then
 		cd $HOME;
 		./compile.sh;
+		cd - >&/dev/null;
 	fi 2>&1;
 then 
 	java -Dfile.encoding=UTF8 -classpath $CLASSPATH org.acoli.conll.rdf.$*; #could also add  -Dlog4j.configuration=file:'src/log4j.properties' for another log4j config
