@@ -1,5 +1,5 @@
 PREFIX conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#>
-DELTE {
+DELETE {
 	?a conll:ID ?id
 }
 WHERE {
