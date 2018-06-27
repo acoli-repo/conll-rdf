@@ -477,7 +477,7 @@ public class CoNLLRDFFormatter {
 				if (col.equals("HEAD")) {
 					select += "		OPTIONAL {\n";
 					select += "			?word conll:HEAD ?headurl .\n";
-					select += "			bind(strafter(strafter(str(?headurl),'#s'), '_') as ?HEADs) .\n";
+					select += "			bind(replace(str(?headurl), '^.*[_/]s[0-9]+_([0-9]+)$', '$1') as ?HEADs) .\n";
 					select += "		} .\n";
 				} else {
 					select += "		OPTIONAL{?word conll:"+col+" ?"+col+"s .} .\n";
