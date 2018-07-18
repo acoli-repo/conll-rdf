@@ -55,6 +55,8 @@ In this chapter you can find detailed information on all functionalities of **co
 
 All relevant classes are in [src/](./src/org/acoli/conll/rdf). Sample scripts in [examples/](./examples). These convert data found in [data/](./data/ud/UD_English-master). In case your corpus directly corresponds to a format found there you can directly convert it with given scripts into conll-rdf. 
 
+IMPORTANT USAGE HINT: all given data is parsed sentence wise if applicable - for CoNLL data as input a newline is considered as a sentence boundary marker (in regard to the CoNLL data model). Also the ID column if provided must contain sentence internal IDs (if this is not the case this column must be renamed before conversion/parsing) - if no such column is provided sentence internal IDs will be generated. Please refer to paper mentioned below under #Reference .
+
 ### CoNLLStreamExtractor
 
 
