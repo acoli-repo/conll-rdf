@@ -24,6 +24,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -87,34 +88,64 @@ public class CoNLLRDFUpdater {
 			this.third = third;
 		}
 	}
+
+	private static void isValidUTF8(String s, String message) {
+		try 
+		{
+			s.getBytes("UTF-8");
+		} 
+		catch (UnsupportedEncodingException e)
+		{
+		    LOG.error(message + " - Encoding error: " + e.getMessage());
+		    System.exit(-1);
+		}		
+	}
 	
-	public static void loadGraph(URI url, URI graph) throws MalformedURLException, IOException {
+	public static void loadGraph(URI url, URI graph) throws IOException {
 		LOG.info("loading...");
 		LOG.info(url +" into "+ graph);
 		if (graph == null) {
 			graph = url;
 		}
 		Model m = ModelFactory.createDefaultModel();
-		m.read(readInURI(url));
-		memAccessor.add(readInURI(graph), m);
+		try {
+			m.read(readInURI(url));
+			memAccessor.add(readInURI(graph), m);
+		} catch (IOException ex) {
+			LOG.error("Exception while reading " + url + " into " + graph);
+			throw ex;
+		}
 		LOG.info("done...");
 	}
 	
 	private static String readInURI(URI uri) throws MalformedURLException, IOException {
-		String result = uri.toString();
-		if (result != null && result.endsWith(".gz")) {
-			StringBuilder sb = new StringBuilder();
-			BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(uri.toURL().openStream())));
-			for (String line; (line = br.readLine()) != null; sb.append(line));
-			result = sb.toString();
+		String result = null;
+		try {
+			result = uri.toString();
+			if (result != null && result.endsWith(".gz")) {
+				StringBuilder sb = new StringBuilder();
+				BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(uri.toURL().openStream())));
+				for (String line; (line = br.readLine()) != null; sb.append(line));
+				result = sb.toString();
+			}
+		} catch (Exception ex) {
+			LOG.error("Excpetion while reading " + uri.getPath());
+			throw ex;
 		}
+		isValidUTF8(result, "Given URI input (" + uri.getPath() + ") is not UTF-8 encoded");
 		return result;
 	}
 
 	public static void loadBuffer(String buffer) {
-		Model m = ModelFactory.createDefaultModel().read(new StringReader(buffer),null, "TTL");
-		memAccessor.add(m);
-		memAccessor.getModel().setNsPrefixes(m.getNsPrefixMap());
+		isValidUTF8(buffer, "Input data encoding issue for \"" + buffer + "\"");
+		try {
+			Model m = ModelFactory.createDefaultModel().read(new StringReader(buffer),null, "TTL");
+			memAccessor.add(m);
+			memAccessor.getModel().setNsPrefixes(m.getNsPrefixMap());
+		} catch (Exception ex) {
+			LOG.error("Exception while reading: " + buffer);
+			throw ex;
+		}
 	}
 
 	public static void unloadBuffer(String buffer, Writer out) throws IOException {
@@ -220,7 +251,7 @@ public class CoNLLRDFUpdater {
 		return result;
 	}
 
-	public static void main(String[] argv) throws IOException, URISyntaxException {
+	public static void main(String[] argv) throws URISyntaxException, IOException {
 		LOG.info("synopsis: CoNLLRDFUpdater [-custom [-model URI [GRAPH]]* [-graphsout DIR [SENT_ID]] -updates [UPDATE]]+\n"
 				+ "\t\t-custom  use custom update scripts\n"
 				+ "\t\t-model to load additional Models into local graph\n"
@@ -267,8 +298,12 @@ public class CoNLLRDFUpdater {
 				i++;
 				GRAPHOUTPUTDIR = new File(argv[i].toLowerCase());
 				if (GRAPHOUTPUTDIR.exists() || GRAPHOUTPUTDIR.mkdirs()) {
-					if (! GRAPHOUTPUTDIR.isDirectory()) throw new IOException("Error: Given -graphsout DIRECTORY is not a valid directory.");
-				} else throw new IOException("Error: Failed to create given -graphsout DIRECTORY.");
+					if (! GRAPHOUTPUTDIR.isDirectory()) {
+						throw new IOException("Error: Given -graphsout DIRECTORY is not a valid directory: " + argv[i].toLowerCase());
+					}
+				} else {
+					throw new IOException("Error: Failed to create given -graphsout DIRECTORY: " + argv[i].toLowerCase());
+				}
 				i++;
 				while(i<argv.length && !argv[i].toLowerCase().matches("^-+.*$")) {
 					GRAPHOUTPUT_SNT.add(argv[i++]);
@@ -309,6 +344,7 @@ public class CoNLLRDFUpdater {
 				String updateBuff = "";
 				for(String line = in.readLine(); line!=null; line=in.readLine())
 					updateBuff = updateBuff + line + "\n";
+				isValidUTF8(updates.get(i).second, "SPARQL update String is not UTF-8 encoded for " + updates.get(i).first);
 				try {
 					@SuppressWarnings("unused")
 					UpdateRequest qexec = UpdateFactory.create(updateBuff);
@@ -321,7 +357,7 @@ public class CoNLLRDFUpdater {
 						LOG.error("SPARQL parse exception for:\n" + updateBuff); // this is SPARQL code with broken SPARQL syntax
 						System.exit(1);
 					}
-					LOG.error("File not found exception for (Please note - if update is passed on as a String is has to be in `-quotes!)" + updates.get(i).first); // this is a faulty SPARQL script file path - if you have written a valid path into your SPARQL script file, it is your own fault
+					LOG.error("File not found exception for (Please note - if update is passed on as a String is has to be in `-quotes!): " + updates.get(i).first); // this is a faulty SPARQL script file path - if you have written a valid path into your SPARQL script file, it is your own fault
 					System.exit(1);
 				}				
 				updates.set(i,new Triple<String, String, String>(updates.get(i).first, updateBuff,updates.get(i).third));
