@@ -48,8 +48,7 @@ public class CoNLLStreamExtractor {
 			"\tFIELDi        CoNLL field label, cf. CoNLL2RDF\n"+
 			"\tSPARQL_UPDATE SPARQL UPDATE (DELETE/INSERT) query, either literally or its location (file/uri)\n"+
 			"\t              can be followed by an optional integer in {}-parentheses = number of repetitions\n"+
-			"\t              or {u} to repeat unlimited (capped at 999)\n"+
-			"\t              both option run until there are no more changes in the model\n"+
+			"\t              The SPARQL_UPDATE parameter is DEPRECATED - please use CoNLLRDFUpdater instead!\n"+
 			"\tSPARQL_SELECT SPARQL SELECT statement to produce TSV output\n"+
 			"\treads CoNLL from stdin, splits sentences, creates CoNLL RDF, applies SPARQL queries");
 		

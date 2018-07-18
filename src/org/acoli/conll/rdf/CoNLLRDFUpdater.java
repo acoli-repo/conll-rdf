@@ -17,7 +17,6 @@ package org.acoli.conll.rdf;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -38,8 +37,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
 import javafx.util.Pair;
@@ -79,11 +76,6 @@ public class CoNLLRDFUpdater {
 	private static List<String> GRAPHOUTPUT_SNT = new ArrayList<String>();
 	
 	private static int PARSED_SENTENCES = 0;
-	
-	// get NAME.nam from file:///NAME.nam/
-	private static final Pattern URINAMEPATTERN = Pattern.compile("^.*/(.*)[/#]?$");
-	
-	private static final Pattern FILENAMEENDPATTERN = Pattern.compile("^.*_([^_]*)$");
 
 	private static class Triple<F, S, M> {
 		public final F first;
@@ -138,18 +130,9 @@ public class CoNLLRDFUpdater {
 		memAccessor.deleteDefault();
 	}
 	
-	public static void produceDot(Model m, String update, String sent, int upd_id, int iter_id, int step) throws IOException {
+	public static void produceDot(Model m, String updateSrc, String updateQuery, String sent, int upd_id, int iter_id, int step) throws IOException {
 		if (GRAPHOUTPUTDIR != null) {
-			/*
-			String baseURI = "file:///sample.ttl/";
-			String u = m.getNsPrefixURI("");
-			if (u != null) baseURI = u;
-			Matcher ma = URINAMEPATTERN.matcher(baseURI);
-			String baseURIName = new String();
-			if (ma.matches()) baseURIName = ma.group(1);
-			*/
-
-			String updateName = (new File(update)).getName();
+			String updateName = (new File(updateSrc)).getName();
 			updateName = (updateName != null && !updateName.isEmpty()) ? updateName : UUID.randomUUID().toString();
 			
 			File outputFile = new File(GRAPHOUTPUTDIR, sent
@@ -158,46 +141,10 @@ public class CoNLLRDFUpdater {
 							+"_S" +String.format("%03d", step)
 							+"__" +updateName.replace(".sparql", "")+".dot");
 			Writer w = new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8);
-			CoNLLRDFViz.produceDot(m, w);
-		}		
-	}
-	/*
-	public static void produceDot(Model m, String update) throws IOException {
-		if (GRAPHOUTPUTDIR != null) {
-			String baseURI = "file:///sample.ttl/";
-			String u = m.getNsPrefixURI("");
-			if (u != null) baseURI = u;
-			String updateName = (new File(update)).getName();
-			updateName = (updateName != null && !updateName.isEmpty()) ? updateName : UUID.randomUUID().toString();
-			Matcher ma = URINAMEPATTERN.matcher(baseURI);
-			String baseURIName;
-			if (ma.matches()) baseURIName = ma.group(1); else baseURIName = UUID.randomUUID().toString();
-			File outputFile = getUniqueFileInt(new File(GRAPHOUTPUTDIR, baseURIName+"_"+updateName+"_"+UUID.randomUUID().toString()));
-			Writer w = new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8);
-			CoNLLRDFViz.produceDot(m, w);
+			CoNLLRDFViz.produceDot(m, w, updateQuery);
 		}		
 	}
 	
-	public static File getUniqueFileInt(File f) {
-		File result = f;
-		if (result.exists()) {
-			Matcher m = FILENAMEENDPATTERN.matcher(result.getName());
-			int i;
-			try {
-				i = Integer.parseInt(m.group(1));
-			} catch (NumberFormatException e) {
-				i = 0;
-			}
-			if (i == 0) {
-				result = getUniqueFileInt(new File(f.getPath() + "_" + Integer.toString(i)));
-			} else {
-				String oldI = Integer.toString(i);
-				result = getUniqueFileInt(new File(f.getPath().substring(0, f.getPath().length() - oldI.length()) + Integer.toString(i + 1)));
-			}
-		}
-		return result;
-	}
-*/
 	public static List<Pair<Integer, Long>> executeUpdates(List<Triple<String, String, String>> updates) throws IOException {
 		String sent = new String();
 		boolean graphsout = false;
@@ -215,7 +162,7 @@ public class CoNLLRDFUpdater {
 			} else if (GRAPHOUTPUT_SNT.contains(sent)){
 				graphsout = true;
 			}
-			if (graphsout) produceDot(memAccessor.getModel(), "INIT", sent, 0, 0, 0);
+			if (graphsout) produceDot(memAccessor.getModel(), "INIT", null, sent, 0, 0, 0);
 		}
 		List<Pair<Integer,Long> > result = new ArrayList<Pair<Integer,Long> >();
 		int upd_id = 1;
@@ -240,9 +187,14 @@ public class CoNLLRDFUpdater {
 				updateRequest = UpdateFactory.create(update.second);
 				if (graphsout) { //execute Update-block step by step and output intermediate results
 					int step = 1;
-					for(Update operation:updateRequest.getOperations()) {
+					Model dM = memAccessor.getModel();
+					String dMS = dM.toString();
+					ChangedListener cLdM = new ChangedListener();
+					dM.register(cLdM);
+					for(Update operation : updateRequest.getOperations()) {
 						UpdateAction.execute(operation, memDataset);
-						produceDot(defaultModel, update.first, sent, upd_id, iter_id, step);
+						if (cLdM.hasChanged() && (!dMS.equals(memAccessor.getModel().toString())))
+							produceDot(defaultModel, update.first, update.second, sent, upd_id, iter_id, step);
 						step++;
 					}
 				} else { //execute updates en bloc
@@ -283,6 +235,7 @@ public class CoNLLRDFUpdater {
 			LOG.error("Please specify update script.");
 		}
 
+		// should be <#UPDATEFILENAMEORSTRING, #UPDATESTRING, #UPDATEITER>
 		List<Triple<String, String, String>> updates = new ArrayList<Triple<String, String, String>>();
 		List<String> models = new ArrayList<String>();
 
@@ -357,15 +310,18 @@ public class CoNLLRDFUpdater {
 				for(String line = in.readLine(); line!=null; line=in.readLine())
 					updateBuff = updateBuff + line + "\n";
 				try {
+					@SuppressWarnings("unused")
 					UpdateRequest qexec = UpdateFactory.create(updateBuff);
+					updates.set(i,new Triple<String, String, String>("DIRECTUPDATE", updateBuff,updates.get(i).third));
 				} catch (QueryParseException e) {
 					try {
+						@SuppressWarnings("unused")
 						Path ha = Paths.get(updateBuff.trim());
 					} catch (InvalidPathException d) {
 						LOG.error("SPARQL parse exception for:\n" + updateBuff); // this is SPARQL code with broken SPARQL syntax
 						System.exit(1);
 					}
-					LOG.error("File not found exception for: " + updates.get(i).first); // this is a faulty SPARQL script file path - if you have written a valid path into your SPARQL script file, it is your own fault
+					LOG.error("File not found exception for (Please note - if update is passed on as a String is has to be in `-quotes!)" + updates.get(i).first); // this is a faulty SPARQL script file path - if you have written a valid path into your SPARQL script file, it is your own fault
 					System.exit(1);
 				}				
 				updates.set(i,new Triple<String, String, String>(updates.get(i).first, updateBuff,updates.get(i).third));
@@ -411,6 +367,7 @@ public class CoNLLRDFUpdater {
 			}
 			loadBuffer(buffer);
 			if(CUSTOM) {
+				PARSED_SENTENCES++;
 				List<Pair<Integer,Long> > ret = executeUpdates(updates);
 				if (dRTs.isEmpty())
 					dRTs = ret;
