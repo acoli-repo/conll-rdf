@@ -87,7 +87,7 @@ Synopsis: ```CoNLLRDFUpdater -custom [-model URI [GRAPH]]* -updates [UPDATE]+```
 		* `URI` (required): Path to external ontology. Will be pre-loaded by the Updater and available for the whole runtime.
 		* `GRAPH` (optional): GRAPH into which the ontology should be loaded. If empty: `URI` is used as graph name.
 
-Hint: The -updates parameter can take a SPARQL-update-query as a String. If this String is passed on by BASH/SHELL the String must be enclosed in \`-qutoation marks (will be otherwise split into sevaral arguments)!
+Hint: The -updates parameter can take a SPARQL-update-query as a String. If this String is passed on by BASH/SHELL the String must be enclosed in \`-qutoation marks (will be otherwise split into several arguments)!
 
 ### CoNLLRDFFormatter
 
