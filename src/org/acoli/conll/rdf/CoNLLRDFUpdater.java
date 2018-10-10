@@ -123,7 +123,7 @@ public class CoNLLRDFUpdater {
 			while (updater.running) {
 				//Execute Thread
 
-				LOG.debug("NOW Processing on thread "+threadID+": outputbuffersize "+sentBufferOut.size());
+				LOG.trace("NOW Processing on thread "+threadID+": outputbuffersize "+sentBufferOut.size());
 				String buffer = sentBufferThreads.get(threadID);
 				StringWriter out = new StringWriter();
 				try {
@@ -150,7 +150,7 @@ public class CoNLLRDFUpdater {
 
 				// synchronized write access to sentBuffer in order to avoid corruption
 				synchronized(updater) {
-				LOG.debug("NOW PRINTING on thread "+threadID+": outputbuffersize "+sentBufferOut.size());
+				LOG.trace("NOW PRINTING on thread "+threadID+": outputbuffersize "+sentBufferOut.size());
 				for (int i = 0; i < sentBufferOut.size(); i++) {
 					if (sentBufferOut.get(i).equals(String.valueOf(threadID))) {
 						sentBufferOut.set(i, out.toString());
@@ -159,13 +159,13 @@ public class CoNLLRDFUpdater {
 				}				
 				
 				//go to sleep and let Updater take control
-					LOG.debug("Updater notified by "+threadID);
+					LOG.trace("Updater notified by "+threadID);
 					updater.notify();
 
 				}
 				try {
 					synchronized (this) {
-						LOG.debug("Waiting: "+threadID);
+						LOG.trace("Waiting: "+threadID);
 						wait();
 					}
 				} catch (InterruptedException e) {
@@ -320,7 +320,7 @@ public class CoNLLRDFUpdater {
 					
 					if (oldModel.isEmpty()) {
 						change = cL.hasChanged();
-						LOG.debug("cl.hasChanged(): "+change);
+						LOG.trace("cl.hasChanged(): "+change);
 					} else {
 						change = !defaultModel.toString().equals(oldModel);
 						oldModel = "";
@@ -704,7 +704,7 @@ public class CoNLLRDFUpdater {
 	}
 
 	private synchronized void flushOutputBuffer(PrintStream out) {
-		LOG.debug("OutBufferSIze: "+sentBufferOut.size());
+		LOG.trace("OutBufferSIze: "+sentBufferOut.size());
 		while (!sentBufferOut.isEmpty()) {
 			if (sentBufferOut.get(0).matches("\\d+")) break;
 			out.print(sentBufferOut.remove(0));
@@ -714,14 +714,14 @@ public class CoNLLRDFUpdater {
 	private void executeThread(String buffer) {
 		int i = 0;
 		while(i < updateThreads.size()) {
-			LOG.debug("ThreadState " + i + ": "+((updateThreads.get(i)!=null)?updateThreads.get(i).getState():"null"));
+			LOG.trace("ThreadState " + i + ": "+((updateThreads.get(i)!=null)?updateThreads.get(i).getState():"null"));
 			if (updateThreads.get(i) == null) {
 				sentBufferThreads.set(i, buffer);
 				sentBufferOut.add(String.valueOf(i)); //add last sentences to the end of the output queue.
 				updateThreads.set(i, new UpdateThread(this, i));
 				updateThreads.get(i).start();
-				LOG.debug("restart "+i);
-				LOG.debug("OutBufferSize: "+sentBufferOut.size());
+				LOG.trace("restart "+i);
+				LOG.trace("OutBufferSize: "+sentBufferOut.size());
 				break;
 			} else 
 				if (updateThreads.get(i).getState() == Thread.State.WAITING) {
@@ -730,15 +730,15 @@ public class CoNLLRDFUpdater {
 				sentBufferOut.add(String.valueOf(i)); //add last sentences to the end of the output queue.
 				updateThreads.get(i).notify();
 				}
-				LOG.debug("wake up "+i);
+				LOG.trace("wake up "+i);
 				break;
 			} else 
 				if (updateThreads.get(i).getState() == Thread.State.NEW) {
 				sentBufferThreads.set(i, buffer);
 				sentBufferOut.add(String.valueOf(i)); //add last sentences to the end of the output queue.
 				updateThreads.get(i).start();
-				LOG.debug("start "+i);
-				LOG.debug("OutBufferSize: "+sentBufferOut.size());
+				LOG.trace("start "+i);
+				LOG.trace("OutBufferSize: "+sentBufferOut.size());
 				break;
 			} else 
 				if (updateThreads.get(i).getState() == Thread.State.TERMINATED) {
@@ -746,8 +746,8 @@ public class CoNLLRDFUpdater {
 				sentBufferOut.add(String.valueOf(i)); //add last sentences to the end of the output queue.
 				updateThreads.set(i, new UpdateThread(this, i));
 				updateThreads.get(i).start();
-				LOG.debug("restart "+i);
-				LOG.debug("OutBufferSize: "+sentBufferOut.size());
+				LOG.trace("restart "+i);
+				LOG.trace("OutBufferSize: "+sentBufferOut.size());
 				break;
 			}
 			
