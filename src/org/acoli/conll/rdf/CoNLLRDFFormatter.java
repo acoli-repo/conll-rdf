@@ -480,7 +480,8 @@ public class CoNLLRDFFormatter {
 					select += "			bind(replace(str(?headurl), '^.*s[0-9]+_([0-9]+)$', '$1') as ?HEADs) .\n";
 					select += "		} .\n";
 				} else {
-					select += "		OPTIONAL{?word conll:"+col+" ?"+col+"s .} .\n";
+					select += "		OPTIONAL{?word conll:"+col+" ?"+col+"_raw ."+
+							  "		 		 BIND(str(?"+col+"_raw) as ?"+col+"s)} .\n";	// cast to string
 				}
 			}
 			select += "	}\n";
