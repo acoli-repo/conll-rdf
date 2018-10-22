@@ -21,6 +21,8 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -70,20 +72,9 @@ public class CoNLLRDFViz {
 		ResIterator sbjs;
 
 		// header
-		out.write("digraph {\n" + "charset=\"utf-8\";\n" + "#rankdir=TB;\n" + "\n");
-		
-		// sparql query if any
-		if ((query != null) && (!query.isEmpty())) {
-			out.write("subgraph cluster_sparql { \n");
-			out.write("graph [label=<<b>SPARQL Update Query</b>> size=\"12,12\" color=\"white\"];\n");
-			out.write("node [shape=box]\n");
-			query = query.replaceAll("\"", "'").replaceAll("\n", "\\\\l");
-			out.write("node1 [label=\"" + query + "\"]\n");
-			out.write("}\n\n");
-		}
+		out.write("digraph {\n" + "charset=\"utf-8\";\n" + "#rankdir=LR;\n" + "\n");
 
 		// upper subgraph: dep view
-		out.write("subgraph { \n" + "#rankdir=LR;\n" + "\n");
 
 		String DEP_SFX = "_conll"; // ""; // "_conll"; // set to "" to merge both graphs
 		out.write(
@@ -221,7 +212,7 @@ public class CoNLLRDFViz {
 
 		// edges
 		stmts = m.listStatements();
-		String possibleRoot = null;
+		List<String> possibleRoots = new ArrayList<String>();
 		while (stmts.hasNext()) {
 			Statement stmt = stmts.next();
 
@@ -232,6 +223,8 @@ public class CoNLLRDFViz {
 				String s = dotId(sbj);
 				String p = name(prop);
 				String o = dotId(obj);
+				if (!possibleRoots.contains(o) && obj.isResource() && obj.asResource().listProperties().hasNext())
+					possibleRoots.add(o);
 				if (obj.isResource() && obj.asResource().listProperties().hasNext()) {
 					if (!prop.equals(rdfType) && obj.isResource()
 							&& (!p.equals("conll:HEAD") || !m.contains(obj.asResource(), rdfType, nifWord))) {
@@ -268,32 +261,30 @@ public class CoNLLRDFViz {
 		}
 
 		// connect all nif:nextSentence pairs by setting them to equal rank
-		for (Statement st : m.listStatements((Resource) null, nifNextSentence, (RDFNode) null).toSet()) {
-			possibleRoot = dotId(st.getObject());
+		for (Statement st : m.listStatements((Resource) null, nifNextSentence, (RDFNode) null).toSet())
 			if (st.getObject().asResource().listProperties().hasNext()) {
 				out.write("{ rank=same ");
 				out.write("\"" + dotId(st.getSubject()) + "\" ");
 				out.write("\"" + dotId(st.getObject()) + "\" };\n");
 			}
-		}
-		
+
 		out.write("}\n\n");
 
-//		if ((query != null) && (!query.isEmpty())) {
-//			if (possibleRoot != null) { // should be only the root element left in the list - if multiple roots they
-//											// should all be on the same level
-//				out.write("subgraph cluster_sparql { \n");
-//				out.write("graph [label=<<b>SPARQL Update Query</b>> size=\"12,12\" color=\"white\"];\n");
-//				out.write("node [shape=box]\n");
-//				query = query.replaceAll("\"", "'").replaceAll("\n", "\\\\l");
-//				out.write("node1 [label=\"" + query + "\"]\n");
-//				out.write("}\n\n");
-//				out.write("\"" + possibleRoot + "\" -> \"node1\" [color=\"invis\", minlen=2];\n");
-//			} else {
-//				LOG.warn("No http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Sentence Element found to place QueryString.");
-//			}
-//		}
-		out.write("}\n\n");
+		if ((query != null) && (!query.isEmpty())) {
+			if (!possibleRoots.isEmpty()) { // should be only the root element left in the list - if multiple roots they
+											// should all be on the same level
+				out.write("subgraph cluster_sparql { \n");
+				out.write("graph [label=<<b>SPARQL Update Query</b>> size=\"12,12\" color=\"white\"];\n");
+				out.write("node [shape=box]\n");
+				query = query.replaceAll("\"", "'").replaceAll("\n", "\\\\l");
+				out.write("node1 [label=\"" + query + "\"]\n");
+				out.write("}\n\n");
+				for (String ob: possibleRoots)
+					out.write("\"" + ob + "\" -> \"node1\" [color=\"invis\", minlen=2];\n");
+			} else {
+				LOG.error("No root element found (cyclic tree?).");
+			}
+		}
 		out.write("}\n\n");
 		out.flush();
 

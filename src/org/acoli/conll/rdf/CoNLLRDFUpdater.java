@@ -17,7 +17,6 @@ package org.acoli.conll.rdf;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -45,14 +44,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 
-import javafx.util.Pair;
-
 import org.apache.jena.query.Dataset;
-import org.apache.jena.query.DatasetAccessor;
-import org.apache.jena.query.DatasetAccessorFactory;
 import org.apache.jena.query.DatasetFactory;
 import org.apache.jena.query.QueryParseException;
-import org.apache.jena.query.ReadWrite;
 import org.apache.jena.rdf.listeners.ChangedListener;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -62,6 +56,8 @@ import org.apache.jena.update.UpdateFactory;
 import org.apache.jena.update.UpdateRequest;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+
+import javafx.util.Pair;
 
 /**
  *  @author Christian Chiarcos {@literal chiarcos@informatik.uni-frankfurt.de}
@@ -73,6 +69,7 @@ public class CoNLLRDFUpdater {
 	private static final List<Integer> CHECKINTERVAL = new ArrayList<Integer>() {{add(3); add(10); add(25); add(50); add(100); add(200); add(500);}};
 	static final int MAXITERATE = 999; // maximum update iterations allowed until the update loop is cancelled and an error message is thrown - to prevent faulty update scripts running in an endless loop
 	private static final Logger LOG = Logger.getLogger(CoNLLRDFUpdater.class.getName());
+	private static final String DEFAULTUPDATENAME = "DIRECTUPDATE";
 	
 	private static class Triple<F, S, M> {
 		public final F first;
@@ -256,9 +253,7 @@ public class CoNLLRDFUpdater {
 				} catch (Exception e) {
 					sent = "none";
 				}
-				if (graphOutputSentences.isEmpty() && parsedSentences == 1) {
-					graphsout = true;
-				} else if (graphOutputSentences.contains(sent)){
+				if (graphOutputSentences.contains(sent)){
 					graphsout = true;
 				}
 				if (graphsout)
@@ -391,7 +386,7 @@ public class CoNLLRDFUpdater {
 	
 	//for statistics
 	private final List<List<Pair<Integer,Long>>> dRTs; // iterations and execution time of each update in seconds
-	private int parsedSentences = 0;
+	//private int parsedSentences = 0; // no longer used since graphsout default is set at sentence readin
 	private boolean running = false;
 	
 
@@ -456,7 +451,7 @@ public class CoNLLRDFUpdater {
 		graphOutputDir = null;
 		
 		//runtime
-		parsedSentences = 0;
+		//parsedSentences = 0;
 		running = false;
 	}
 	
@@ -543,9 +538,17 @@ public class CoNLLRDFUpdater {
 				try {
 					sparqlreader = new InputStreamReader(u.openStream());
 					sb.append("u");
-				} catch (Exception e) {}
+				} catch (Exception e) {
+				}
 			}
-			updatesTemp.set(i,new Triple<String, String, String>(updatesTemp.get(i).first, "", updatesTemp.get(i).third)); // TODO: Needed? just removes the second string, but second is overwritten later anyway....
+			
+			String updateName = updatesTemp.get(i).first;
+			// check for String as Update and set update name to default
+			if (!(sparqlreader instanceof FileReader) && !(sparqlreader instanceof InputStreamReader)) {
+				updateName = DEFAULTUPDATENAME;
+			}
+			
+			updatesTemp.set(i,new Triple<String, String, String>(updateName, "", updatesTemp.get(i).third)); // TODO: Needed? just removes the second string, but second is overwritten later anyway....
 			BufferedReader in = new BufferedReader(sparqlreader);
 			String updateBuff = "";
 			for(String line = in.readLine(); line!=null; line=in.readLine())
@@ -638,8 +641,15 @@ public class CoNLLRDFUpdater {
 
 			if(!buffer.trim().equals(""))
 				if((line.startsWith("@") || line.startsWith("#")) && !lastLine.startsWith("@") && !lastLine.startsWith("#")) { //!buffer.matches("@[^\n]*\n?$")) {
-					
-					parsedSentences++;
+					if ((graphOutputDir != null) && (!graphOutputSentences.isEmpty())) { // get first sentence id as default for graphsout output
+						Model m = ModelFactory.createDefaultModel();
+						String sentID = m.read(new StringReader(buffer),null, "TTL").listSubjectsWithProperty(
+								m.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), 
+								m.getProperty("http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Sentence")
+							).next().getLocalName();
+						graphOutputSentences.add(sentID);
+					}
+					//parsedSentences++;
 					executeThread(buffer);
 					flushOutputBuffer(out);
 					buffer="";
@@ -657,7 +667,7 @@ public class CoNLLRDFUpdater {
 
 			lastLine=line;
 		}
-		parsedSentences++;
+		//parsedSentences++;
 		executeThread(buffer);
 		
 		boolean threadsRunning = true;
