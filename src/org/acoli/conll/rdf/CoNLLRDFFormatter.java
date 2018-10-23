@@ -441,7 +441,8 @@ public class CoNLLRDFFormatter {
 			}
 			return result;
 		}
-		
+
+		/** note: the last column must contain literal values, not HEAD */
 		public static String columnsAsSelect(List<String> cols) {
 			String select = ""
 			+ "PREFIX nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#>\n"
@@ -456,25 +457,33 @@ public class CoNLLRDFFormatter {
 			
 			select += "{\n";
 			select += "	SELECT \n";
-			select += "	?ordinal \n";
+			select += "	?sid ?wid \n";
 			
 			for (String col:cols) {
 				select += "	(group_concat(?"+col+"s;separator='|') as ?"+col+")\n";
 			}
 			
+			String lastCol = cols.get(cols.size()-1);
 			
 			select += "	WHERE {\n";
 			select += "		?word a nif:Word .\n";
 			select += "		{\n";
-			select += "			SELECT ?word (count(?next) as ?ordinal)\n";
+			select += "			SELECT ?word (count(distinct ?preS) as ?sid) (count(distinct ?pre) as ?wid)\n";
 			select += "			WHERE {\n";
 			select += "				?word a nif:Word .\n";
-			select += "				?word nif:nextWord* ?next .\n";
+			select += "				?pre nif:nextWord* ?word .\n";
+			select += "             ?word conll:HEAD+ ?s. ?s a nif:Sentence. ?preS nif:nextSentence* ?s.\n";
 			select += "			}\n";
 			select += "			group by ?word\n";
 			select += "		}\n";
 			for (String col:cols) {
-				if (col.equals("HEAD")) {
+				if(col.equals(lastCol)) {	// cast to string
+					select += "		OPTIONAL{?word conll:"+col+" ?"+col+"_raw ."+
+							  "		 		 BIND(str(?"+col+"_raw) as ?"+col+"a)} .\n"+
+							  "     BIND(concat(if(bound(?"+col+"a),?"+col+"a,'_'),\n"+
+							  "                 IF(EXISTS { ?word nif:nextWord [] }, '', '\\n')) as ?"+col+"s)\n";
+					// we append a linebreak to the value of the last column to generate sentence breaks within a local graph
+				} else if (col.equals("HEAD")) {
 					select += "		OPTIONAL {\n";
 					select += "			?word conll:HEAD ?headurl .\n";
 					select += "			bind(replace(str(?headurl), '^.*s[0-9]+_([0-9]+)$', '$1') as ?HEADs) .\n";
@@ -485,8 +494,8 @@ public class CoNLLRDFFormatter {
 				}
 			}
 			select += "	}\n";
-			select += "	group by ?word ?ordinal\n";
-			select += "	order by desc(?ordinal)\n";
+			select += "	group by ?word ?sid ?wid\n";
+			select += "	order by ?sid ?wid\n";
 			select += "}\n";
 			
 			return select;
