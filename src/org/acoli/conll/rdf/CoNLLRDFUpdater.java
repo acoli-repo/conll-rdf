@@ -110,6 +110,7 @@ public class CoNLLRDFUpdater {
 				String graph = iter.next();
 				memDataset.addNamedModel(graph, updater.dataset.getNamedModel(graph));
 			}
+			memDataset.addNamedModel("https://github.com/acoli-repo/conll-rdf/lookback", ModelFactory.createDefaultModel());
 		}
 		
 		/**
@@ -121,10 +122,10 @@ public class CoNLLRDFUpdater {
 				//Execute Thread
 
 				LOG.trace("NOW Processing on thread "+threadID+": outputbuffersize "+sentBufferOut.size());
-				String buffer = sentBufferThreads.get(threadID);
+				List<String> sentBufferThread = sentBufferThreads.get(threadID);
 				StringWriter out = new StringWriter();
 				try {
-					loadBuffer(buffer);
+					loadBuffer(sentBufferThread);
 					
 					List<Pair<Integer,Long> > ret = executeUpdates(updates);
 					if (dRTs.get(threadID).isEmpty())
@@ -135,7 +136,7 @@ public class CoNLLRDFUpdater {
 									dRTs.get(threadID).get(x).getKey() + ret.get(x).getKey(), 
 									dRTs.get(threadID).get(x).getValue() + ret.get(x).getValue()));
 					
-					unloadBuffer(buffer, out);
+					unloadBuffer(sentBufferThread, out);
 				} catch (Exception e) {
 //					memDataset.begin(ReadWrite.WRITE);
 					memDataset.getDefaultModel().removeAll();
@@ -178,11 +179,20 @@ public class CoNLLRDFUpdater {
 		 * 			the model to be read.
 		 * @throws Exception
 		 */
-		private void loadBuffer(String buffer) throws Exception { //TODO: adjust for TXN-Models
+		private void loadBuffer(List<String> sentBufferThread) throws Exception { //TODO: adjust for TXN-Models
+			String buffer = sentBufferThread.get(sentBufferThread.size()-1);
 			isValidUTF8(buffer, "Input data encoding issue for \"" + buffer + "\"");
 			try {
 //				memDataset.begin(ReadWrite.WRITE);
 				memDataset.getDefaultModel().read(new StringReader(buffer),null, "TTL");
+				
+				// for lookback
+				for (int i = 0; i < sentBufferThread.size()-1; i++) {
+					Model m = ModelFactory.createDefaultModel();
+					m.read(sentBufferThread.get(i));
+					memDataset.getNamedModel("https://github.com/acoli-repo/conll-rdf/lookback").add(m);
+				}
+				
 //				memDataset.commit();
 //				Model m = ModelFactory.createDefaultModel().read(new StringReader(buffer),null, "TTL");
 //				memAccessor.add(m);
@@ -193,6 +203,7 @@ public class CoNLLRDFUpdater {
 			} finally {
 //				memDataset.end();
 			}
+			
 		}
 
 		/**
@@ -204,23 +215,25 @@ public class CoNLLRDFUpdater {
 		 * 			Output Writer.
 		 * @throws Exception
 		 */
-		private void unloadBuffer(String buffer, Writer out) throws Exception { //TODO: adjust for TXN-Models
+		private void unloadBuffer(List<String> sentBufferThread, Writer out) throws Exception { //TODO: adjust for TXN-Models
+			String buffer = sentBufferThread.get(sentBufferThread.size()-1);
 			try {
-			BufferedReader in = new BufferedReader(new StringReader(buffer));
-			String line;
-			while((line=in.readLine())!=null) {
-				line=line.trim();
-				if(line.startsWith("#")) out.write(line+"\n");
-			}
-			memDataset.getDefaultModel().write(out, "TTL");
-			out.write("\n");
-			out.flush();
+				BufferedReader in = new BufferedReader(new StringReader(buffer));
+				String line;
+				while((line=in.readLine())!=null) {
+					line=line.trim();
+					if(line.startsWith("#")) out.write(line+"\n");
+				}
+				memDataset.getDefaultModel().write(out, "TTL");
+				out.write("\n");
+				out.flush();
 			} catch (Exception ex) {
 //				memDataset.abort();
 				LOG.error("Exception while unloading: " + buffer);
 			} finally {
 //				memDataset.begin(ReadWrite.WRITE);
 				memDataset.getDefaultModel().removeAll();
+				memDataset.getNamedModel("https://github.com/acoli-repo/conll-rdf/lookback").removeAll();
 //				memDataset.commit();
 //				memDataset.end();
 			}
@@ -377,9 +390,13 @@ public class CoNLLRDFUpdater {
 	
 	//for thread handling
 	private final List<UpdateThread> updateThreads;
-	private final List<String> sentBufferThreads; //Buffer providing each thread with its respective sentence to process
+	private final List<List<String>> sentBufferThreads; //Buffer providing each thread with its respective sentence(s) to process
 	private final List<String> sentBufferOut; //Buffer for outputting sentences in original order
 
+	//For lookback
+	private final List<String> sentBufferLookback; 
+	private int lookback_snts = 0;
+	
 	//For graphsout
 	private final List<String> graphOutputSentences; 
 	private File graphOutputDir;
@@ -436,15 +453,16 @@ public class CoNLLRDFUpdater {
 		}
 		LOG.info("Executing on "+threads+" processor cores, max.");
 		updateThreads = Collections.synchronizedList(new ArrayList<UpdateThread>());
-		sentBufferThreads = Collections.synchronizedList(new ArrayList<String>());
+		sentBufferThreads = Collections.synchronizedList(new ArrayList<List<String>>());
 		dRTs = Collections.synchronizedList(new ArrayList<List<Pair<Integer,Long>>>());
 		for (int i = 0; i < threads; i++) {
 			updateThreads.add(null);
 			dataset.addNamedModel("http://thread"+i, ModelFactory.createDefaultModel());
-			sentBufferThreads.add("");
+			sentBufferThreads.add(new ArrayList<String>());
 			dRTs.add(Collections.synchronizedList(new ArrayList<Pair<Integer,Long> >()));
 		}
 		sentBufferOut = Collections.synchronizedList(new ArrayList<String>());
+		sentBufferLookback = Collections.synchronizedList(new ArrayList<String>());
 		
 		//graphsout
 		graphOutputSentences = Collections.synchronizedList(new ArrayList<String>());
@@ -453,6 +471,15 @@ public class CoNLLRDFUpdater {
 		//runtime
 		//parsedSentences = 0;
 		running = false;
+	}
+	
+	/**
+	 * Activates the lookback mode for caching a fixed number of preceding sentences per thread.
+	 * @param lookback_snts
+	 * 			the number of preceding sentences to be cached
+	 */
+	public void activateLookback(int lookback_snts) {
+		this.lookback_snts = lookback_snts;
 	}
 	
 	/**
@@ -651,6 +678,10 @@ public class CoNLLRDFUpdater {
 					}
 					//parsedSentences++;
 					executeThread(buffer);
+					if (lookback_snts > 0) {
+						while (sentBufferLookback.size() >= lookback_snts) sentBufferLookback.remove(0);
+						sentBufferLookback.add(buffer);
+					}		
 					flushOutputBuffer(out);
 					buffer="";
 				}
@@ -722,11 +753,14 @@ public class CoNLLRDFUpdater {
 	}
 
 	private void executeThread(String buffer) {
+		List<String> sentBufferThread = new ArrayList<String>();
+		sentBufferThread.addAll(sentBufferLookback);
+		sentBufferThread.add(buffer);
 		int i = 0;
 		while(i < updateThreads.size()) {
 			LOG.trace("ThreadState " + i + ": "+((updateThreads.get(i)!=null)?updateThreads.get(i).getState():"null"));
 			if (updateThreads.get(i) == null) {
-				sentBufferThreads.set(i, buffer);
+				sentBufferThreads.set(i, sentBufferThread);
 				sentBufferOut.add(String.valueOf(i)); //add last sentences to the end of the output queue.
 				updateThreads.set(i, new UpdateThread(this, i));
 				updateThreads.get(i).start();
@@ -736,7 +770,7 @@ public class CoNLLRDFUpdater {
 			} else 
 				if (updateThreads.get(i).getState() == Thread.State.WAITING) {
 				synchronized(updateThreads.get(i)) {
-				sentBufferThreads.set(i, buffer);
+				sentBufferThreads.set(i, sentBufferThread);
 				sentBufferOut.add(String.valueOf(i)); //add last sentences to the end of the output queue.
 				updateThreads.get(i).notify();
 				}
@@ -744,7 +778,7 @@ public class CoNLLRDFUpdater {
 				break;
 			} else 
 				if (updateThreads.get(i).getState() == Thread.State.NEW) {
-				sentBufferThreads.set(i, buffer);
+				sentBufferThreads.set(i, sentBufferThread);
 				sentBufferOut.add(String.valueOf(i)); //add last sentences to the end of the output queue.
 				updateThreads.get(i).start();
 				LOG.trace("start "+i);
@@ -752,7 +786,7 @@ public class CoNLLRDFUpdater {
 				break;
 			} else 
 				if (updateThreads.get(i).getState() == Thread.State.TERMINATED) {
-				sentBufferThreads.set(i, buffer);
+				sentBufferThreads.set(i, sentBufferThread);
 				sentBufferOut.add(String.valueOf(i)); //add last sentences to the end of the output queue.
 				updateThreads.set(i, new UpdateThread(this, i));
 				updateThreads.get(i).start();
@@ -850,6 +884,21 @@ public class CoNLLRDFUpdater {
 				graphOutputSentences.add(argv[i++]);
 			}
 			updater.activateGraphsOut(graphOutputDir, graphOutputSentences);
+		}
+		
+		// READ LOOKBACK PARAMETERS
+		int lookback_snts = 0;
+		if (args.contains("-lookback ")) {
+			i = 0;
+			while(i<argv.length && !argv[i].toLowerCase().matches("^-+lookback$")) i++;
+			i++;
+			try {
+				lookback_snts = Integer.parseInt(argv[i]);
+			} catch (Exception e) {
+				LOG.error("Wrong usage of lookback parameter. NaN.");
+				System.exit(0);
+			}
+			updater.activateLookback(lookback_snts);
 		}
 		
 		
