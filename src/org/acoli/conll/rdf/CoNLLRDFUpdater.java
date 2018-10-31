@@ -188,9 +188,7 @@ public class CoNLLRDFUpdater {
 				
 				// for lookback
 				for (int i = 0; i < sentBufferThread.size()-1; i++) {
-					Model m = ModelFactory.createDefaultModel();
-					m.read(sentBufferThread.get(i));
-					memDataset.getNamedModel("https://github.com/acoli-repo/conll-rdf/lookback").add(m);
+					memDataset.getNamedModel("https://github.com/acoli-repo/conll-rdf/lookback").read(new StringReader(sentBufferThread.get(i)),null, "TTL");
 				}
 				
 //				memDataset.commit();
