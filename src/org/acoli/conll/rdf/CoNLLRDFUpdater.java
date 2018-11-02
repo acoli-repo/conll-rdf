@@ -72,9 +72,9 @@ public class CoNLLRDFUpdater {
 	private static final String DEFAULTUPDATENAME = "DIRECTUPDATE";
 	
 	private static class Triple<F, S, M> {
-		public final F first;
-		public final S second;
-		public final M third;
+		public F first;
+		public S second;
+		public M third;
 		public Triple (F first, S second, M third) {
 			this.first = first;
 			this.second = second;
@@ -111,6 +111,7 @@ public class CoNLLRDFUpdater {
 				memDataset.addNamedModel(graph, updater.dataset.getNamedModel(graph));
 			}
 			memDataset.addNamedModel("https://github.com/acoli-repo/conll-rdf/lookback", ModelFactory.createDefaultModel());
+			memDataset.addNamedModel("https://github.com/acoli-repo/conll-rdf/lookahead", ModelFactory.createDefaultModel());
 		}
 		
 		/**
@@ -122,7 +123,7 @@ public class CoNLLRDFUpdater {
 				//Execute Thread
 
 				LOG.trace("NOW Processing on thread "+threadID+": outputbuffersize "+sentBufferOut.size());
-				List<String> sentBufferThread = sentBufferThreads.get(threadID);
+				Triple<List<String>, String, List<String>> sentBufferThread = sentBufferThreads.get(threadID);
 				StringWriter out = new StringWriter();
 				try {
 					loadBuffer(sentBufferThread);
@@ -140,6 +141,8 @@ public class CoNLLRDFUpdater {
 				} catch (Exception e) {
 //					memDataset.begin(ReadWrite.WRITE);
 					memDataset.getDefaultModel().removeAll();
+					memDataset.getNamedModel("https://github.com/acoli-repo/conll-rdf/lookback").removeAll();
+					memDataset.getNamedModel("https://github.com/acoli-repo/conll-rdf/lookahead").removeAll();
 //					memDataset.commit();
 //					memDataset.end();
 					e.printStackTrace();
@@ -179,16 +182,24 @@ public class CoNLLRDFUpdater {
 		 * 			the model to be read.
 		 * @throws Exception
 		 */
-		private void loadBuffer(List<String> sentBufferThread) throws Exception { //TODO: adjust for TXN-Models
-			String buffer = sentBufferThread.get(sentBufferThread.size()-1);
-			isValidUTF8(buffer, "Input data encoding issue for \"" + buffer + "\"");
+		private void loadBuffer(Triple<List<String>, String, List<String>> sentBufferThread) throws Exception { //TODO: adjust for TXN-Models
+			//check validity of current sentence
+			isValidUTF8(sentBufferThread.second, "Input data encoding issue for \"" + sentBufferThread.second + "\"");
+			//load ALL
 			try {
 //				memDataset.begin(ReadWrite.WRITE);
-				memDataset.getDefaultModel().read(new StringReader(buffer),null, "TTL");
 				
 				// for lookback
-				for (int i = 0; i < sentBufferThread.size()-1; i++) {
-					memDataset.getNamedModel("https://github.com/acoli-repo/conll-rdf/lookback").read(new StringReader(sentBufferThread.get(i)),null, "TTL");
+				for (String sent:sentBufferThread.first) {
+					memDataset.getNamedModel("https://github.com/acoli-repo/conll-rdf/lookback").read(new StringReader(sent),null, "TTL");
+				}
+				
+				// for current sentence
+				memDataset.getDefaultModel().read(new StringReader(sentBufferThread.second),null, "TTL");
+				
+				// for lookahead
+				for (String sent:sentBufferThread.third) {
+					memDataset.getNamedModel("https://github.com/acoli-repo/conll-rdf/lookahead").read(new StringReader(sent),null, "TTL");
 				}
 				
 //				memDataset.commit();
@@ -196,7 +207,7 @@ public class CoNLLRDFUpdater {
 //				memAccessor.add(m);
 //				memDataset.getDefaultModel().setNsPrefixes(m.getNsPrefixMap());
 			} catch (Exception ex) {
-				LOG.error("Exception while reading: " + buffer);
+				LOG.error("Exception while reading: " + sentBufferThread.second);
 				throw ex;
 			} finally {
 //				memDataset.end();
@@ -213,8 +224,8 @@ public class CoNLLRDFUpdater {
 		 * 			Output Writer.
 		 * @throws Exception
 		 */
-		private void unloadBuffer(List<String> sentBufferThread, Writer out) throws Exception { //TODO: adjust for TXN-Models
-			String buffer = sentBufferThread.get(sentBufferThread.size()-1);
+		private void unloadBuffer(Triple<List<String>, String, List<String>> sentBufferThread, Writer out) throws Exception { //TODO: adjust for TXN-Models
+			String buffer = sentBufferThread.second;
 			try {
 				BufferedReader in = new BufferedReader(new StringReader(buffer));
 				String line;
@@ -232,6 +243,7 @@ public class CoNLLRDFUpdater {
 //				memDataset.begin(ReadWrite.WRITE);
 				memDataset.getDefaultModel().removeAll();
 				memDataset.getNamedModel("https://github.com/acoli-repo/conll-rdf/lookback").removeAll();
+				memDataset.getNamedModel("https://github.com/acoli-repo/conll-rdf/lookahead").removeAll();
 //				memDataset.commit();
 //				memDataset.end();
 			}
@@ -388,9 +400,16 @@ public class CoNLLRDFUpdater {
 	
 	//for thread handling
 	private final List<UpdateThread> updateThreads;
-	private final List<List<String>> sentBufferThreads; //Buffer providing each thread with its respective sentence(s) to process
 	private final List<String> sentBufferOut; //Buffer for outputting sentences in original order
+	// Buffer providing each thread with its respective sentence(s) to process
+	// <List:lookbackBuffer>, <String:currentSentence>, <List:lookaheadBuffer>
+	private final List<Triple<List<String>, String, List<String>>> sentBufferThreads; 
 
+
+	//For lookahead
+	private final List<String> sentBufferLookahead; 
+	private int lookahead_snts = 0;
+	
 	//For lookback
 	private final List<String> sentBufferLookback; 
 	private int lookback_snts = 0;
@@ -451,15 +470,19 @@ public class CoNLLRDFUpdater {
 		}
 		LOG.info("Executing on "+threads+" processor cores, max.");
 		updateThreads = Collections.synchronizedList(new ArrayList<UpdateThread>());
-		sentBufferThreads = Collections.synchronizedList(new ArrayList<List<String>>());
+		sentBufferThreads = Collections.synchronizedList(new ArrayList<Triple<List<String>, String, List<String>>>());
 		dRTs = Collections.synchronizedList(new ArrayList<List<Pair<Integer,Long>>>());
 		for (int i = 0; i < threads; i++) {
 			updateThreads.add(null);
 			dataset.addNamedModel("http://thread"+i, ModelFactory.createDefaultModel());
-			sentBufferThreads.add(new ArrayList<String>());
+			sentBufferThreads.add(new Triple<List<String>, String, List<String>>(
+					new ArrayList<String>(), new String(), new ArrayList<String>()));
 			dRTs.add(Collections.synchronizedList(new ArrayList<Pair<Integer,Long> >()));
 		}
 		sentBufferOut = Collections.synchronizedList(new ArrayList<String>());
+		
+		//lookahead+lookback
+		sentBufferLookahead = Collections.synchronizedList(new ArrayList<String>());
 		sentBufferLookback = Collections.synchronizedList(new ArrayList<String>());
 		
 		//graphsout
@@ -470,6 +493,16 @@ public class CoNLLRDFUpdater {
 		//parsedSentences = 0;
 		running = false;
 	}
+
+	/**
+	 * Activates the lookahead mode for caching a fixed number of additional sentences per thread.
+	 * @param lookahead_snts
+	 * 			the number of additional sentences to be cached
+	 */
+	public void activateLookahead(int lookahead_snts) {
+		if (lookahead_snts < 0) lookahead_snts = 0;
+		this.lookahead_snts = lookahead_snts;
+	}
 	
 	/**
 	 * Activates the lookback mode for caching a fixed number of preceding sentences per thread.
@@ -477,6 +510,7 @@ public class CoNLLRDFUpdater {
 	 * 			the number of preceding sentences to be cached
 	 */
 	public void activateLookback(int lookback_snts) {
+		if (lookback_snts < 0) lookback_snts = 0;
 		this.lookback_snts = lookback_snts;
 	}
 	
@@ -674,12 +708,31 @@ public class CoNLLRDFUpdater {
 							).next().getLocalName();
 						graphOutputSentences.add(sentID);
 					}
+					// --> deprecated
 					//parsedSentences++;
-					executeThread(buffer);
-					if (lookback_snts > 0) {
-						while (sentBufferLookback.size() >= lookback_snts) sentBufferLookback.remove(0);
-						sentBufferLookback.add(buffer);
+					//execute updates using thread handler  --> now in lookahead handling
+					//executeThread(buffer);
+					// <-- deprecated 
+
+					
+					//lookahead
+					//add ALL sentences to sentBufferLookahead
+					sentBufferLookahead.add(buffer);
+					if (sentBufferLookahead.size() > lookahead_snts) {
+						//READY TO PROCESS 
+						// remove first sentence from buffer and process it.
+						// !!if lookahead = 0 then only current buffer is in sentBufferLookahead!!
+						executeThread(sentBufferLookahead.remove(0));
 					}		
+					
+					//lookback
+					//needs to consider lookahead buffer. The full buffer size needs to be lookahead + lookback.
+					if (lookback_snts > 0) {
+						while (sentBufferLookback.size() >= lookback_snts + sentBufferLookahead.size()) sentBufferLookback.remove(0);
+						sentBufferLookback.add(buffer);
+					}
+					
+					
 					flushOutputBuffer(out);
 					buffer="";
 				}
@@ -696,9 +749,24 @@ public class CoNLLRDFUpdater {
 
 			lastLine=line;
 		}
+		// --> deprecated
 		//parsedSentences++;
-		executeThread(buffer);
+		//executeThread(buffer);
+		// --> deprecated
 		
+		//lookahead 
+		//add final sentence
+		//work down remaining buffer
+		sentBufferLookahead.add(buffer);
+		while (sentBufferLookahead.size()>0) {
+			executeThread(sentBufferLookahead.remove(0));
+			if (lookback_snts > 0) {
+				while (sentBufferLookback.size() >= lookback_snts + sentBufferLookahead.size()) sentBufferLookback.remove(0);
+			}
+		}
+			
+		
+		//wait for threads to finish work
 		boolean threadsRunning = true;
 		while(threadsRunning) {
 			threadsRunning = false;
@@ -709,11 +777,12 @@ public class CoNLLRDFUpdater {
 				}
 			}
 		}
+		//terminate all threads
 		running = false;
 		for (UpdateThread t:updateThreads) {
 			if (t != null)
 			if(t.getState() == Thread.State.NEW) {
-				t.start();
+				t.start(); //in case of spontaneous resurrection, new threads should not have any work to do at this point
 			} else if (!(t.getState() == Thread.State.TERMINATED)) {
 				synchronized(t) {
 					t.notify();
@@ -721,6 +790,7 @@ public class CoNLLRDFUpdater {
 			}
 		}
 		
+		//sum up statistics
 		List<Pair<Integer,Long>> dRTs_sum = new ArrayList<Pair<Integer,Long> >();
 		for (List<Pair<Integer,Long>> dRT_thread:dRTs) {
 			if (dRTs_sum.isEmpty())
@@ -732,12 +802,10 @@ public class CoNLLRDFUpdater {
 							dRTs_sum.get(x).getValue() + dRT_thread.get(x).getValue()));
 			
 		}
-		
 		if (!dRTs_sum.isEmpty())
-			
 			LOG.debug("Done - List of iterations and execution times for the updates done (in given order):\n\t\t" + dRTs_sum.toString());
-		
 
+		//final flush
 		flushOutputBuffer(out);
 		
 	}
@@ -751,9 +819,17 @@ public class CoNLLRDFUpdater {
 	}
 
 	private void executeThread(String buffer) {
-		List<String> sentBufferThread = new ArrayList<String>();
-		sentBufferThread.addAll(sentBufferLookback);
-		sentBufferThread.add(buffer);
+		Triple<List<String>, String, List<String>>sentBufferThread = 
+				new Triple<List<String>, String, List<String>>(
+				new ArrayList<String>(), new String(), new ArrayList<String>());
+		//sentBufferLookback only needs to be filled up to the current sentence. 
+		//All other sentences are for further lookahead iterations 
+//		sentBufferThread.first.addAll(sentBufferLookback);
+		for (int i = 0; i < sentBufferLookback.size() - sentBufferLookahead.size(); i++) {
+			sentBufferThread.first.add(sentBufferLookback.get(i));
+		}
+		sentBufferThread.second = buffer;
+		sentBufferThread.third.addAll(sentBufferLookahead);
 		int i = 0;
 		while(i < updateThreads.size()) {
 			LOG.trace("ThreadState " + i + ": "+((updateThreads.get(i)!=null)?updateThreads.get(i).getState():"null"));
@@ -810,10 +886,12 @@ public class CoNLLRDFUpdater {
 	}
 
 	public static void main(String[] argv) throws URISyntaxException, IOException {
-		LOG.info("synopsis: CoNLLRDFUpdater [-loglevel LEVEL] [-threads T] +\n"
+		LOG.info("synopsis: CoNLLRDFUpdater [-loglevel LEVEL] [-threads T] [-lookahead N] [-lookback N] +\n"
 				+ "\t[-custom [-model URI [GRAPH]]* [-graphsout DIR [SENT_ID]] -updates [UPDATE]]+\n"
 				+ "\t\t-loglevel: set log level to LEVEL\n"
 				+ "\t\t-threads: use T threads max\n"
+				+ "\t\t-lookahead: cache N further sentences in lookahead graph\n"
+				+ "\t\t-lookback: cache N preceeding sentences in lookback graph\n"
 				+ "\t\t\t default: half of available logical processor cores\n"
 				+ "\t\t-custom: use custom update scripts\n"
 				+ "\t\t-model: to load additional Models into local graph\n"
@@ -882,6 +960,21 @@ public class CoNLLRDFUpdater {
 				graphOutputSentences.add(argv[i++]);
 			}
 			updater.activateGraphsOut(graphOutputDir, graphOutputSentences);
+		}
+		
+		// READ LOOKAHEAD PARAMETERS
+		int lookahead_snts = 0;
+		if (args.contains("-lookahead ")) {
+			i = 0;
+			while(i<argv.length && !argv[i].toLowerCase().matches("^-+lookahead$")) i++;
+			i++;
+			try {
+				lookahead_snts = Integer.parseInt(argv[i]);
+			} catch (Exception e) {
+				LOG.error("Wrong usage of lookahead parameter. NaN.");
+				System.exit(0);
+			}
+			updater.activateLookahead(lookahead_snts);
 		}
 		
 		// READ LOOKBACK PARAMETERS
