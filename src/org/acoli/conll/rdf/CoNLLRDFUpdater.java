@@ -321,7 +321,7 @@ public class CoNLLRDFUpdater {
 //							memDataset.end();
 							if (cLdM.hasChanged() && (!dMS.equals(memDataset.getDefaultModel().toString())))
 								try {
-									produceDot(defaultModel, update.first, update.second, sent, upd_id, iter_id, step);
+									produceDot(defaultModel, update.first, operation.toString(), sent, upd_id, iter_id, step);
 								} catch (IOException e) {
 									// TODO Auto-generated catch block
 									e.printStackTrace();
@@ -657,12 +657,12 @@ public class CoNLLRDFUpdater {
 				BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(uri.toURL().openStream())));
 				for (String line; (line = br.readLine()) != null; sb.append(line));
 				result = sb.toString();
+				isValidUTF8(result, "Given URI input (" + uri.getPath() + ") is not UTF-8 encoded");
 			}
 		} catch (Exception ex) {
 			LOG.error("Excpetion while reading " + uri.getPath());
 			throw ex;
 		}
-		isValidUTF8(result, "Given URI input (" + uri.getPath() + ") is not UTF-8 encoded");
 		return result;
 	}
 	
