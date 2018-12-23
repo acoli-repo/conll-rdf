@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 
+import org.apache.jena.ext.com.google.common.collect.Lists;
 import org.apache.jena.query.Dataset;
 import org.apache.jena.query.DatasetFactory;
 import org.apache.jena.query.QueryParseException;
@@ -267,7 +268,8 @@ public class CoNLLRDFUpdater {
 
 			String sent = new String();
 			boolean graphsout = false;
-			if (graphOutputDir != null) {
+			boolean triplesout = false;
+			if (graphOutputDir != null || triplesOutputDir != null) {
 				try {
 				sent = memDataset.getDefaultModel().listSubjectsWithProperty(
 								memDataset.getDefaultModel().getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), 
@@ -279,9 +281,18 @@ public class CoNLLRDFUpdater {
 				if (graphOutputSentences.contains(sent)){
 					graphsout = true;
 				}
-				if (graphsout)
-					try {
+
+				if (triplesOutputSentences.contains(sent)){
+					triplesout = true;
+				}
+				if (graphsout) try {
 						produceDot(memDataset.getDefaultModel(), "INIT", null, sent, 0, 0, 0);
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				if (triplesout) try {
+						produceNTRIPLES(memDataset.getDefaultModel(), "INIT", null, sent, 0, 0, 0);
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -308,7 +319,7 @@ public class CoNLLRDFUpdater {
 				while(v < frq && change) {
 					UpdateRequest updateRequest;
 					updateRequest = UpdateFactory.create(update.second);
-					if (graphsout) { //execute Update-block step by step and output intermediate results
+					if (graphsout || triplesout) { //execute Update-block step by step and output intermediate results
 						int step = 1;
 						Model dM = memDataset.getDefaultModel();
 						String dMS = dM.toString();
@@ -319,13 +330,20 @@ public class CoNLLRDFUpdater {
 							UpdateAction.execute(operation, memDataset);
 //							memDataset.commit();
 //							memDataset.end();
-							if (cLdM.hasChanged() && (!dMS.equals(memDataset.getDefaultModel().toString())))
-								try {
+							if (cLdM.hasChanged() && (!dMS.equals(memDataset.getDefaultModel().toString()))) {
+								if (graphsout) try {
 									produceDot(defaultModel, update.first, operation.toString(), sent, upd_id, iter_id, step);
 								} catch (IOException e) {
 									// TODO Auto-generated catch block
 									e.printStackTrace();
 								}
+								if (triplesout) try {
+									produceNTRIPLES(defaultModel, update.first, operation.toString(), sent, upd_id, iter_id, step);
+								} catch (IOException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+							}
 							step++;
 						}
 					} else { //execute updates en bloc
@@ -390,6 +408,51 @@ public class CoNLLRDFUpdater {
 				CoNLLRDFViz.produceDot(m, w, updateQuery);
 			}		
 		}
+		
+		/**
+		 * Produce lexicographically sorted ntriples-file for a specific update iteration.
+		 * 
+		 * @param m
+		 * 			The current model.
+		 * @param updateSrc
+		 * 			The update source filename.
+		 * @param updateQuery
+		 * 			The update query string.
+		 * @param sent
+		 * 			The sentence ID.
+		 * @param upd_id
+		 * 			The update ID.
+		 * @param iter_id
+		 * 			The ID of the current iteration of the given update on the given sentence.
+		 * @param step
+		 * 			The single isolated query step of the current update.
+		 * @throws IOException
+		 */
+		private void produceNTRIPLES(Model m, String updateSrc, String updateQuery, String sent, int upd_id, int iter_id, int step) throws IOException {
+			if (triplesOutputDir != null) {
+				String updateName = (new File(updateSrc)).getName();
+				updateName = (updateName != null && !updateName.isEmpty()) ? updateName : UUID.randomUUID().toString();
+				
+				File outputFile = new File(triplesOutputDir, sent
+								+"__U"+String.format("%03d", upd_id)
+								+"_I" +String.format("%04d", iter_id)
+								+"_S" +String.format("%03d", step)
+								+"__" +updateName.replace(".sparql", "")+".nt");
+				//write N3 to String
+				StringWriter w = new StringWriter();
+				m.write(w, "N-TRIPLE");
+				//sort lines
+				List<String> list = Arrays.asList(w.toString().split("\\n"));
+				Collections.sort(list);
+				//Write lines to file
+				Writer out = new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8);
+				for (String s : list) {
+					out.write(s+"\n");
+				}
+				out.flush();
+				out.close();
+			}		
+		}
 	}
 	
 	
@@ -417,6 +480,10 @@ public class CoNLLRDFUpdater {
 	//For graphsout
 	private final List<String> graphOutputSentences; 
 	private File graphOutputDir;
+	
+	//For triplesout
+	private final List<String> triplesOutputSentences; 
+	private File triplesOutputDir;
 	
 	//for statistics
 	private final List<List<Pair<Integer,Long>>> dRTs; // iterations and execution time of each update in seconds
@@ -489,6 +556,10 @@ public class CoNLLRDFUpdater {
 		graphOutputSentences = Collections.synchronizedList(new ArrayList<String>());
 		graphOutputDir = null;
 		
+		//triplesout
+		triplesOutputSentences = Collections.synchronizedList(new ArrayList<String>());
+		triplesOutputDir = null;
+		
 		//runtime
 		//parsedSentences = 0;
 		running = false;
@@ -535,6 +606,29 @@ public class CoNLLRDFUpdater {
 			throw new IOException("Error: Failed to create given -graphsout DIRECTORY: " + dir.toLowerCase());
 		}
 		graphOutputSentences.addAll(sentences);
+	}
+	
+	/**
+	 * Activates the triplesout mode for single ntriples-files per execution step.
+	 * @param dir
+	 * 			folder to store .dot files
+	 * @param sentences
+	 * 			List of sentenceIDs to be included in triplesout mode (s23_0, s4_0 ...)
+	 * @throws IOException
+	 */
+	public void activateTriplesOut(String dir, List<String> sentences) throws IOException {
+		triplesOutputSentences.clear();
+		triplesOutputDir = new File(dir.toLowerCase());
+		if (triplesOutputDir.exists() || triplesOutputDir.mkdirs()) {
+			if (! triplesOutputDir.isDirectory()) {
+				triplesOutputDir = null;
+				throw new IOException("Error: Given -triplesout DIRECTORY is not a valid directory: " + dir.toLowerCase());
+			}
+		} else {
+			triplesOutputDir = null;
+			throw new IOException("Error: Failed to create given -triplesout DIRECTORY: " + dir.toLowerCase());
+		}
+		triplesOutputSentences.addAll(sentences);
 	}
 
 	/**
@@ -700,7 +794,7 @@ public class CoNLLRDFUpdater {
 
 			if(!buffer.trim().equals(""))
 				if((line.startsWith("@") || line.startsWith("#")) && !lastLine.startsWith("@") && !lastLine.startsWith("#")) { //!buffer.matches("@[^\n]*\n?$")) {
-					if ((graphOutputDir != null) && (!graphOutputSentences.isEmpty())) { // get first sentence id as default for graphsout output
+					if ((graphOutputDir != null) && (graphOutputSentences.isEmpty())) { // get first sentence id as default for graphsout output
 						Model m = ModelFactory.createDefaultModel();
 						String sentID = m.read(new StringReader(buffer),null, "TTL").listSubjectsWithProperty(
 								m.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), 
@@ -886,8 +980,8 @@ public class CoNLLRDFUpdater {
 	}
 
 	public static void main(String[] argv) throws URISyntaxException, IOException {
-		LOG.info("synopsis: CoNLLRDFUpdater [-loglevel LEVEL] [-threads T] [-lookahead N] [-lookback N] +\n"
-				+ "\t[-custom [-model URI [GRAPH]]* [-graphsout DIR [SENT_ID]] -updates [UPDATE]]+\n"
+		LOG.info("synopsis: CoNLLRDFUpdater [-loglevel LEVEL] [-threads T] [-lookahead N] [-lookback N]\n"
+				+ "\t[-custom [-model URI [GRAPH]]* [-graphsout DIR [SENT_ID]] [-triplesout DIR [SENT_ID]] -updates [UPDATE]]\n"
 				+ "\t\t-loglevel: set log level to LEVEL\n"
 				+ "\t\t-threads: use T threads max\n"
 				+ "\t\t-lookahead: cache N further sentences in lookahead graph\n"
@@ -897,6 +991,9 @@ public class CoNLLRDFUpdater {
 				+ "\t\t-model: to load additional Models into local graph\n"
 				+ "\t\t-graphsout: output directory for the .dot graph files\n"
 				+ "\t\t\t followed by the IDs of the sentences to be visualized\n"
+				+ "\t\t\t default: first sentence only\n"
+				+ "\t\t-triplesout: same as graphsout but write N-TRIPLES for text debug instead.\n"
+				+ "\t\t\t followed by the IDs of the sentences\n"
 				+ "\t\t\t default: first sentence only\n"
 				+ "\t\t-updates: followed by SPARQL scripts paired with {iterations/u}\n"
 				+ "\t\tread TTL from stdin => update CoNLL-RDF");
@@ -944,12 +1041,12 @@ public class CoNLLRDFUpdater {
 		List<Triple<String, String, String>> updates = new ArrayList<Triple<String, String, String>>();
 		List<String> models = new ArrayList<String>();
 		
-		String graphOutputDir = null;
-		List<String> graphOutputSentences = new ArrayList<String>();
 		
 
-
 		// READ GRAPHSOUT PARAMETERS
+		String graphOutputDir = null;
+		List<String> graphOutputSentences = new ArrayList<String>();
+
 		if (args.contains("-graphsout ")) {
 			i = 0;
 			while(i<argv.length && !argv[i].toLowerCase().matches("^-+graphsout$")) i++;
@@ -961,6 +1058,23 @@ public class CoNLLRDFUpdater {
 			}
 			updater.activateGraphsOut(graphOutputDir, graphOutputSentences);
 		}
+		
+		// READ TRIPLESOUT PARAMETERS
+		String triplesOutputDir = null;
+		List<String> triplesOutputSentences = new ArrayList<String>();
+
+		if (args.contains("-triplesout ")) {
+			i = 0;
+			while(i<argv.length && !argv[i].toLowerCase().matches("^-+triplesout$")) i++;
+			i++;
+			triplesOutputDir = argv[i];
+			i++;
+			while(i<argv.length && !argv[i].toLowerCase().matches("^-+.*$")) {
+				triplesOutputSentences.add(argv[i++]);
+			}
+			updater.activateTriplesOut(triplesOutputDir, triplesOutputSentences);
+		}
+		
 		
 		// READ LOOKAHEAD PARAMETERS
 		int lookahead_snts = 0;
