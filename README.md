@@ -13,6 +13,11 @@ We also provide a [hands-on tutorial](./examples) which comes with prepared scri
 java is required, use `java --version` to check if you have java installed.
 (Java version 8 or 9 is required for logging with log4j)
 
+Note: If you prefer using OpenJDK instead of Oracle Java, it might be necessary to install openjfx. (Thanks to Francesco Mambrini for finding out!)
+```shell
+sudo apt-get install openjfx
+```
+
 All required java libraries are contained in [lib/](./lib).
 
 * `run.sh` is used to make things feel more bash-like. It determines the classpath, updates class files if necessary and runs the specified java class with the provided arguments. 
