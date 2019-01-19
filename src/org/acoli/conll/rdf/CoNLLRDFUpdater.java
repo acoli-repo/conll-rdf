@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 
+import org.apache.jena.atlas.logging.Log;
 import org.apache.jena.ext.com.google.common.collect.Lists;
 import org.apache.jena.query.Dataset;
 import org.apache.jena.query.DatasetFactory;
@@ -317,40 +318,45 @@ public class CoNLLRDFUpdater {
 						throw e;
 				}
 				while(v < frq && change) {
-					UpdateRequest updateRequest;
-					updateRequest = UpdateFactory.create(update.second);
-					if (graphsout || triplesout) { //execute Update-block step by step and output intermediate results
-						int step = 1;
-						Model dM = memDataset.getDefaultModel();
-						String dMS = dM.toString();
-						ChangedListener cLdM = new ChangedListener();
-						dM.register(cLdM);
-						for(Update operation : updateRequest.getOperations()) {
-//							memDataset.begin(ReadWrite.WRITE);
-							UpdateAction.execute(operation, memDataset);
-//							memDataset.commit();
-//							memDataset.end();
-							if (cLdM.hasChanged() && (!dMS.equals(memDataset.getDefaultModel().toString()))) {
-								if (graphsout) try {
-									produceDot(defaultModel, update.first, operation.toString(), sent, upd_id, iter_id, step);
-								} catch (IOException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
+					try {
+						UpdateRequest updateRequest;
+						updateRequest = UpdateFactory.create(update.second);
+						if (graphsout || triplesout) { //execute Update-block step by step and output intermediate results
+							int step = 1;
+							Model dM = memDataset.getDefaultModel();
+							String dMS = dM.toString();
+							ChangedListener cLdM = new ChangedListener();
+							dM.register(cLdM);
+							for(Update operation : updateRequest.getOperations()) {
+								//							memDataset.begin(ReadWrite.WRITE);
+								UpdateAction.execute(operation, memDataset);
+								//							memDataset.commit();
+								//							memDataset.end();
+								if (cLdM.hasChanged() && (!dMS.equals(memDataset.getDefaultModel().toString()))) {
+									if (graphsout) try {
+										produceDot(defaultModel, update.first, operation.toString(), sent, upd_id, iter_id, step);
+									} catch (IOException e) {
+										LOG.error("Error while producing DOT for update No. "+upd_id+": "+update.first);
+										e.printStackTrace();
+									}
+									if (triplesout) try {
+										produceNTRIPLES(defaultModel, update.first, operation.toString(), sent, upd_id, iter_id, step);
+									} catch (IOException e) {
+										LOG.error("Error while producing NTRIPLES for update No. "+upd_id+": "+update.first);
+										e.printStackTrace();
+									}
 								}
-								if (triplesout) try {
-									produceNTRIPLES(defaultModel, update.first, operation.toString(), sent, upd_id, iter_id, step);
-								} catch (IOException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-								}
+								step++;
 							}
-							step++;
+						} else { //execute updates en bloc
+							//						memDataset.begin(ReadWrite.WRITE);
+							UpdateAction.execute(updateRequest, memDataset); //REMOVE THE PARAMETERS sent_id, upd_id, iter_id to use deshoe's original file names
+							//						memDataset.commit();
+							//						memDataset.end();
 						}
-					} else { //execute updates en bloc
-//						memDataset.begin(ReadWrite.WRITE);
-						UpdateAction.execute(updateRequest, memDataset); //REMOVE THE PARAMETERS sent_id, upd_id, iter_id to use deshoe's original file names
-//						memDataset.commit();
-//						memDataset.end();
+					} catch (Exception e) {
+						LOG.error("Error while processing update No. "+upd_id+": "+update.first);
+						e.printStackTrace();
 					}
 					
 					
@@ -712,15 +718,17 @@ public class CoNLLRDFUpdater {
 				UpdateRequest qexec = UpdateFactory.create(updateBuff);
 				updatesTemp.set(i,new Triple<String, String, String>(updatesTemp.get(i).first, updateBuff, updatesTemp.get(i).third));
 			} catch (QueryParseException e) {
-				try {
-					@SuppressWarnings("unused")
-					Path ha = Paths.get(updateBuff.trim());
-				} catch (InvalidPathException d) {
-					LOG.error("SPARQL parse exception for:\n" + updateBuff); // this is SPARQL code with broken SPARQL syntax
-					System.exit(1);
-				}
-				LOG.error("File not found exception for (Please note - if update is passed on as a String is has to be in `-quotes!): " + updatesTemp.get(i).first); // this is a faulty SPARQL script file path - if you have written a valid path into your SPARQL script file, it is your own fault
+				LOG.error("SPARQL parse exception for Update No. "+i+": "+updateName+"\n" + updateBuff); // this is SPARQL code with broken SPARQL syntax
 				System.exit(1);
+//				try {
+//					@SuppressWarnings("unused")
+//					Path ha = Paths.get(updateBuff.trim());
+//				} catch (InvalidPathException d) {
+//					LOG.error("SPARQL parse exception for:\n" + updateBuff); // this is SPARQL code with broken SPARQL syntax
+//					System.exit(1);
+//				}
+//				LOG.error("File not found exception for (Please note - if update is passed on as a String is has to be in `-quotes!): " + updatesTemp.get(i).first); // this is a faulty SPARQL script file path - if you have written a valid path into your SPARQL script file, it is your own fault
+//				System.exit(1);
 			}				
 			updatesTemp.set(i,new Triple<String, String, String>(updatesTemp.get(i).first, updateBuff, updatesTemp.get(i).third));
 			sb.append(".");
