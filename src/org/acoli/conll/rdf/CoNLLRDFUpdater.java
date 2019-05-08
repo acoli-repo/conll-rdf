@@ -65,7 +65,7 @@ import javafx.util.Pair;
  *  @author Christian Chiarcos {@literal chiarcos@informatik.uni-frankfurt.de}
  *  @author Christian Faeth {@literal faeth@em.uni-frankfurt.de}
  */
-public class CoNLLRDFUpdater {
+public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 	
 	@SuppressWarnings("serial")
 	private static final List<Integer> CHECKINTERVAL = new ArrayList<Integer>() {{add(3); add(10); add(25); add(50); add(100); add(200); add(500);}};
@@ -73,7 +73,7 @@ public class CoNLLRDFUpdater {
 	private static final Logger LOG = Logger.getLogger(CoNLLRDFUpdater.class.getName());
 	private static final String DEFAULTUPDATENAME = "DIRECTUPDATE";
 	
-	private static class Triple<F, S, M> {
+	public static class Triple<F, S, M> {
 		public F first;
 		public S second;
 		public M third;
@@ -718,7 +718,7 @@ public class CoNLLRDFUpdater {
 				UpdateRequest qexec = UpdateFactory.create(updateBuff);
 				updatesTemp.set(i,new Triple<String, String, String>(updatesTemp.get(i).first, updateBuff, updatesTemp.get(i).third));
 			} catch (QueryParseException e) {
-				LOG.error("SPARQL parse exception for Update No. "+i+": "+updateName+"\n" + updateBuff); // this is SPARQL code with broken SPARQL syntax
+				LOG.error("SPARQL parse exception for Update No. "+i+": "+updateName+"\n" + e + "\n" + updateBuff); // this is SPARQL code with broken SPARQL syntax
 				System.exit(1);
 //				try {
 //					@SuppressWarnings("unused")
@@ -791,13 +791,13 @@ public class CoNLLRDFUpdater {
 	 * 			the output stream wrapped in a PrintStream
 	 * @throws IOException
 	 */
-	public void processSentenceStream(BufferedReader in, PrintStream out) throws IOException {
+	public void processSentenceStream() throws IOException {
 		running = true;
 		String line;
 		String lastLine ="";
 		String buffer="";
 //		List<Pair<Integer,Long> > dRTs = new ArrayList<Pair<Integer,Long> >(); // iterations and execution time of each update in seconds
-		while((line = in.readLine())!=null) {
+		while((line = getInputStream().readLine())!=null) {
 			line=line.replaceAll("[\t ]+"," ").trim();
 
 			if(!buffer.trim().equals(""))
@@ -835,7 +835,7 @@ public class CoNLLRDFUpdater {
 					}
 					
 					
-					flushOutputBuffer(out);
+					flushOutputBuffer(getOutputStream());
 					buffer="";
 				}
 			if(line.trim().startsWith("@") && !lastLine.trim().endsWith(".")) 
@@ -908,7 +908,8 @@ public class CoNLLRDFUpdater {
 			LOG.debug("Done - List of iterations and execution times for the updates done (in given order):\n\t\t" + dRTs_sum.toString());
 
 		//final flush
-		flushOutputBuffer(out);
+		flushOutputBuffer(getOutputStream());
+		getOutputStream().close();
 		
 	}
 
@@ -1161,9 +1162,27 @@ public class CoNLLRDFUpdater {
 
 			long start = System.currentTimeMillis();
 			
+			updater.setInputStream(new BufferedReader(new InputStreamReader(System.in)));
+			updater.setOutputStream(System.out);
+			
 			//READ SENTENCES from System.in  
-			updater.processSentenceStream(new BufferedReader(new InputStreamReader(System.in)),System.out);
+			updater.processSentenceStream();
 			LOG.debug((System.currentTimeMillis()-start)/1000 + " seconds");
+		}
+	}
+
+	@Override
+	public void start() {
+		run();
+	}
+
+	@Override
+	public void run() {
+		try {
+			processSentenceStream();
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.exit(0);
 		}
 	}
 }

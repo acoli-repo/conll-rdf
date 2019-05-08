@@ -1,0 +1,49 @@
+{
+"input" : "PATH"
+, "output" : "System.out"
+, "pipeline" : [ 
+
+	{ "class" : "CoNLLStreamExtractor",
+		"baseURI" : "URI",
+		"columns" : ["COL1", "COL2"]
+	},
+	
+	{ "class" : "CoNLLRDFUpdater"
+		, "updates" : [
+			{"path":"PATH", "iter":"1"}, 
+			{"path":"sparql/test.sparql", "iter":"*"}
+		]
+		, "models" : [
+			{"source":"URI", "graph":"URI"},
+			{"source":"URI", "graph":"URI"}
+		]
+		//OPTIONAL for cross-sentence processing
+		//, "lookahead" : "0" 
+		//, "lookback" : "0" 
+		//OPTIONAL for debugging
+		//, "threads" : "default" 
+		//, "graphsoutDIR" : "PATH"
+		//, "graphsoutSNT" : ["s1","s5"]
+		//, "triplesoutDIR" : "PATH"
+		//, "triplesoutSNT" : ["s1","s5"]
+	} ,
+	
+	{ "class" : "CoNLLRDFFormatter",
+		// must be called LAST in pipeline --> else, ERROR
+		// multiple outputs can be generated simultaneously. (but need distinct outstreams, else ERROR)
+		// if only one mode w/o specific outstream, use default output.
+		// if NO mode: use "RDF" + default output
+		"modules" : [
+				// DEBUG always writes to System.err
+				{"mode":"DEBUG"}
+				, {"mode":"RDF", "columns": ["COL1", "COL2"], "output":"PATH"}
+				, {"mode":"CONLL", "columns": ["COL1", "COL2"], "output":"PATH"}
+				, {"mode":"SPARQLTSV", "select": "PATH", "output":"PATH"}
+				// GRAMMAR and SEMANTICS can be combined
+				, {"mode":"GRAMMAR", "output":"PATH"}
+				, {"mode":"SEMANTICS", "output":"PATH"}
+				, {"mode":"GRAMMAR+SEMANTICS", "output":"PATH"}
+		]
+	}
+]
+}

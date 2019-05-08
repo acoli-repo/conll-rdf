@@ -29,9 +29,9 @@ import org.apache.jena.query.*;
  *  @author Christian Chiarcos {@literal chiarcos@informatik.uni-frankfurt.de}
  *  @author Christian Faeth {@literal faeth@em.uni-frankfurt.de}
  */
-public class CoNLLRDFFormatter {
+public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 	
-	private static Logger LOG = Logger.getLogger(CoNLLRDFFormatter.class.getName());
+	protected static Logger LOG = Logger.getLogger(CoNLLRDFFormatter.class.getName());
 		
 	public static final String ANSI_RESET    = "\u001B[0m";
 	public static final String ANSI_BRIGHTER = "\u001B[1m";
@@ -54,8 +54,50 @@ public class CoNLLRDFFormatter {
 	public static final String ANSI_CYAN_BK  = "\u001B[46m";
 	public static final String ANSI_WHITE_BK = "\u001B[47m";
 	
+	public static class Module {
+		private Mode mode = Mode.CONLLRDF;
+		private List<String> cols = new ArrayList<String>();
+		String select = "";
+		private PrintStream outputStream;
+		
+		public Mode getMode() {
+			return mode;
+		}
+		public void setMode(Mode mode) {
+			this.mode = mode;
+		}
+		public List<String> getCols() {
+			return cols;
+		}
+		public void setCols(List<String> cols) {
+			this.cols = cols;
+		}
+		public String getSelect() {
+			return select;
+		}
+		public void setSelect(String select) {
+			this.select = select;
+		}
+		public PrintStream getOutputStream() {
+			return outputStream;
+		}
+		public void setOutputStream(PrintStream outputStream) {
+			this.outputStream = outputStream;
+		}
+	}
+	
+	public static enum Mode {
+		CONLLRDF, CONLL, DEBUG, SPARQLTSV, GRAMMAR, SEMANTICS, GRAMMAR_SEMANTICS
+	}
+	
+	private List<Module> modules = new ArrayList<Module>();
+	
+	public List<Module> getModules() {
+		return modules;
+	}
+
 		/** do some highlighting, but provide the full TTL data*/
-		public static String colorTTL(String buffer) {
+		public String colorTTL(String buffer) {
 			return buffer.replaceAll("(terms:[^ ]*)",ANSI_YLW_BK+"$1"+ANSI_RESET)
 						.replaceAll("(rdfs:label +)(\"[^\"]*\")","$1"+ANSI_CYAN+"$2"+ANSI_RESET)
 						.replaceAll("(nif:[^ ]*)",ANSI_YELLOW+"$1"+ANSI_RESET)
@@ -478,10 +520,17 @@ public class CoNLLRDFFormatter {
 			select += "		}\n";
 			for (String col:cols) {
 				if(col.equals(lastCol)) {	// cast to string
-					select += "		OPTIONAL{?word conll:"+col+" ?"+col+"_raw ."+
-							  "		 		 BIND(str(?"+col+"_raw) as ?"+col+"a)} .\n"+
-							  "     BIND(concat(if(bound(?"+col+"a),?"+col+"a,'_'),\n"+
-							  "                 IF(EXISTS { ?word nif:nextWord [] }, '', '\\n')) as ?"+col+"s)\n";
+					if (col.equals("HEAD")) { //TODO: streamline! only difference to statement below is binding to HEADa instead of HEADs
+						select += "		OPTIONAL {\n";
+						select += "			?word conll:HEAD ?headurl .\n";
+						select += "			bind(replace(str(?headurl), '^.*s[0-9]+_([0-9]+)$', '$1') as ?HEADa) .\n";
+						select += "		} .\n";
+					} else {
+						select += "		OPTIONAL{?word conll:"+col+" ?"+col+"_raw .";
+						select += "		 		 BIND(str(?"+col+"_raw) as ?"+col+"a)} .\n";
+					}
+					select += "     BIND(concat(if(bound(?"+col+"a),?"+col+"a,'_'),\n";
+					select += "                 IF(EXISTS { ?word nif:nextWord [] }, '', '\\n')) as ?"+col+"s)\n";
 					// we append a linebreak to the value of the last column to generate sentence breaks within a local graph
 				} else if (col.equals("HEAD")) {
 					select += "		OPTIONAL {\n";
@@ -489,8 +538,8 @@ public class CoNLLRDFFormatter {
 					select += "			bind(replace(str(?headurl), '^.*s[0-9]+_([0-9]+)$', '$1') as ?HEADs) .\n";
 					select += "		} .\n";
 				} else {
-					select += "		OPTIONAL{?word conll:"+col+" ?"+col+"_raw ."+
-							  "		 		 BIND(str(?"+col+"_raw) as ?"+col+"s)} .\n";	// cast to string
+					select += "		OPTIONAL{?word conll:"+col+" ?"+col+"_raw .";
+					select += "		 		 BIND(str(?"+col+"_raw) as ?"+col+"s)} .\n";	// cast to string
 				}
 			}
 			select += "	}\n";
@@ -545,6 +594,13 @@ public class CoNLLRDFFormatter {
 					+ "read TTL from stdin => format CoNLL-RDF or extract and highlight CoNLL (namespace conll:) and semantic (namespace terms:) subgraphs\n"
 					+ "if no parameters are supplied, -conllrdf is inferred");
 			String args = Arrays.asList(argv).toString().replaceAll("[\\[\\], ]+"," ").trim().toLowerCase();
+			
+			CoNLLRDFFormatter f = new CoNLLRDFFormatter();
+			
+			f.setInputStream(new BufferedReader(new InputStreamReader(System.in)));
+			f.setOutputStream(System.out);
+			
+			
 			boolean CONLLRDF = args.contains("-rdf");
 			boolean CONLL = args.contains("-conll");
 			boolean DEBUG = args.contains("-debug");
@@ -556,30 +612,59 @@ public class CoNLLRDFFormatter {
 				// SEMANTICS=true;
 			// }
 			if(!CONLLRDF && !CONLL && !SPARQLTSV && !GRAMMAR && !SEMANTICS && !DEBUG) { // default
-				CONLLRDF=true;
+				CONLLRDF = true;
 			}
 			
-			String select = null;
+			if(GRAMMAR) {
+				Module m = new Module();
+				m.setMode(Mode.GRAMMAR);
+				m.setOutputStream(f.getOutputStream());
+				f.getModules().add(m);
+			}
 			
-			List<String> conllcols = new ArrayList<String>();
+			if(SEMANTICS) {
+				Module m = new Module();
+				m.setMode(Mode.SEMANTICS);
+				m.setOutputStream(f.getOutputStream());
+				f.getModules().add(m);
+			}
+			
+			if(DEBUG) {
+				Module m = new Module();
+				m.setMode(Mode.DEBUG);
+				m.setOutputStream(System.err);
+				f.getModules().add(m);
+			}
 			
 			if(CONLL) {
+				Module m = new Module();
+				m.setMode(Mode.CONLL);
+				m.setOutputStream(f.getOutputStream());
+				m.getCols().clear();
 				int i = 0;
 				while(i<argv.length && argv[i].toLowerCase().matches("^-+conll$")) i++;
 				while(i<argv.length && !argv[i].toLowerCase().matches("^-+.*$"))
-					conllcols.add(argv[i++]);
+					m.getCols().add(argv[i++]);
+				f.getModules().add(m);
 			}
 			
-			List<String> conllrdfcols = new ArrayList<String>();
-			
 			if(CONLLRDF) {
+				Module m = new Module();
+				m.setMode(Mode.CONLLRDF);
+				m.setOutputStream(f.getOutputStream());
+				m.getCols().clear();
 				int i = 0;
 				while(i<argv.length && argv[i].toLowerCase().matches("^-+rdf$")) i++;
 				while(i<argv.length && !argv[i].toLowerCase().matches("^-+.*$"))
-					conllrdfcols.add(argv[i++]);
+					m.getCols().add(argv[i++]);
+				f.getModules().add(m);
 			}
 			
 			if(SPARQLTSV) {
+				Module m = new Module();
+				m.setMode(Mode.SPARQLTSV);
+				m.setOutputStream(f.getOutputStream());
+				String select = "";
 				int i = 1;
 				while(i<argv.length && argv[i].toLowerCase().matches("^-+sparqltsv$")) i++;
 				if(i<argv.length)
@@ -588,14 +673,14 @@ public class CoNLLRDFFormatter {
 					select=select+" "+argv[i++]; // because queries may be parsed by the shell (Cygwin)
 				
 				Reader sparqlreader = new StringReader(select);
-				File f = new File(select);
+				File file = new File(select);
 				URL u = null;
 				try {
 					u = new URL(select);
 				} catch (MalformedURLException e) {}
 				
-				if(f.exists()) {			// can be read from a file
-					sparqlreader = new FileReader(f);
+				if(file.exists()) {			// can be read from a file
+					sparqlreader = new FileReader(file);
 					LOG.debug("f");
 				} else if(u!=null) {
 					try {
@@ -608,28 +693,40 @@ public class CoNLLRDFFormatter {
 				select="";
 				for(String line = in.readLine(); line!=null; line=in.readLine())
 					select=select+line+"\n";
+				m.setSelect(select);
+				f.getModules().add(m);
 			}
 			
-			BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+			f.processSentenceStream();
+			
+		}
+
+		public void processSentenceStream() throws IOException {
 			String line;
 			String lastLine ="";
 			String buffer="";
-			while((line = in.readLine())!=null) {
+			while((line = getInputStream().readLine())!=null) {
 				line=line.replaceAll("[\t ]+"," ").trim();
 				
 				if(!buffer.trim().equals(""))
 					if((line.startsWith("@") || line.startsWith("#")) && !lastLine.startsWith("@") && !lastLine.startsWith("#")) { //!buffer.matches("@[^\n]*\n?$")) {
-						if(CONLLRDF) System.out.println(reorderTTLBuffer(buffer, conllrdfcols));
-						if(DEBUG) System.err.println(colorTTL(reorderTTLBuffer(buffer, conllrdfcols)));
-						if(CONLL) {
-							if (conllcols.size() < 1) 
-								throw new IOException("-conll argument needs at least one COL to export!"); 
-							else 
-								printSparql(buffer, columnsAsSelect(conllcols), new OutputStreamWriter(System.out));
+						for (Module m:modules) {
+							if(m.getMode()==Mode.CONLLRDF) m.getOutputStream().println(reorderTTLBuffer(buffer, m.getCols()));
+							if(m.getMode()==Mode.DEBUG) System.err.println(colorTTL(reorderTTLBuffer(buffer, m.getCols())));
+							if(m.getMode()==Mode.CONLL) {
+								if (m.getCols().size() < 1) 
+									throw new IOException("-conll argument needs at least one COL to export!"); 
+								else 
+									printSparql(buffer, columnsAsSelect(m.getCols()), new OutputStreamWriter(m.getOutputStream()));
+							}
+							if(m.getMode()==Mode.SPARQLTSV) printSparql(buffer, m.getSelect(), new OutputStreamWriter(m.getOutputStream()));
+							if(m.getMode()==Mode.GRAMMAR) m.getOutputStream().println(extractCoNLLGraph(buffer,true));
+							if(m.getMode()==Mode.SEMANTICS) m.getOutputStream().println(extractTermGraph(buffer,true));
+							if(m.getMode()==Mode.GRAMMAR_SEMANTICS) {
+								m.getOutputStream().println(extractCoNLLGraph(buffer,true));
+								m.getOutputStream().println(extractTermGraph(buffer,false));
+							}
 						}
-						if(SPARQLTSV) printSparql(buffer, select, new OutputStreamWriter(System.out));
-						if(GRAMMAR) System.out.println(extractCoNLLGraph(buffer,true));
-						if(SEMANTICS) System.out.println(extractTermGraph(buffer,!GRAMMAR));
 						buffer="";
 					}
 				//System.err.println(ANSI_RED+"> "+line+ANSI_RESET);
@@ -653,16 +750,37 @@ public class CoNLLRDFFormatter {
 				lastLine=line;
 			}
 			
-			if(CONLLRDF) System.out.println(reorderTTLBuffer(buffer, conllrdfcols));
-			if(DEBUG) System.err.println(colorTTL(reorderTTLBuffer(buffer, conllrdfcols)));
-			if(CONLL) {
-				if (conllcols.size() < 1) 
-					throw new IOException("-conll argument needs at least one COL to export!"); 
-				else 
-					printSparql(buffer, columnsAsSelect(conllcols), new OutputStreamWriter(System.out));
+			for (Module m:modules) {
+				if(m.getMode()==Mode.CONLLRDF) m.getOutputStream().println(reorderTTLBuffer(buffer, m.getCols()));
+				if(m.getMode()==Mode.DEBUG) System.err.println(colorTTL(reorderTTLBuffer(buffer, m.getCols())));
+				if(m.getMode()==Mode.CONLL) {
+					if (m.getCols().size() < 1) 
+						throw new IOException("-conll argument needs at least one COL to export!"); 
+					else 
+						printSparql(buffer, columnsAsSelect(m.getCols()), new OutputStreamWriter(m.getOutputStream()));
+				}
+				if(m.getMode()==Mode.SPARQLTSV) printSparql(buffer, m.getSelect(), new OutputStreamWriter(m.getOutputStream()));
+				if(m.getMode()==Mode.GRAMMAR) m.getOutputStream().println(extractCoNLLGraph(buffer,true));
+				if(m.getMode()==Mode.SEMANTICS) m.getOutputStream().println(extractTermGraph(buffer,true));
+				if(m.getMode()==Mode.GRAMMAR_SEMANTICS) {
+					m.getOutputStream().println(extractCoNLLGraph(buffer,true));
+					m.getOutputStream().println(extractTermGraph(buffer,false));
+				}
 			}
-			if(SPARQLTSV) printSparql(buffer, select, new OutputStreamWriter(System.out));
-			if(GRAMMAR) System.out.println(extractCoNLLGraph(buffer,true));
-			if(SEMANTICS) System.out.println(extractTermGraph(buffer,!GRAMMAR));
+		}
+
+		@Override
+		public void run() {
+			try {
+				processSentenceStream();
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.exit(0);
+			}
+		}
+
+		@Override
+		public void start() {
+			run();
 		}
 }

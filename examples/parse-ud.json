@@ -1,0 +1,48 @@
+{
+  "input" : "data/ud/UD_English-master/en-ud-dev.conllu.gz"
+, "output" : "parse_ud.ttl"
+, "pipeline" : [ 
+	{ "class" : "CoNLLStreamExtractor",
+		"baseURI" : "https://github.com/UniversalDependencies/UD_English#",
+		"columns" : ["ID", "WORD", "LEMMA", "IGNORE", "POS", "IGNORE", "IGNORE", "IGNORE", "IGNORE", "IGNORE"]
+	},
+	{ "class" : "CoNLLRDFUpdater"
+		, "models" : [
+			{"source":"http://purl.org/olia/penn.owl", "graph":"http://purl.org/olia/penn.owl"}
+			,{"source":"http://purl.org/olia/penn-link.rdf", "graph":"http://purl.org/olia/penn.owl"}
+			,{"source":"http://purl.org/olia/olia.owl", "graph":"http://purl.org/olia/olia.owl"}
+	    ]
+		, "updates" : [
+			{"path":"examples/sparql/remove-ID.sparql", "iter":"1"}
+			,{"path":"examples/sparql/remove-IGNORE.sparql", "iter":"1"}
+			
+			,{"path":"examples/sparql/link/link-penn-POS.sparql", "iter":"1"}
+			,{"path":"examples/sparql/link/remove-annotation-model.sparql", "iter":"1"}
+			,{"path":"examples/sparql/link/infer-olia-concepts.sparql", "iter":"1"}
+			
+			,{"path":"examples/sparql/parse/initialize-SHIFT.sparql", "iter":"1"}
+			,{"path":"examples/sparql/parse/REDUCE-english-1.sparql", "iter":"5"}
+			,{"path":"examples/sparql/parse/REDUCE-english-2.sparql", "iter":"5"}
+			,{"path":"examples/sparql/parse/REDUCE-english-3.sparql", "iter":"5"}
+			,{"path":"examples/sparql/parse/REDUCE-english-4.sparql", "iter":"5"}
+			,{"path":"examples/sparql/parse/REDUCE-to-HEAD.sparql", "iter":"1"}
+		]
+	} ,
+	
+	
+	{ "class" : "CoNLLRDFFormatter"
+		, "modules" : [
+				// DEBUG always writes to System.err
+				//{"mode":"DEBUG"}
+				//{"mode":"RDF", "columns": ["HEAD", "WORD"]}
+				//, {"mode":"CONLL", "columns": ["WORD", "HEAD"]}
+				//, {"mode":"SPARQLTSV", "select": "PATH"}
+				// GRAMMAR and SEMANTICS can be combined
+				//, {"mode":"GRAMMAR"}
+				//, {"mode":"SEMANTICS"}
+				//, {"mode":"GRAMMAR+SEMANTICS"}
+		]
+	} 
+	
+]
+}
