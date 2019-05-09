@@ -652,6 +652,9 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 	public void loadGraph(URI url, URI graph) throws IOException {
 		LOG.info("loading...");
 		LOG.info(url +" into "+ graph);
+		if (!url.isAbsolute()) {
+			url = (new File(url.toString())).toURI();
+		}
 		if (graph == null) {
 			graph = url;
 		}

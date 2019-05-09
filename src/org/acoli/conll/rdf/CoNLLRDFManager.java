@@ -62,7 +62,7 @@ public class CoNLLRDFManager {
 			try {
 				man.readConfig(cmd.getOptionValue("c"));
 			} catch (IOException e) {
-				throw new Exception("Error when reading config file "+cmd.getOptionValue("c"), e);
+				throw new Exception("Error when reading config file "+new File(cmd.getOptionValue("c")).getAbsolutePath(), e);
 			}
 		}
 		else {
