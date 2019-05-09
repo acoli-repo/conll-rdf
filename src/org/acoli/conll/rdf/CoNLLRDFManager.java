@@ -294,14 +294,14 @@ public class CoNLLRDFManager {
 			f.getModules().add(m);
 		}
 		for (JsonNode modConf:conf.withArray("modules")) {
+			Module m = new Module();
+			try {
+				m.setOutputStream(parseConfAsOutputStream(modConf.get("output").asText()));
+			} catch (Exception e) {
+				m.setOutputStream(output);
+			}
 			if (modConf.get("mode").asText().equals("RDF") || modConf.get("mode").asText().equals("CONLLRDF")) {
-				Module m = new Module();
 				m.setMode(Mode.CONLLRDF);
-				try {
-					m.setOutputStream(parseConfAsOutputStream(modConf.get("output").asText()));
-				} catch (Exception e) {
-					m.setOutputStream(output);
-				}
 				m.getCols().clear();
 				for (JsonNode col:modConf.withArray("columns")) {
 					m.getCols().add(col.asText());
@@ -309,13 +309,7 @@ public class CoNLLRDFManager {
 				f.getModules().add(m);
 			}
 			if (modConf.get("mode").asText().equals("CONLL")) {
-				Module m = new Module();
 				m.setMode(Mode.CONLL);
-				try {
-					m.setOutputStream(parseConfAsOutputStream(modConf.get("output").asText()));
-				} catch (Exception e) {
-					m.setOutputStream(output);
-				}
 				m.getCols().clear();
 				for (JsonNode col:modConf.withArray("columns")) {
 					m.getCols().add(col.asText());
@@ -323,16 +317,14 @@ public class CoNLLRDFManager {
 				f.getModules().add(m);
 			}
 			if (modConf.get("mode").asText().equals("DEBUG")) {
-				Module m = new Module();
 				m.setMode(Mode.DEBUG);
 				m.setOutputStream(System.err);
 				f.getModules().add(m);
 			}
 			if (modConf.get("mode").asText().equals("SPARQLTSV")) {
-				Module m = new Module();
 				m.setMode(Mode.SPARQLTSV);
 				if (new File(modConf.get("select").asText()).canRead()) {
-					BufferedReader in = new BufferedReader(new FileReader(config.get("input").asText()));
+					BufferedReader in = new BufferedReader(new FileReader(modConf.get("select").asText()));
 					String select="";
 					for(String line = in.readLine(); line!=null; line=in.readLine())
 						select=select+line+"\n";
@@ -344,33 +336,15 @@ public class CoNLLRDFManager {
 				}
 			}
 			if (modConf.get("mode").asText().equals("GRAMMAR")) {
-				Module m = new Module();
 				m.setMode(Mode.GRAMMAR);
-				try {
-					m.setOutputStream(parseConfAsOutputStream(modConf.get("output").asText()));
-				} catch (Exception e) {
-					m.setOutputStream(output);
-				}
 				f.getModules().add(m);
 			}
 			if (modConf.get("mode").asText().equals("SEMANTICS")) {
-				Module m = new Module();
 				m.setMode(Mode.SEMANTICS);
-				try {
-					m.setOutputStream(parseConfAsOutputStream(modConf.get("output").asText()));
-				} catch (Exception e) {
-					m.setOutputStream(output);
-				}
 				f.getModules().add(m);
 			}
 			if (modConf.get("mode").asText().equals("GRAMMAR+SEMANTICS")) {
-				Module m = new Module();
 				m.setMode(Mode.GRAMMAR_SEMANTICS);
-				try {
-					m.setOutputStream(parseConfAsOutputStream(modConf.get("output").asText()));
-				} catch (Exception e) {
-					m.setOutputStream(output);
-				}
 				f.getModules().add(m);
 			}
 		}
