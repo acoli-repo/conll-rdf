@@ -24,7 +24,6 @@ import org.apache.jena.rdf.model.*;
 import org.apache.jena.update.*;
 import org.apache.log4j.Logger;
 import org.apache.jena.query.*;
-import javafx.util.Pair;
 
 /** extracts RDF data from CoNLL files, transforms the result using SPARQL UPDATE queries,
  * 	optionally followed by SPARQL SELECT to produce TSV output<br>
@@ -34,7 +33,26 @@ import javafx.util.Pair;
  *  @author Christian Faeth {@literal faeth@em.uni-frankfurt.de}
  */
 public class CoNLLStreamExtractor extends CoNLLRDFComponent {
-	
+	public static class Pair<F, S> {
+		public F key;
+		public S value;
+		public Pair (F key, S value) {
+			this.key = key;
+			this.value = value;
+		}
+		public F getKey() {
+			return key;
+		}
+		public void setKey(F key) {
+			this.key = key;
+		}
+		public S getValue() {
+			return value;
+		}
+		public void setValue(S value) {
+			this.value = value;
+		}
+	}
 	
 	private static Logger LOG = Logger.getLogger(CoNLLStreamExtractor.class.getName());
 	

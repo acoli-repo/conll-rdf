@@ -59,7 +59,6 @@ import org.apache.jena.update.UpdateRequest;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
-import javafx.util.Pair;
 
 /**
  *  @author Christian Chiarcos {@literal chiarcos@informatik.uni-frankfurt.de}
@@ -72,6 +71,27 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 	static final int MAXITERATE = 999; // maximum update iterations allowed until the update loop is cancelled and an error message is thrown - to prevent faulty update scripts running in an endless loop
 	private static final Logger LOG = Logger.getLogger(CoNLLRDFUpdater.class.getName());
 	private static final String DEFAULTUPDATENAME = "DIRECTUPDATE";
+	
+	public static class Pair<F, S> {
+		public F key;
+		public S value;
+		public Pair (F key, S value) {
+			this.key = key;
+			this.value = value;
+		}
+		public F getKey() {
+			return key;
+		}
+		public void setKey(F key) {
+			this.key = key;
+		}
+		public S getValue() {
+			return value;
+		}
+		public void setValue(S value) {
+			this.value = value;
+		}
+	}
 	
 	public static class Triple<F, S, M> {
 		public F first;
