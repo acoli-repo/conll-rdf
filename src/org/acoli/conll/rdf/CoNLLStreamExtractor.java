@@ -230,7 +230,7 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 			inputStream.mark(readAheadLimit);
 
 			String peekedLine;
-			while ((peekedLine = inputStream.readLine()) != null && m <= maxLinesToSearch) {
+			while ((peekedLine = inputStream.readLine()) != null && m < maxLinesToSearch) {
 				m++;
 				meanByteSizeOfLine = ((meanByteSizeOfLine * (m - 1)) + peekedLine.length()) / m;
 				LOG.debug("Mean Byte size: " + meanByteSizeOfLine);
@@ -295,7 +295,7 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 			select=select+" "+argv[i++]; // because queries may be parsed by the shell (Cygwin)
 
 		if (fields.size() == 0) { // might be conllu plus, we check the first line for col names.
-			findFieldsFromComments(inputStream, fields, 10);
+			findFieldsFromComments(inputStream, fields, 1);
 		}
 
 
