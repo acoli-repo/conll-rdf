@@ -23,6 +23,8 @@ import org.apache.jena.update.*;
 import org.apache.log4j.Logger;
 import org.apache.jena.query.*;
 
+import static org.acoli.conll.rdf.CoNLLStreamExtractor.findFieldsFromComments;
+
 
 /** reads CoNLL-RDF from stdin, writes it formatted to stdout (requires a Un*x shell)<br>
  *  this is basically for diagnostic purposes 
@@ -554,17 +556,21 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 		*  Note: this CoNLL-like export has limitations, of course: it will export one property per column, hence, collapsed dependencies or 
 		*  SRL annotations cannot be reconverted */		
 		public static void printSparql(String buffer, String select, Writer out) throws IOException {
+			Model m = ModelFactory.createDefaultModel().read(new StringReader(buffer),null, "TTL");
+			QueryExecution qexec = QueryExecutionFactory.create(select, m);
+			ResultSet results = qexec.execSelect();
+			List<String> cols = results.getResultVars();
+
 			BufferedReader in = new BufferedReader(new StringReader(buffer));
 			Hashtable<String,String> key2line = new Hashtable<String,String>();
 			String line;
 			while((line=in.readLine())!=null) {
 				line=line.trim();
-				if(line.startsWith("#")) out.write(line+"\n");
+				if (line.matches("^#\\s?global\\.columns\\s?=.*")) out.write("# global.columns = "+String.join(" ", cols)+"\n");
+				else if (line.startsWith("#")) out.write(line+"\n");
+
 			}
-			Model m = ModelFactory.createDefaultModel().read(new StringReader(buffer),null, "TTL");
-			QueryExecution qexec = QueryExecutionFactory.create(select, m);
-			ResultSet results = qexec.execSelect();
-			List<String> cols = results.getResultVars();
+
 			out.write("# "); 									// well, this may be redundant, but permitted in CoNLL
 			for(String col : cols)
 				out.write(col+"\t");
@@ -645,6 +651,11 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 				while(i<argv.length && argv[i].toLowerCase().matches("^-+conll$")) i++;
 				while(i<argv.length && !argv[i].toLowerCase().matches("^-+.*$"))
 					m.getCols().add(argv[i++]);
+				if (m.getCols().size() < 1) {
+					List<String> fields = new ArrayList<>(); // TODO: Can i use getter as call by reference param?
+					findFieldsFromComments(f.getInputStream(), fields, 1);
+					m.setCols(fields);
+				}
 				f.getModules().add(m);
 			}
 			
@@ -716,8 +727,10 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 							if(m.getMode()==Mode.CONLL) {
 								if (m.getCols().size() < 1) 
 									throw new IOException("-conll argument needs at least one COL to export!"); 
-								else 
+								else {
+									System.err.println("!");
 									printSparql(buffer, columnsAsSelect(m.getCols()), new OutputStreamWriter(m.getOutputStream()));
+								}
 							}
 							if(m.getMode()==Mode.SPARQLTSV) printSparql(buffer, m.getSelect(), new OutputStreamWriter(m.getOutputStream()));
 							if(m.getMode()==Mode.GRAMMAR) m.getOutputStream().println(extractCoNLLGraph(buffer,true));
@@ -755,9 +768,11 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 				if(m.getMode()==Mode.DEBUG) System.err.println(colorTTL(reorderTTLBuffer(buffer, m.getCols())));
 				if(m.getMode()==Mode.CONLL) {
 					if (m.getCols().size() < 1) 
-						throw new IOException("-conll argument needs at least one COL to export!"); 
-					else 
+						throw new IOException("-conll argument needs at least one COL to export!");
+					else {
+						System.err.println("!!");
 						printSparql(buffer, columnsAsSelect(m.getCols()), new OutputStreamWriter(m.getOutputStream()));
+					}
 				}
 				if(m.getMode()==Mode.SPARQLTSV) printSparql(buffer, m.getSelect(), new OutputStreamWriter(m.getOutputStream()));
 				if(m.getMode()==Mode.GRAMMAR) m.getOutputStream().println(extractCoNLLGraph(buffer,true));
