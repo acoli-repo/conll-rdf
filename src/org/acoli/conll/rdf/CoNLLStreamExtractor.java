@@ -208,6 +208,55 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 		}
 	}
 
+	/**
+	 * Searches a BufferedReader for a global.columns = field to extract the column names from (CoNLL-U Plus feature).
+	 * We allow for arbitrary lines to search, however as of September 2019, CoNLL-U Plus only allows first line.
+	 * Does NOT validate if custom columns are in a separate name space, as required by the format.
+	 * @see <a href="https://universaldependencies.org/ext-format.html">CoNLL-U Plus Format</a>
+	 * @param inputStream an untouched BufferedReader
+	 * @param fields The List the found field names will be written to
+	 * @param maxLinesToSearch how many lines to search. CoNLL-U Plus requires this to be 1.
+	 */
+	static void findFieldsFromComments(BufferedReader inputStream, List<String> fields, int maxLinesToSearch) {
+		int readAheadLimit = 10000;
+		float meanByteSizeOfLine = 0.0f;
+		int m = 0;
+		int peekedChars = 0;
+		if (!inputStream.markSupported()) {
+			LOG.warn("Marking is not supported, could lead to cutting off the beginning of the stream.");
+		}
+		try {
+			LOG.info("Testing for CoNLL-U Plus");
+			inputStream.mark(readAheadLimit);
+
+			String peekedLine;
+			while ((peekedLine = inputStream.readLine()) != null && m <= maxLinesToSearch) {
+				m++;
+				meanByteSizeOfLine = ((meanByteSizeOfLine * (m - 1)) + peekedLine.length()) / m;
+				LOG.debug("Mean Byte size: " + meanByteSizeOfLine);
+				peekedChars += peekedLine.length();
+				if ((peekedChars + meanByteSizeOfLine) > readAheadLimit) {
+					LOG.info("Couldn't find CoNLL-U Plus columns.");
+					inputStream.reset();
+					return;
+				}
+				LOG.debug("Testing line: " + peekedLine);
+				if (peekedLine.matches("^#\\s?global\\.columns\\s?=.*")) {
+					fields.addAll(Arrays.asList(peekedLine.trim()
+							.replaceFirst("#\\s?global\\.columns\\s?=", "")
+							.trim().split(" |\t")));
+					inputStream.reset();
+					LOG.info("Success");
+					return;
+				}
+
+			}
+			inputStream.reset();
+		} catch (IOException e) {
+			LOG.error(e);
+			LOG.warn("Couldn't figure out CoNLL-U Plus, searched for " + m + " lines.");
+		}
+	}
 
 	public static void main(String[] argv) throws Exception {
 		LOG.info("synopsis: CoNLLStreamExtractor baseURI FIELD1[.. FIELDn] [-u SPARQL_UPDATE1..m] [-s SPARQL_SELECT]\n"+
@@ -223,7 +272,8 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 		List<String> fields = new ArrayList<String>();
 		List<Pair<String, String>> updates = new ArrayList<Pair<String, String>>();
 		String select = null;
-		
+		BufferedReader inputStream = new BufferedReader(new InputStreamReader(System.in));
+
 		int i = 1;
 		while(i<argv.length && !argv[i].toLowerCase().matches("^-+u$"))
 			fields.add(argv[i++]);
@@ -243,7 +293,12 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 			select=argv[i++];
 		while(i<argv.length)
 			select=select+" "+argv[i++]; // because queries may be parsed by the shell (Cygwin)
-		
+
+		if (fields.size() == 0) { // might be conllu plus, we check the first line for col names.
+			findFieldsFromComments(inputStream, fields, 10);
+		}
+
+
 		LOG.info("running CoNLLStreamExtractor");
 		LOG.info("\tbaseURI:       "+baseURI);
 		LOG.info("\tCoNLL columns: "+fields);
@@ -311,7 +366,7 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 		ex.setColumns(fields);
 		ex.setUpdates(updates);
 		ex.setSelect(select);
-		ex.setInputStream(new BufferedReader(new InputStreamReader(System.in)));
+		ex.setInputStream(inputStream);
 		ex.setOutputStream(System.out);
 		
 		ex.processSentenceStream();
