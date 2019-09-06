@@ -2,7 +2,7 @@
 # CoNLL-RDF ontology 
 CoNLL-RDF ontology, based on CoNLL Shared Tasks and selected other TSV formats
 
-Formalizes CoNLL data structures and CoNLL properties for 19 CoNLL-TSV and related TSV dialects. This includes all CoNLL Shared Task TSV formats until 2018, CoNLL-U, UniMorph and several PropBank skel formats.
+Formalizes CoNLL data structures and CoNLL properties for 20 CoNLL-TSV and related TSV dialects. This includes all CoNLL Shared Task TSV formats until 2018, CoNLL-U, UniMorph and several PropBank skel formats.
 
 
 ## Notes
@@ -19,7 +19,7 @@ https://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core
 but the original link does currently not resolve.
 
 ## History
-2019-08-30 - 2019-09-04 initial version (CC)
+2019-08-30 - 2019-09-07 initial submit (CC)
 
 ## Contributors
 CC - Christian Chiarcos, chiarcos@informatik.uni-frankfurt.de
