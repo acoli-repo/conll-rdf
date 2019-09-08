@@ -100,7 +100,7 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 	private String select = null;
 	List<Pair<String, String>> updates = new ArrayList<Pair<String, String>>();
 	
-	private void processSentenceStream() throws Exception {
+	protected void processSentenceStream() throws Exception {
 		CoNLL2RDF conll2rdf = new CoNLL2RDF(baseURI, columns.toArray(new String[columns.size()]));
 		List<Pair<Integer,Long> > dRTs = new ArrayList<Pair<Integer,Long> >(); // iterations and execution time of each update in seconds
 		LOG.info("process input ..");
@@ -110,7 +110,7 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 		for(String line = ""; line !=null; line=in.readLine()) {
 			if(line.contains("#"))
 				out.write(line.replaceAll("^[^#]*#", "#") + "\n");
-			line=line.replaceAll("<[\\/]?[psPS]( [^>]*>|>)","").trim(); 		// in this way, we can also read sketch engine data and split at s and p elements
+			line=line.replaceAll("<[\\/]?[psPS]( [^>]*>|>)","").trim(); // in this way, we can also read sketch engine data and split at s and p elements
 			if(!(line.matches("^<[^>]*>$")))							// but we skip all other XML elements, as used by Sketch Engine or TreeTagger chunker
 				if(line.equals("") && !buffer.trim().equals("")) {
 					Model m = conll2rdf.conll2model(new StringReader(buffer+"\n"));
