@@ -239,7 +239,8 @@ public class CoNLL2RDF {
 		TreeSet<String> argTriples = new TreeSet<String>();
 		Set<String> argsProperties = new TreeSet<String>();
 		Set<String> headSubProperties = new TreeSet<String>();
-		
+		ArrayList<String> comments = new ArrayList<>();
+
 		for(String line = ""; line!=null; line=bin.readLine()) {
 			if(line.contains("#"))
 				out.write(line.replaceFirst("^[^#]*","")); // keep commentaries
@@ -259,13 +260,20 @@ public class CoNLL2RDF {
 							sentence=sentence.replaceAll("_TMP_"+col2field.get(col2field.size()-1).replaceFirst("[\\-_]*[Aa][rR][gG][sS]$","_"+i),predicates.get(i));
 						}
 					}
-					out.write(sentence+"\n");
+					if (comments.size()>0) {
+						out.write(sentence);
+						out.write(root+" rdfs:comment \""+(String.join("\\\\n",comments))+"\" ."+"\n");
+					} else
+						out.write(sentence+"\n");
 					predicates.clear();
 					sentence="";
 					tok=0;
 					sent++;
 				} else {
-					if(line.contains("#")) out.write(line.replaceFirst("^[^#]*#", "#")+"\n");
+					if(line.contains("#")) {
+						out.write(line.replaceFirst("^[^#]*#", "#")+"\n");
+						comments.add(line.replaceFirst("^[^#]*#", "#"));
+					}
 					line=line.replaceFirst("#.*","").trim();
 					if(!line.equals("")) {
 						if(sentence.equals("")) {
