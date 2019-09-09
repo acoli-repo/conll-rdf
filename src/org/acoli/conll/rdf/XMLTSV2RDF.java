@@ -166,14 +166,9 @@ public class XMLTSV2RDF extends Format2RDF {
 					atts=atts.trim().substring(att.length()).trim();
 					result=result+"; x:"+att.replaceFirst("=.*","").trim()+" \""+att.replaceFirst(".*=", "").trim().replaceFirst("^['\"](.*)['\"]$","$1")+"\"";
 				}
-				result=result+".\n";
+				result=result+".\n\n";
 			}
 		}
-		if(result.trim().length()>0) 
-			result=	  "############\n"
-					+ "# XML tree #\n"
-					+ "############\n"
-					+ result;
 		return result;
 	}
 }
