@@ -23,7 +23,6 @@ import org.apache.jena.update.*;
 import org.apache.log4j.Logger;
 import org.apache.jena.query.*;
 
-import static org.acoli.conll.rdf.CoNLL2RDF.findFieldsFromComments;
 
 
 /** reads CoNLL-RDF from stdin, writes it formatted to stdout (requires a Un*x shell)<br>
@@ -557,17 +556,30 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 		*  SRL annotations cannot be reconverted */		
 		public static void printSparql(String buffer, String select, Writer out) throws IOException {
 			Model m = ModelFactory.createDefaultModel().read(new StringReader(buffer),null, "TTL");
-			QueryExecution qexec = QueryExecutionFactory.create(select, m);
+			String selectComments = "PREFIX nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#>\n"
+					+ "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n"
+					+ "SELECT ?c WHERE {?x a nif:Sentence . ?x rdfs:comment ?c}";
+			QueryExecution qexec = QueryExecutionFactory.create(selectComments, m);
 			ResultSet results = qexec.execSelect();
+			List<String> comments = new ArrayList<>();
+			while (results.hasNext()) {
+				comments.addAll(Arrays.asList(results.next().getLiteral("c").toString().split("\\\\n")));
+			}
+			qexec = QueryExecutionFactory.create(select, m);
+			results = qexec.execSelect();
 			List<String> cols = results.getResultVars();
-
 			BufferedReader in = new BufferedReader(new StringReader(buffer));
 			Hashtable<String,String> key2line = new Hashtable<String,String>();
 			String line;
 			while((line=in.readLine())!=null) {
-				line=line.trim(); // below causes trailing comment to be lost, would be disallowed by format however.
-				if (line.matches("^#\\s?global\\.columns\\s?=.*")) out.write("# global.columns = "+String.join(" ", cols)+"\n");
-				else if (line.startsWith("#")) out.write(line+"\n");
+                if (line.trim().startsWith("#")) {
+                    String[] commentsLinewise = line.split("\t");
+                    for (String comment : commentsLinewise) {
+                        if (comment.matches("^#\\s?global\\.columns\\s?=.*"))
+                            out.write("# global.columns = " + String.join(" ", cols) + "\n");
+                        else out.write(comment + "\n");
+                    }
+                }
 			}
 
 			out.write("# "); 									// well, this may be redundant, but permitted in CoNLL
@@ -651,7 +663,7 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 				while(i<argv.length && !argv[i].toLowerCase().matches("^-+.*$"))
 					m.getCols().add(argv[i++]);
 				if (m.getCols().size() < 1) {
-					m.setCols(findFieldsFromComments(f.getInputStream(), 1));
+					m.setCols(CoNLL2RDF.findFieldsFromComments(f.getInputStream(), 1));
 				}
 				f.getModules().add(m);
 			}
@@ -723,10 +735,9 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 							if(m.getMode()==Mode.DEBUG) System.err.println(colorTTL(reorderTTLBuffer(buffer, m.getCols())));
 							if(m.getMode()==Mode.CONLL) {
 								if (m.getCols().size() < 1) 
-									throw new IOException("-conll argument needs at least one COL to export!"); 
-								else {
+									throw new IOException("-conll argument needs at least one COL to export!");
+								else
 									printSparql(buffer, columnsAsSelect(m.getCols()), new OutputStreamWriter(m.getOutputStream()));
-								}
 							}
 							if(m.getMode()==Mode.SPARQLTSV) printSparql(buffer, m.getSelect(), new OutputStreamWriter(m.getOutputStream()));
 							if(m.getMode()==Mode.GRAMMAR) m.getOutputStream().println(extractCoNLLGraph(buffer,true));
@@ -743,7 +754,7 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 					//System.out.print("\n");
 					buffer=buffer+"\n";
 
-				if(line.trim().startsWith("#") && (!lastLine.trim().startsWith("#")))
+				if(line.trim().startsWith("#") && (!lastLine.trim().startsWith("#"))) 
 					// System.out.print("\n");
 					buffer=buffer+"\n";
 				
@@ -765,9 +776,8 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 				if(m.getMode()==Mode.CONLL) {
 					if (m.getCols().size() < 1) 
 						throw new IOException("-conll argument needs at least one COL to export!");
-					else {
+					else
 						printSparql(buffer, columnsAsSelect(m.getCols()), new OutputStreamWriter(m.getOutputStream()));
-					}
 				}
 				if(m.getMode()==Mode.SPARQLTSV) printSparql(buffer, m.getSelect(), new OutputStreamWriter(m.getOutputStream()));
 				if(m.getMode()==Mode.GRAMMAR) m.getOutputStream().println(extractCoNLLGraph(buffer,true));
