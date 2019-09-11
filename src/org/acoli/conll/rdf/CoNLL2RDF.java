@@ -357,4 +357,55 @@ public class CoNLL2RDF {
 				tok=0;
 			}
 	}
+	/**
+	 * Searches a BufferedReader for a global.columns = field to extract the column names from (CoNLL-U Plus feature).
+	 * We allow for arbitrary lines to search, however as of September 2019, CoNLL-U Plus only allows first line.
+	 * Does NOT validate if custom columns are in a separate name space, as required by the format.
+	 * @see <a href="https://universaldependencies.org/ext-format.html">CoNLL-U Plus Format</a>
+	 * @param inputStream an untouched BufferedReader
+	 * @param fields The List the found field names will be written to
+	 * @param maxLinesToSearch how many lines to search. CoNLL-U Plus requires this to be 1.
+	 */
+	static List<String> findFieldsFromComments(BufferedReader inputStream, int maxLinesToSearch) {
+		List<String> fields = new ArrayList<>();
+		int readAheadLimit = 10000;
+		float meanByteSizeOfLine = 0.0f;
+		int m = 0;
+		int peekedChars = 0;
+		if (!inputStream.markSupported()) {
+			LOG.warn("Marking is not supported, could lead to cutting off the beginning of the stream.");
+		}
+		try {
+			LOG.info("Testing for CoNLL-U Plus");
+			inputStream.mark(readAheadLimit);
+
+			String peekedLine;
+			while ((peekedLine = inputStream.readLine()) != null && m < maxLinesToSearch) {
+				m++;
+				meanByteSizeOfLine = ((meanByteSizeOfLine * (m - 1)) + peekedLine.length()) / m;
+				LOG.debug("Mean Byte size: " + meanByteSizeOfLine);
+				peekedChars += peekedLine.length();
+				if ((peekedChars + meanByteSizeOfLine) > readAheadLimit) {
+					LOG.info("Couldn't find CoNLL-U Plus columns.");
+					inputStream.reset();
+					return fields;
+				}
+				LOG.debug("Testing line: " + peekedLine);
+				if (peekedLine.matches("^#\\s?global\\.columns\\s?=.*")) {
+					fields.addAll(Arrays.asList(peekedLine.trim()
+							.replaceFirst("#\\s?global\\.columns\\s?=", "")
+							.trim().split(" |\t")));
+					inputStream.reset();
+					LOG.info("Success");
+					return fields;
+				}
+
+			}
+			inputStream.reset();
+		} catch (IOException e) {
+			LOG.error(e);
+			LOG.warn("Couldn't figure out CoNLL-U Plus, searched for " + m + " lines.");
+		}
+		return fields;
+	}
 }

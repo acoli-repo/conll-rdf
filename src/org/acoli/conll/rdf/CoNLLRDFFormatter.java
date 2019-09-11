@@ -23,7 +23,7 @@ import org.apache.jena.update.*;
 import org.apache.log4j.Logger;
 import org.apache.jena.query.*;
 
-import static org.acoli.conll.rdf.CoNLLStreamExtractor.findFieldsFromComments;
+import static org.acoli.conll.rdf.CoNLL2RDF.findFieldsFromComments;
 
 
 /** reads CoNLL-RDF from stdin, writes it formatted to stdout (requires a Un*x shell)<br>
@@ -565,10 +565,9 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 			Hashtable<String,String> key2line = new Hashtable<String,String>();
 			String line;
 			while((line=in.readLine())!=null) {
-				line=line.trim();
+				line=line.trim(); // below causes trailing comment to be lost, would be disallowed by format however.
 				if (line.matches("^#\\s?global\\.columns\\s?=.*")) out.write("# global.columns = "+String.join(" ", cols)+"\n");
 				else if (line.startsWith("#")) out.write(line+"\n");
-
 			}
 
 			out.write("# "); 									// well, this may be redundant, but permitted in CoNLL
@@ -652,9 +651,7 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 				while(i<argv.length && !argv[i].toLowerCase().matches("^-+.*$"))
 					m.getCols().add(argv[i++]);
 				if (m.getCols().size() < 1) {
-					List<String> fields = new ArrayList<>(); // TODO: Can i use getter as call by reference param?
-					findFieldsFromComments(f.getInputStream(), fields, 1);
-					m.setCols(fields);
+					m.setCols(findFieldsFromComments(f.getInputStream(), 1));
 				}
 				f.getModules().add(m);
 			}
@@ -728,7 +725,6 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 								if (m.getCols().size() < 1) 
 									throw new IOException("-conll argument needs at least one COL to export!"); 
 								else {
-									System.err.println("!");
 									printSparql(buffer, columnsAsSelect(m.getCols()), new OutputStreamWriter(m.getOutputStream()));
 								}
 							}
@@ -747,7 +743,7 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 					//System.out.print("\n");
 					buffer=buffer+"\n";
 
-				if(line.trim().startsWith("#") && (!lastLine.trim().startsWith("#"))) 
+				if(line.trim().startsWith("#") && (!lastLine.trim().startsWith("#")))
 					// System.out.print("\n");
 					buffer=buffer+"\n";
 				
@@ -770,7 +766,6 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 					if (m.getCols().size() < 1) 
 						throw new IOException("-conll argument needs at least one COL to export!");
 					else {
-						System.err.println("!!");
 						printSparql(buffer, columnsAsSelect(m.getCols()), new OutputStreamWriter(m.getOutputStream()));
 					}
 				}
