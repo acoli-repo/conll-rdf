@@ -114,6 +114,21 @@ abstract class Format2RDF {
 			field2col.put(col2field.get(i), i);
 			
 	}
+	
+	/** Format2RDF can wrap another Format2RDF instance in order to build on their conll2rdf() method, e.g.,
+	 *  a CoNLL2RDF method may be called from XMLTSV2RDF after XML markup has been processed */
+	protected Format2RDF conll2rdf = null;
+	
+	/** can be used for wrapping another Format2RDF instance, e.g., one providing another functionality
+	 *  e.g., CoNLL2RDF being wrapped by XMLTSV2RDF
+	 * @param other
+	 * @throws IOException
+	 */
+	protected Format2RDF(Format2RDF other) throws IOException {
+		this(other.baseURI, other.col2field.toArray(new String[1]), other.out);
+		conll2rdf=other;
+	}
+
 
 	/** for conll2model, we need to write prefixes multiple times */
 	protected void writePrefixes(Writer out) throws IOException {
