@@ -29,7 +29,7 @@ public class CoNLLBracketsWithSpanURIs2RDF extends CoNLLBrackets2RDF {
 	 *  Note that this is potentially lossy and error-prone as it merges non-branching nodes
 	 *  (but it can be handy and is the default behavior of related vocabularies, e.g., NIF)
 	 *  */
-	protected String getURI(String[] lines, int i) {
+	protected String getURI(String[] lines, int i, String col) {
 		if(lines[i].startsWith("(")) {// if this is indeed a node
 			int first = i;
 			while(first<lines.length && !lines[first].startsWith(":"))

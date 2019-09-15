@@ -176,7 +176,7 @@ abstract class CoNLLBrackets2RDF extends Format2RDF {
 				lastSibling=n;
 			  } // else: skip URI
 			} else if(n.startsWith("(")) {
-				String uri = getURI(lines,i);
+				String uri = getURI(lines,i,col);
 				String val = n.replaceFirst("^\\(", "").trim();
 				if(lastSibling!=null && nodes.size()>0)
 					result=result+lastSibling+" powla:next "+uri+". \n";
@@ -197,5 +197,5 @@ abstract class CoNLLBrackets2RDF extends Format2RDF {
 	}
 
 	/** implement different URI minting strategies, must only return a value if current line starts with "(" */
-	abstract protected String getURI(String[] lines, int i);
+	abstract protected String getURI(String[] lines, int i, String col);
 }
