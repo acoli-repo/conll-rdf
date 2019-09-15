@@ -60,10 +60,10 @@ public class CoNLL2RDF extends Format2RDF{
 	 * If this is not the pre-defined writer out, we define the prefixes.<br>
 	 * This handling of writers is done to provide the core functionality for conll2ttl(Reader) and conll2model(Reader).<br>
 	 * NOTE: make sure to finish the input with a newline character
+	 * NOTE2: now skipping comments (todo: reenable)
 	 */
 	protected void conll2ttl(Reader in, Writer out) throws IOException {
-		if(out!=this.out && out!=null)
-			writePrefixes(out);
+		writePrefixes(out);
 
 		BufferedReader bin = new BufferedReader(in);
 		String sentence = "";
@@ -74,8 +74,8 @@ public class CoNLL2RDF extends Format2RDF{
 		Set<String> headSubProperties = new TreeSet<String>();
 		
 		for(String line = ""; line!=null; line=bin.readLine()) {
-			if(line.contains("#"))
-				out.write(line.replaceFirst("^[^#]*","")); // keep commentaries
+			//if(line.contains("#"))
+				//out.write(line.replaceFirst("^[^#]*","")); // uncomment to keep commentaries
 			line=line.replaceAll("<[\\/]?[psPS]( [^>]*>|>)","").trim(); 		// in this way, we can also read sketch engine data and split at s and p elements
 			if(!(line.trim().matches("^<[^>]*>$"))) {							// but we skip all other XML elements, as used by Sketch Engine or TreeTagger chunker
 				root = ":s"+sent+"_"+0;
@@ -83,7 +83,7 @@ public class CoNLL2RDF extends Format2RDF{
 					for(String arg : argTriples)
 						sentence=sentence+".\n"+arg;
 					sentence=sentence+"."+
-							" # offset="+pos+
+							//" # offset="+pos+
 							"\n";
 					// sentence=sentence+".\n";
 					argTriples.clear();
@@ -98,7 +98,8 @@ public class CoNLL2RDF extends Format2RDF{
 					tok=0;
 					sent++;
 				} else {
-					if(line.contains("#")) out.write(line.replaceFirst("^[^#]*#", "#")+"\n");
+					// if(line.contains("#")) out.write(line.replaceFirst("^[^#]*#", "#")+"\n");
+					// uncomment to keep comments
 					line=line.replaceFirst("#.*","").trim();
 					if(!line.equals("")) {
 						if(sentence.equals("")) {
@@ -122,7 +123,7 @@ public class CoNLL2RDF extends Format2RDF{
 						
 						if(tok>1)
 							sentence=sentence+"; nif:nextWord "+URI+"."+
-							" # offset="+pos+
+							//" # offset="+pos+
 							"\n";
 						sentence=sentence+URI+" a nif:Word";
 						for(int i = 0; i<field.length; i++) {

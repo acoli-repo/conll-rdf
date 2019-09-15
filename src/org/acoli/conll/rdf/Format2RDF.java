@@ -125,7 +125,7 @@ abstract class Format2RDF {
 				"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n"+
 				"PREFIX terms: <http://purl.org/acoli/open-ie/>\n"+
 				"PREFIX powla: <http://purl.org/powla/powla.owl#>\n"+
-				"PREFIX : <"+baseURI+">\n\n");
+				"PREFIX : <"+baseURI+">\n");
 		out.flush();
 	}
 	
