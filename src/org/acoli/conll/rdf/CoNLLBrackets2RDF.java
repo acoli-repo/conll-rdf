@@ -11,12 +11,9 @@ import org.apache.log4j.Logger;
  *  note that we check the SRL bracketing notation only for the first column, it is then applied to *all* following columns
  *  warning: no support for SRL bracketing annotations, as there, the values become properties rather than object literals
  *  */
-public class CoNLLBrackets2RDF extends Format2RDF {
+abstract class CoNLLBrackets2RDF extends Format2RDF {
 
 	private static Logger LOG = Logger.getLogger(Format2RDF.class.getName());
-	
-	/** counter to generate consecutive node ids */
-	protected int brackets = 0;
 	
 	/** marks columns that contain brackets, judging from the first sentence that  */
 	protected final Boolean[] col2bracket;
@@ -42,7 +39,7 @@ public class CoNLLBrackets2RDF extends Format2RDF {
 
 	/** @param argv baseURI field1 field2 ... (see variable <code>help</code> and method <code>conll2ttl</code>) */
 	public static void main(String[] argv) throws Exception {		
-		Format2RDF.main("CoNLLBrackets",argv);
+		Format2RDF.main("CoNLLBracketsWithDefaultURIs",argv);
 	}
 
 	/** note that we do not checking whether brackets are balanced <br/>
@@ -168,7 +165,9 @@ public class CoNLLBrackets2RDF extends Format2RDF {
 		String lastSibling = null;
 
 		Stack<String> nodes = new Stack<String>();
-		for(String n : string.split("\n")) {
+		String[] lines = string.split("\n");
+		for(int i = 0; i<lines.length; i++) {
+			String n = lines[i];
 			if(n.startsWith(":")) {
 			  if(nodes.size()>0) { // terminal in a powla:node
 				if(lastSibling!=null)
@@ -177,7 +176,7 @@ public class CoNLLBrackets2RDF extends Format2RDF {
 				lastSibling=n;
 			  } // else: skip URI
 			} else if(n.startsWith("(")) {
-				String uri = ":b"+(brackets++);
+				String uri = getURI(lines,i);
 				String val = n.replaceFirst("^\\(", "").trim();
 				if(lastSibling!=null && nodes.size()>0)
 					result=result+lastSibling+" powla:next "+uri+". \n";
@@ -196,4 +195,7 @@ public class CoNLLBrackets2RDF extends Format2RDF {
 		}
 		return result.replaceAll("\\s*\n\\s*", "\n").trim()+"\n";
 	}
+
+	/** implement different URI minting strategies, must only return a value if current line starts with "(" */
+	abstract protected String getURI(String[] lines, int i);
 }

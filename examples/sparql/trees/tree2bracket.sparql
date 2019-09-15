@@ -39,34 +39,38 @@ INSERT {
 	FILTER(?type!=powla:Node)
 	
 	OPTIONAL 
-		{ SELECT ?w ?type (GROUP_CONCAT(?brack1; separator=' ') as ?pre)
+		{ SELECT ?w ?type (GROUP_CONCAT(?brack1; separator='') as ?pre)
 		  WHERE {
 			?w a nif:Word; (^tmp:first)+ ?node.
 			?node a ?type.
-			# FILTER(?type!=powla:Node)
+			FILTER(?type!=powla:Node)
 			OPTIONAL {
-				?node rdf:value ?v
+				SELECT ?node ?type (GROUP_CONCAT(distinct ?v; separator="|") as ?vals)
+				WHERE {
+					?node a powla:Node, ?type.
+					?node rdf:value ?v.
+				} GROUP BY ?node ?type ORDER BY ?v
 			}
-			{ SELECT ?node (count(?parent) as ?depth)
+			{ SELECT ?node ?type (count(?parent) as ?depth)
 			  WHERE {
-				?node a powla:Node.
-			    ?parent tmp:first* ?node.
-				[] tmp:first* ?parent. 
-			  } GROUP BY ?node ORDER BY ASC(?depth)
+				?node a powla:Node, ?type.
+			    ?parent tmp:first* ?node; a ?type.
+				[] tmp:first* ?parent; a ?type.
+			  } GROUP BY ?node ?type ORDER BY ASC(?depth)
 			}
-			BIND(if(bound(?v), concat("(",str(?v)), "(") as ?brack1)
+			BIND(if(bound(?vals), concat("(",str(?vals)," "), "(") as ?brack1)
 		  } GROUP BY ?w ?type 
 		}
 	OPTIONAL 
-		{ SELECT ?w ?type (GROUP_CONCAT(?brack2; separator='') as ?post)
+		{ SELECT distinct ?w ?type (GROUP_CONCAT(?brack2; separator='') as ?post)
 		  WHERE {
-			?w a nif:Word; (^tmp:last)+ ?node.
-			?node a ?type.
-			FILTER(?type!=powla:Node)
-			OPTIONAL {
-				?node rdf:value ?v
-			}
-			BIND(")" as ?brack2)
+			SELECT distinct ?node ?type ?w ?brack2
+			WHERE {
+				?w a nif:Word; (^tmp:last)+ ?node.
+				?node a ?type.
+				FILTER(?type!=powla:Node)
+				BIND(")" as ?brack2)
+			} GROUP BY ?node ?type ?w ?brack2
 		  } GROUP BY ?w ?type
 		}
 	BIND(
