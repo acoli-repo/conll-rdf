@@ -385,6 +385,7 @@ public class CoNLL2RDF {
 				meanByteSizeOfLine = ((meanByteSizeOfLine * (m - 1)) + peekedLine.length()) / m;
 				LOG.debug("Mean Byte size: " + meanByteSizeOfLine);
 				peekedChars += peekedLine.length();
+				System.err.println("Peeking line: "+peekedLine);
 				if ((peekedChars + meanByteSizeOfLine) > readAheadLimit) {
 					LOG.info("Couldn't find CoNLL-U Plus columns.");
 					inputStream.reset();
@@ -394,6 +395,7 @@ public class CoNLL2RDF {
 				if (peekedLine.matches("^#\\s?global\\.columns\\s?=.*")) {
 					fields.addAll(Arrays.asList(peekedLine.trim()
 							.replaceFirst("#\\s?global\\.columns\\s?=", "")
+							.split("#")[0]
 							.trim().split(" |\t")));
 					inputStream.reset();
 					LOG.info("Success");
