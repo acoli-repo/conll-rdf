@@ -1,0 +1,92 @@
+# for every empty powla:Node, create an empty nif:Word as dependent
+# if information about empty nodes are to be preserved, use this before tree2bracket.sparql
+# we represent empty nodes by nif:Words with conll:WORD ""
+
+PREFIX conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#>
+PREFIX  powla: <http://purl.org/powla/powla.owl#> 
+PREFIX  tmp: <http://purl.org/acoli/open-ie/> 
+PREFIX  rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
+PREFIX  conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#> 
+PREFIX  x:     <http://purl.org/acoli/conll-rdf/xml#> 
+PREFIX  rdfs:  <http://www.w3.org/2000/01/rdf-schema#> 
+PREFIX  nif:   <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#> 
+
+# 1) insert "empty" nif:Word, generate identifier from parent URI
+INSERT {
+	?empty a nif:Word; conll:WORD ""; powla:hasParent ?node.
+} WHERE {
+	?node a powla:Node.
+	MINUS { [] powla:hasParent ?node }
+	BIND(URI(concat(str(?node),'_word')) as ?empty)
+};
+
+# 2) connect empty words with last and next nif:Word
+DELETE {
+	?last nif:nextWord ?next
+} INSERT {
+	?last nif:nextWord ?empty.
+	?empty nif:nextWord ?next
+} WHERE {
+	# with preceding and following words
+		?last nif:nextWord ?next.
+		?empty conll:WORD "".
+		?last (powla:hasParent|powla:next)*/powla:next/(^powla:hasParent|powla:next)* ?empty.
+		?empty (powla:hasParent|powla:next)*/powla:next/(^powla:hasParent|powla:next)* ?next.
+};
+
+# 2.a) connect initial emptys with first nif:Word (use within the same sentence only)
+INSERT {
+	?empty nif:nextWord ?first
+} WHERE {
+	?empty conll:WORD "".
+	MINUS { [] nif:nextWord ?empty }
+	MINUS { ?empty nif:nextWord [] }
+	?empty (powla:hasParent|powla:next)*/powla:next/(^powla:hasParent|powla:next)* ?first.
+	?first a conll:WORD; nif:nextWord [].
+	MINUS { [] nif:nextWord ?first }.
+};
+
+# 2.b) connect remaining emptys with last last nif:Word word
+INSERT {
+	?last nif:nextWord ?empty
+} WHERE {
+	?empty conll:WORD "".
+	MINUS { [] nif:nextWord ?empty }
+	MINUS { ?empty nif:nextWord [] }
+	?last (powla:hasParent|powla:next)*/powla:next/(^powla:hasParent|powla:next)* ?empty.
+	?last a conll:WORD.
+	[] nif:nextWord ?last.
+	MINUS { ?last nif:nextWord [] }.
+};
+
+# 3) organize multiple words (incl. emptys) at the same position: order by uri
+# 3.a) create nif:nextWord between emptys at the same position according to lexical order of URIs
+INSERT {
+	?x nif:nextWord ?y.
+} WHERE {
+	?last nif:nextWord ?x,?y.
+	FILTER(str(?x)<str(?y))
+	?x nif:nextWord ?next.
+	?y nif:nextWord ?next.
+	MINUS { ?x a nif:Word; nif:nextWord+ ?y }
+	MINUS { ?y a nif:Word; nif:nextWord+ ?x }
+};
+
+# 3.b) delete transitive nif:nextWords
+DELETE {
+	?x nif:nextWord ?z
+} WHERE {
+	?x nif:nextWord ?z.
+	?x nif:nextWord ?y.
+	?y nif:nextWord+ ?z.
+};
+
+# 4) insert conll:HEAD to empty words
+INSERT {
+	?x conll:HEAD ?s
+} WHERE {
+	?x conll:WORD "".
+	MINUS { ?x conll:HEAD [] }
+	?x (nif:nextWord+|(^nif:nextWord)+)/conll:HEAD+ ?s.
+	?s a nif:Sentence.
+};

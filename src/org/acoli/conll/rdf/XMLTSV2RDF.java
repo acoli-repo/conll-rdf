@@ -154,7 +154,7 @@ public class XMLTSV2RDF extends Format2RDF {
 				if(nodeURIs.size()>0) {
 					result=result+" powla:hasParent "+nodeURIs.peek()+";";
 				}
-				result=result+" a x:"+element;
+				result=result+" a powla:Node, conll:XML_DATA; rdf:value \""+element+"\" ";
 				if(line.contains("/>")) {
 					lastSibling=":x"+id;
 				} else {
@@ -166,7 +166,7 @@ public class XMLTSV2RDF extends Format2RDF {
 					atts=atts.trim().substring(att.length()).trim();
 					result=result+"; x:"+att.replaceFirst("=.*","").trim()+" \""+att.replaceFirst(".*=", "").trim().replaceFirst("^['\"](.*)['\"]$","$1")+"\"";
 				}
-				result=result+".\n\n";
+				result=result+".\n";
 			}
 		}
 		return result;

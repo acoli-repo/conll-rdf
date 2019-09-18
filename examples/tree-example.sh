@@ -5,6 +5,9 @@
 # - represent parses as powla:Nodes
 # - write the first of the parses to stdout
 
+# Treatment of empty nodes (that do not contain a nif:Word) left as an excercise.
+# See xml-example.sh for their treatment in XML parsing
+
 HOME=`echo $0 | sed -e s/'^[^\/]*$'/'.'/g -e s/'\/[^\/]*$'//`;
 ROOT=$HOME/..;
 DATA=$ROOT/data;
