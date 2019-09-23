@@ -1,0 +1,604 @@
+@prefix : <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#> .
+@prefix owl2xml: <http://www.w3.org/2006/12/owl2-xml#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@base <http://ufal.mff.cuni.cz/conll2009-st/task-description.html> .
+
+<http://ufal.mff.cuni.cz/conll2009-st/task-description.html> rdf:type owl:Ontology ;
+                                                             
+                                                             rdfs:comment """CoNLL-RDF ontology
+
+Column structure for various one-word-per-line TSV formats as used, e.g., by CorpusWorkBench/SketchEngine and for most CoNLL Shared Tasks.
+
+The input format is “vertical” or “word-per-line (WPL)” text, as defined at the University of Stuttgart in the 1990s. Words are written one word per line, so each line contains one word, number or punctuation mark. (https://www.sketchengine.eu/documentation/preparing-corpus-text/)
+															 
+history
+2019-09-07 added CWB and SketchEngine formats (CC)
+2019-09-04 :dialect recast as ObjectProperty (CC)
+2019-08-30 created (CC)
+
+contributors
+CC - Christian Chiarcos, chiarcos@informatik.uni-frankfurt.de"""@en ;
+                                                             
+                                                             dc:description """Ontology covering the following CoNLL TSV dialects and related one-word-per-line formats.
+
+In chronological order, these are:
+- CWB (Corpus WorkBench) format (1994) [column structure only]: http://txm.sourceforge.net/doc/cwb/technical-manual.pdf
+- TreeTagger format (1994) [column structure only]: https://www.ims.uni-stuttgart.de/forschung/ressourcen/werkzeuge/treetagger.en.html
+- SketchEngine format [column structure only]: https://www.sketchengine.eu/documentation/preparing-corpus-text/
+- CoNLL-00 format: https://www.clips.uantwerpen.be/conll2000/chunking/
+- CoNLL-01 format: https://www.clips.uantwerpen.be/conll2001/clauses/
+- CoNLL-02 format: https://www.clips.uantwerpen.be/conll2002/ner/
+- CoNLL-03 format: https://www.clips.uantwerpen.be/conll2003/ner/
+- CoNLL-04 format: https://www.cs.upc.edu/~srlconll/st04/conll04st-release.tar.gz (conll04st-release/README)
+- CoNLL-05 format: https://www.cs.upc.edu/~srlconll/conll05st-release/README
+- CoNLL-06 format: https://ilk.uvt.nl/conll/ (link broken, no information available, probably identical to CoNLL-07 format)
+- CoNLL-07 format: https://depparse.uvt.nl/DataFormat.html
+- CoNLL-08 format: http://surdeanu.info/conll08/conll08.pdf
+- CoNLL-X format: http://ufal.mff.cuni.cz/conll2009-st/task-description.html
+- CoNLL-11 format: http://conll.cemantix.org/2011/data.html
+- CoNLL-12 format: http://conll.cemantix.org/2012/data.html
+- UniMorph format: (CoNLL–SIGMORPHON 2017/2018 shared tasks, https://sigmorphon.github.io/sharedtasks/2017/) http://unimorph.github.io/
+- CoNLL-U formats: (used in CoNLL 2017/2018 shared tasks on Multilingual Parsing from Raw Text to Universal Dependencies) http://universaldependencies.org/
+  CoNLL-U: https://universaldependencies.org/format.html (v.1: https://universaldependencies.org/docsv1/format.html)
+  CoNLL-U Plus: https://universaldependencies.org/ext-format.html
+- PropBank CoNLL/Skel format: https://github.com/propbank/propbank-release/blob/master/docs/conll-conversion-notes.md
+- UniversalPropositions format: https://github.com/System-T/UniversalPropositions
+  
+Note that we formalize the column structure of CoNLL formats only. Comments are preserved by CoNLL-RDF, but we do not formalize conventions for providing sentence-level metadata as *required* by CoNLL-U Plus.
+  
+Other (non-TSV) CoNLL Shared Task formats (not covered by CoNLL-RDF):
+- CoNLL-99 bracketing format (https://nlp.cs.nyu.edu/evalb/EVALB.tgz, sample files)
+- CoNLL-10 XML format (http://rgai.inf.u-szeged.hu/conll2010st/index.html#)
+- CoNLL-13/14 SGML format (https://www.comp.nus.edu.sg/~nlp/conll13st/CoNLLST01.pdf, https://www.comp.nus.edu.sg/~nlp/conll14st/conll14st-test-data.tar.gz)
+- CoNLL-15/16 JSON format (https://www.cs.brandeis.edu/~clp/conll15st/dataset.html, https://www.cs.brandeis.edu/~clp/conll16st/; a CoNLL TSV version was provided, but not used by any of the participants)
+"""@en ;
+                                                             
+                                                             owl:versionInfo "TODO: check whether not to migrate Word and Sentence into conll namespace. Note that this breaks downward-compability."@en .
+
+
+###############################
+# CoNLL vocabulary definition #
+###############################
+
+:Dialect rdfs:label "format dialect"; 
+	rdfs:comment """A CoNLL dialect is a one-word-per-line TSV format with a specific configuration of columns. Note that selected TSV dialects may contain additional markup in SGML (Corpus WorkBench), XML (SketchEngine) or comments (CoNLL-U Plus) which are not covered by this ontology.
+	
+	A dialect representation requires at least one name (rdfs:label) and at least one pointer to documentation or sample data (rdfs:isDefinedBy).
+	It can contain several column mappings, but as some formats support user-defined columns, this is optional.
+	"""@en; 
+	rdfs:subClassOf [ rdf:type owl:Restriction ;
+                                 owl:onProperty rdfs:label ;
+                                 owl:minCardinality "1"^^xsd:nonNegativeInteger
+                               ];
+	rdfs:subClassOf [ rdf:type owl:Restriction ;
+                                 owl:onProperty rdfs:isDefinedBy ;
+                                 owl:minCardinality "1"^^xsd:nonNegativeInteger
+                               ].
+
+:hasMapping rdf:type owl:AnnotationProperty;
+			rdfs:domain rdfs:Property;
+            rdfs:comment "Assigns a CoNLL property a ColumnMapping. Note that this cannot be formally axiomatized in OWL."@en ;
+            rdfs:range :ColumnMapping .
+			
+:property rdf:type owl:ObjectProperty;
+	owl:versionInfo "Inverse of :hasMapping, provided for OWL reasoning, do not use for data modelling"@en;
+	owl:inverseOf :hasMapping .
+	  
+:column rdf:type owl:DatatypeProperty ;
+        rdfs:comment "column number (starting with 1) in a particular CoNLL or TSV format"@en ;
+        rdfs:domain :ColumnMapping ;
+        rdfs:range xsd:int .
+
+:dialect rdf:type owl:ObjectProperty ;
+         rdfs:comment "format identifier, identifies the CoNLL dialect"@en ;
+         rdfs:domain :ColumnMapping ;
+         rdfs:range :Dialect .
+
+:ColumnMapping rdfs:subClassOf [ rdf:type owl:Restriction ;
+                                 owl:onProperty :dialect ;
+                                 owl:minCardinality "1"^^xsd:nonNegativeInteger
+                               ] ,
+                               [ rdf:type owl:Restriction ;
+                                 owl:onProperty :column ;
+                                 owl:cardinality "1"^^xsd:nonNegativeInteger
+                               ] ;
+               rdfs:comment "n-ary annotation property that maps a CoNLL-RDF property to a column (integer value starting with 1) in a particular CoNLL or TSV dialect (identified as a string)."@en .
+
+###########################################
+# external classes, reused and/or refined #
+###########################################
+
+rdfs:label a owl:DatatypeProperty.
+
+rdfs:isDefinedBy a owl:DatatypeProperty, owl:AnnotationProperty;
+	rdfs:range xsd:anyURI.															
+
+dc:description rdf:type owl:AnnotationProperty .
+
+nif:nextSentence rdf:type owl:FunctionalProperty ,
+                               owl:ObjectProperty ;
+                      
+                      rdfs:comment """NIF: This property can be used to make resources of nif:Sentence and nif:Word traversable, it can not be assumed that no gaps or whitespaces between sentences or words exist, i.e. string adjacency is not mandatory. 
+
+In CoNLL-RDF, neither inverse nor transitive versions of this property are employed. Otherwise, the use of nif:nextSentence is compliant with the original NIF definition, and thus, we do not introduce a novel vocabulary element for this purpose."""@en ;
+                      
+                      rdfs:range nif:Sentence ;
+                      
+                      rdfs:domain nif:Sentence .
+
+nif:nextWord rdf:type owl:FunctionalProperty ,
+                           owl:ObjectProperty ;
+                  
+                  rdfs:comment """In CoNLL-RDF, the nif:nextWord property is used to link adjacent words (adjacent rows with text and/or annotation). Note that we do not use the transitive or inverse versions provided by NIF. Also note that nif:nextWord should *not* hold between words that belong to different sentences.
+
+Our use of nif:nextWord is more restricted than in NIF, but it is compliant with it, so that we do not introduce an novel vocabulary element."""@en ;
+                  
+                  rdfs:range nif:Word ;
+                  
+                  rdfs:domain nif:Word .
+
+
+nif:sentence rdf:type owl:ObjectProperty ;
+                  
+                  owl:deprecated "true"^^xsd:boolean ;
+                  
+                  rdfs:comment """NIF definition: 
+This property links words and other structures to their sentence.
+
+In CoNLL-RDF, this function is taken over by conll:HEAD, hence, this property is deprecated. This property is preserved in the CoNLL-RDF ontology in order to explicate this difference from NIF."""@en ;
+                  
+                  rdfs:range nif:Sentence .
+
+nif:Sentence rdf:type owl:Class ;
+                  rdfs:comment """NIF definition: A sentence.
+
+In CoNLL-RDF, a nif:Sentence corresponds to a block of rows that contain text and/or annotations and that are separated from other sentences by an empty line."""@en .
+
+
+nif:Word rdf:type owl:Class ;
+              rdfs:comment """NIF definition: The Word class represents strings that are tokens or words. A string is a Word, if it is a word. We don't nitpic about whether it is a a pronoun, a name, a punctuation mark or an apostrophe or whether it is separated by white space from another Word or something else. ...
+
+In CoNLL-RDF, a nif:Word corresponds to a row in a CoNLL TSV file that contains text and/or annotations. Normally, this will be a (linguistic) word, but as NIF delegates the definitions of nif:Word to external tokenizers, we delegate the definition of nif:Word to data providers. If rows are being used for morpheme-level segmentation instead of word segmentation, they will still be considered as nif:Word."""@en .
+							   
+###########################################
+# Supported one-word-per-line TSV formats #
+###########################################
+
+:CWB a :Dialect; rdfs:label "Corpus Workbench format", "CWB format"; rdfs:comment "Only the first column is fixed, all other columns can be configured. Cover column structure only, no SGML markup."; rdfs:isDefinedBy <http://txm.sourceforge.net/doc/cwb/technical-manual.pdf>.
+:TreeTagger a :Dialect; rdfs:label "TreeTagger format"; rdfs:comment "cover column structure only, no SGML markup."; rdfs:isDefinedBy <https://www.ims.uni-stuttgart.de/forschung/ressourcen/werkzeuge/treetagger.en.html>.
+:SketchEngine a :Dialect; rdfs:label "SketchEngine format", "NoSketchEngine format"; rdfs:comment "SketchEngine performs POS tagging and lemmatization, up to the first three columns are thus fixed. Cover column structure only, no XML markup."; rdfs:isDefinedBy <https://www.sketchengine.eu/documentation/preparing-corpus-text/>.
+:CoNLL-00 a :Dialect; rdfs:label "CoNLL-00 format"; rdfs:isDefinedBy <https://www.clips.uantwerpen.be/conll2000/chunking/>.
+:CoNLL-01 a :Dialect; rdfs:label "CoNLL-01 format"; rdfs:isDefinedBy <https://www.clips.uantwerpen.be/conll2001/clauses/>.
+:CoNLL-02 a :Dialect; rdfs:label "CoNLL-02 format"; rdfs:isDefinedBy <https://www.clips.uantwerpen.be/conll2002/ner/>.
+:CoNLL-03 a :Dialect; rdfs:label "CoNLL-03 format"; rdfs:isDefinedBy <https://www.clips.uantwerpen.be/conll2003/ner/>.
+:CoNLL-04 a :Dialect; rdfs:label "CoNLL-04 format"; rdfs:isDefinedBy <https://www.cs.upc.edu/~srlconll/st04/conll04st-release.tar.gz>; rdfs:comment "See https://www.cs.upc.edu/~srlconll/st04/conll04st-release.tar.gz, conll04st-release/README)".
+:CoNLL-05 a :Dialect; rdfs:label "CoNLL-05 format"; rdfs:isDefinedBy <https://www.cs.upc.edu/~srlconll/conll05st-release/README>.
+:CoNLL-06 a :Dialect; rdfs:label "CoNLL-06 format"; rdfs:isDefinedBy <https://ilk.uvt.nl/conll/>; rdfs:comment "Source link provided under https://www.conll.org/previous-tasks is broken, no information available, probably identical to CoNLL-07 format".
+:CoNLL-07 a :Dialect; rdfs:label "CoNLL-07 format"; rdfs:isDefinedBy <https://depparse.uvt.nl/DataFormat.html>.
+:CoNLL-08 a :Dialect; rdfs:label "CoNLL-08 format"; rdfs:isDefinedBy <http://surdeanu.info/conll08/conll08.pdf>.
+:CoNLL-X a :Dialect; rdfs:label "CoNLL-X format"; rdfs:isDefinedBy <http://ufal.mff.cuni.cz/conll2009-st/task-description.html>.
+:CoNLL-11 a :Dialect; rdfs:label "CoNLL-11 format"; rdfs:isDefinedBy <http://conll.cemantix.org/2011/data.html>.
+:CoNLL-12 a :Dialect; rdfs:label "CoNLL-12 format"; rdfs:isDefinedBy <http://conll.cemantix.org/2012/data.html>.
+:UniMorph a :Dialect; rdfs:label "UniMorph format"; rdfs:comment "Used in CoNLL–SIGMORPHON 2017/2018 shared tasks, https://sigmorphon.github.io/sharedtasks/2017/"; rdfs:isDefinedBy <http://unimorph.github.io/>.
+:CoNLL-U a :Dialect; rdfs:label "CoNLL-U"; rdfs:comment "Used in CoNLL 2017/2018 shared tasks on Multilingual Parsing from Raw Text to Universal Dependencies, cf. http://universaldependencies.org/"; 
+	rdfs:isDefinedBy <https://universaldependencies.org/format.html>, <https://universaldependencies.org/docsv1/format.html>.
+:CoNLL-U-Plus a :Dialect; rdfs:label "CoNLL-U Plus"; rdfs:isDefinedBy <https://universaldependencies.org/ext-format.html>.
+:PropBank a :Dialect; rdfs:label "PropBank CoNLL format", "PropBank Skel format"; rdfs:isDefinedBy <https://github.com/propbank/propbank-release/blob/master/docs/conll-conversion-notes.md>.
+:UniversalPropositions a :Dialect; rdfs:label "UniversalPropositions CoNLL format", "UniversalPropositions Skel format"; rdfs:isDefinedBy <https://github.com/System-T/UniversalPropositions>.
+
+#######################################
+# selected column( label)s/properties #
+#######################################
+
+:DatatypeProperty rdf:type owl:DatatypeProperty ,
+                           owl:FunctionalProperty ;
+                  rdfs:comment """Abstract data type property for text and annotations in CoNLL TSV files. This property must be instantiated before being used.
+
+In CoNLL-RDF, the domain must be a nif:Word, range must be a string, and its subproperties must be functional."""@en ;
+                  rdfs:domain nif:Word ;
+                  rdfs:range xsd:string .
+
+:ObjectProperty rdf:type owl:ObjectProperty ;                
+                rdfs:comment """Abstract property for relations, e.g., syntactic relations (HEAD column) or semantic roles (argument columns following the predicate column).
+
+All CoNLL properties point from one word (row) to something else (sentence or other word)."""@en ;
+                
+                rdfs:domain nif:Word .
+
+:DOCUMENT_ID rdfs:subPropertyOf :DatatypeProperty ;
+	  rdfs:label "DOCUMENT_ID", "FILE_NAME";
+      rdfs:comment """Document ID 	This is a variation on the document filename (http://conll.cemantix.org/2011/data.html)"""@en;
+	  owl:versionInfo """roughly equivalent to the filename column in the PropBank skel format (cf. https://github.com/propbank/propbank-release/blob/master/docs/conll-conversion-notes.md)"""@en;
+      :hasMapping [ a :ColumnMapping; :column "1"^^xsd:int ; :dialect :CoNLL-11,:CoNLL-12,:PropBank] .
+	
+:PART_NUMBER rdfs:subPropertyOf :DatatypeProperty ;
+	  rdfs:label "PART_NUMBER";
+      rdfs:comment """Part number 	Some files are divided into multiple parts numbered as 000, 001, 002, ... etc. (http://conll.cemantix.org/2011/data.html)"""@en;
+      :hasMapping [ a :ColumnMapping; :column "2"^^xsd:int ; :dialect :CoNLL-11,:CoNLL-12] .
+
+:SENTENCE_ID rdfs:subPropertyOf :DatatypeProperty;
+	  rdfs:label "SENTENCE_ID";
+	  rdfs:comment "sentence ID (https://github.com/propbank/propbank-release/blob/master/docs/conll-conversion-notes.md)";
+      :hasMapping [ a :ColumnMapping; :column "2"^^xsd:int ; :dialect :PropBank] .
+	  
+:ID rdfs:subPropertyOf :DatatypeProperty ;
+	  rdfs:label "ID", "WORD_NUMBER", "TOKEN_INDEX";
+      rdfs:comment """ID - Token counter, starting at 1 for each new sentence. (https://depparse.uvt.nl/DataFormat.html)
+	  ID: Word index, integer starting at 1 for each new sentence; may be a range for tokens with multiple words. (https://universaldependencies.org/docsv1/format.html)
+	  token index (https://github.com/propbank/propbank-release/blob/master/docs/conll-conversion-notes.md)
+	  """@en ;
+	  owl:versionInfo """For annotations of single sentences, this column is systematically named ID. In CoNLL-11, it has been named "word number"."""@en;
+      :hasMapping [ a :ColumnMapping; :column "1"^^xsd:int ; :dialect :CoNLL-07, :CoNLL-08, :CoNLL-X, :CoNLL-U, :UniversalPropositions] ;
+      :hasMapping [ a :ColumnMapping; :column "3"^^xsd:int ; :dialect :CoNLL-11,:CoNLL-12,:PropBank ].
+
+:FORM rdfs:subPropertyOf :DatatypeProperty ;	  
+	  rdfs:label "FORM";
+	  rdfs:comment """Word form or punctuation symbol. (https://depparse.uvt.nl/DataFormat.html) 	  
+	  Until CoNLL-05 and in CoNLL-11, the label for this column was WORD. 
+	  CoNLL-07 introduced FORM as an alternative label (and generalization?). 
+	  The CoNLL-RDF ontology supports both versions, but using the original terminology (WORD) is encouraged."""@en;
+	  :hasMapping [ a :ColumnMapping; :column "2"^^xsd:int ; :dialect :CoNLL-07, 
+																	  :CoNLL-08, 
+																	  :CoNLL-X, 
+																	  :CoNLL-U,
+																	  :UniversalPropositions].
+
+:WORD rdfs:subPropertyOf :FORM;
+	  rdfs:label "WORD";
+      rdfs:comment """The first item on each line is a word (https://www.clips.uantwerpen.be/conll2003/ner/)"""@en;
+      :hasMapping [ a :ColumnMapping; :column "1"^^xsd:int ; :dialect 
+													:TreeTagger, 
+													:CWB,
+													:SketchEngine,
+	                                                :CoNLL-00, 
+													:CoNLL-01, 
+													:CoNLL-02, 
+													:CoNLL-03,
+													:CoNLL-04,
+													:CoNLL-05];
+      :hasMapping [ a :ColumnMapping; :column "4"^^xsd:int ; :dialect 
+													:CoNLL-11,
+													:CoNLL-12,
+													:PropBank];
+      :hasMapping [ a :ColumnMapping; :column "3"^^xsd:int ; :dialect 
+													:UniMorph ].
+
+:LEMMA rdfs:subPropertyOf :DatatypeProperty;
+	rdfs:label "LEMMA", "ROOT";
+	rdfs:comment """lemma information (https://www.ims.uni-stuttgart.de/forschung/ressourcen/werkzeuge/treetagger.en.html)
+	
+	Lemma or stem (depending on particular data set) of word form, or an underscore if not available. (https://depparse.uvt.nl/DataFormat.html)
+	"""@en;
+	owl:versionInfo """Corresponds to ROOT in the (original) CWB format: "Root for the base form of that word" (https://arxiv.org/pdf/cmp-lg/9408005.pdf). Otherwise systematically labelled LEMMA."""@en;
+	:hasMapping [ a :ColumnMapping; :column "3"^^xsd:int; :dialect  :TreeTagger,
+																	:SketchEngine,
+																	:CoNLL-07, 
+																	:CoNLL-08, 
+																	:CoNLL-X,
+																	:CoNLL-U];
+	:hasMapping [ a :ColumnMapping; :column "1"^^xsd:int; :dialect :UniMorph ].
+																	
+:PLEMMA rdfs:subPropertyOf :LEMMA;
+	rdfs:label "PLEMMA";
+	rdfs:comment """The P-columns (PLEMMA, PPOS, PFEAT, PHEAD and PDEPREL) are the autoamtically predicted variants of the gold-standard LEMMA, POS, FEAT, HEAD and DEPREL columns. (http://ufal.mff.cuni.cz/conll2009-st/task-description.html)"""@en;
+	:hasMapping [ a :ColumnMapping; :column "4"^^xsd:int; :dialect :CoNLL-X ].
+	
+																	
+:POS rdfs:subPropertyOf :DatatypeProperty;
+	rdfs:label "POS", "POSTAG", "TAG";
+	rdfs:comment """[T]he second [item on each line is] a part-of-speech (POS) tag (https://www.clips.uantwerpen.be/conll2003/ner/)
+	
+	POSTAG: Fine-grained part-of-speech tag, where the tagset depends on the language, or identical to the coarse-grained part-of-speech tag if not available. (https://depparse.uvt.nl/DataFormat.html)
+	"""@en;
+	owl:versionInfo "The abbreviation POSTAG was only used in CoNLL-07. CoNLL-08 provides two POS columns, one for gold annotation (GPOS), one for automated annotation (PPOS), we assume that GPOS and POS are identical. CoNLL-X uses POS, again. The SketchEngine documentation uses both POS and TAG."@en;
+	:hasMapping [ a :ColumnMapping; :column "2"^^xsd:int; :dialect :TreeTagger,
+												 :CWB,
+												 :SketchEngine,
+	                                             :CoNLL-00, 
+												 :CoNLL-01, 
+												 :CoNLL-03,
+												 :CoNLL-04];
+	:hasMapping [ a :ColumnMapping; :column "3"^^xsd:int; :dialect :CoNLL-05];
+	:hasMapping [ a :ColumnMapping; :column "4"^^xsd:int; :dialect :CoNLL-08];
+	:hasMapping [ a :ColumnMapping; :column "5"^^xsd:int; :dialect :CoNLL-07, 
+																   :CoNLL-X,
+																   :CoNLL-11,
+																   :CoNLL-12,
+																   :PropBank].
+
+:UPOS rdfs:subPropertyOf :POS;
+	rdfs:label "UPOSTAG";
+	rdfs:comment """UPOSTAG: Universal part-of-speech tag drawn from our revised version of the Google universal POS tags. (https://universaldependencies.org/docsv1/format.html)"""@en;
+	owl:versionInfo "UD naming simplified in analogy with POS(TAG). Note that UniversalPropositions label this as POS, but emphasize that this is a UD POS, i.e., UPOS (https://github.com/System-T/UniversalPropositions)"@en;
+	:hasMapping [ a :ColumnMapping; :column "4"^^xsd:int; :dialect :CoNLL-U];
+	:hasMapping [ a :ColumnMapping; :column "3"^^xsd:int; :dialect :UniversalPropositions ].
+
+:XPOS rdfs:subPropertyOf :POS;
+	rdfs:label "XPOSTAG";
+	rdfs:comment """XPOSTAG: Language-specific part-of-speech tag; underscore if not available. (https://universaldependencies.org/docsv1/format.html)"""@en;
+	owl:versionInfo "naming simplified in analogy with POS(TAG)"@en;
+	:hasMapping [ a :ColumnMapping; :column "5"^^xsd:int; :dialect :CoNLL-U].
+																   
+:CPOS rdfs:subPropertyOf :POS;
+	rdfs:label "CPOSTAG";
+	rdfs:comment """CPOSTAG: Coarse-grained part-of-speech tag, where tagset depends on the language. (https://depparse.uvt.nl/DataFormat.html)"""@en;
+	owl:versionInfo "CoNLL-07 used the abbreviation CPOSTAG, simplified in analogy with POS(TAG)"@en;
+	:hasMapping [ a :ColumnMapping; :column "4"^^xsd:int; :dialect :CoNLL-07].
+
+:PPOS rdfs:subPropertyOf :POS;
+	rdfs:label "PPOS";
+	rdfs:comment """PPOS: Predicted POS tag. (http://surdeanu.info/conll08/conll08.pdf)"""@en;
+	:hasMapping [ a :ColumnMapping; :column "5"^^xsd:int; :dialect :CoNLL-08];
+	:hasMapping [ a :ColumnMapping; :column "6"^^xsd:int; :dialect :CoNLL-X].
+	
+:SPLIT_FORM rdfs:subPropertyOf :FORM;
+	rdfs:label "SPLIT_FORM";
+	rdfs:comment """Tokens split at hyphens and slashes. (http://surdeanu.info/conll08/conll08.pdf)"""@en;
+	:hasMapping [ a :ColumnMapping; :column "6"^^xsd:int; :dialect :CoNLL-08 ].
+
+:SPLIT_LEMMA rdfs:subPropertyOf :LEMMA;
+	rdfs:label "SPLIT_LEMMA";
+	rdfs:comment """Predicted lemma of SPLIT_FORM. (http://surdeanu.info/conll08/conll08.pdf)"""@en;
+	:hasMapping [ a :ColumnMapping; :column "7"^^xsd:int; :dialect :CoNLL-08 ].
+
+:PPOSS rdfs:subPropertyOf :POS;
+	rdfs:label "PPOSS";
+	rdfs:comment """Predicted POS tags of the split forms. (http://surdeanu.info/conll08/conll08.pdf)"""@en;
+	:hasMapping [ a :ColumnMapping; :column "8"^^xsd:int; :dialect :CoNLL-08 ].
+	
+:FEATS rdfs:subPropertyOf :DatatypeProperty;
+	rdfs:label "FEATS","FEAT";
+	rdfs:comment """Unordered set of syntactic and/or morphological features (depending on the particular language), separated by a vertical bar (|), or an underscore if not available. (https://depparse.uvt.nl/DataFormat.html)
+	"""@en;
+	owl:versionInfo "CoNLL-07 used the column label FEATS, CoNLL-X used FEAT"@en;
+	:hasMapping [ a :ColumnMapping; :column "6"^^xsd:int; :dialect :CoNLL-07, :CoNLL-U];
+	:hasMapping [ a :ColumnMapping; :column "7"^^xsd:int; :dialect :CoNLL-X];
+	:hasMapping [ a :ColumnMapping; :column "3"^^xsd:int; :dialect :UniMorph].
+
+:PFEATS rdfs:subPropertyOf :FEATS;
+	rdfs:label "PFEAT";
+	rdfs:comment """The P-columns (PLEMMA, PPOS, PFEAT, PHEAD and PDEPREL) are the autoamtically predicted variants of the gold-standard LEMMA, POS, FEAT, HEAD and DEPREL columns. (http://ufal.mff.cuni.cz/conll2009-st/task-description.html)"""@en;
+	:hasMapping [ a :ColumnMapping; :column "8"^^xsd:int; :dialect :CoNLL-X ].
+
+	
+:CHUNK rdfs:subPropertyOf :DatatypeProperty ;
+	rdfs:label "CHUNK";
+	rdfs:comment """Text chunking consists of dividing a text in syntactically correlated parts of words. For example, the sentence He reckons the current account deficit will narrow to only # 1.8 billion in September . can be divided as follows:
+    [NP He ] [VP reckons ] [NP the current account deficit ] [VP will narrow ] [PP to ] [NP only # 1.8 billion ] [PP in ] [NP September ] . 
+	...
+	
+	 The chunk tags contain the name of the chunk type, for example I-NP for noun phrase words and I-VP for verb phrase words.
+	(https://www.clips.uantwerpen.be/conll2000/chunking/)
+	"""@en;
+	:hasMapping [ a :ColumnMapping; :column "3"^^xsd:int; :dialect :CoNLL-00, 
+												 :CoNLL-01, 
+												 :CoNLL-03,
+												 :CoNLL-04];
+	:hasMapping [ a :ColumnMapping; :column "4"^^xsd:int; :dialect :CoNLL-05 ]. 
+
+:CLAUSE rdfs:subPropertyOf :DatatypeProperty;
+	rdfs:label "CLAUSE";
+	rdfs:comment """Clauses are word sequences which contain a subject and a predicate. (https://www.clips.uantwerpen.be/conll2001/clauses/)
+	In the CoNLL-01 format (shared task part 3), a bracket notation based on the Penn Treebank syntax was used, using S as its only label.
+	"""@en;
+	:hasMapping [ a :ColumnMapping; :column "4"^^xsd:int; :dialect :CoNLL-01,
+												 :CoNLL-04];
+	:hasMapping [ a :ColumnMapping; :column "5"^^xsd:int; :dialect :CoNLL-05 ]. 
+	
+:PARSE rdfs:subPropertyOf :DatatypeProperty;
+	rdfs:label "FULL_SYNT", "PARSE_BIT";
+	rdfs:comment """Parse bit: This is the bracketed structure broken before the first open parenthesis in the parse, and the word/part-of-speech leaf replaced with a *. The full parse can be created by substituting the asterix with the "([pos] [word])" string (or leaf) and concatenating the items in the rows of that column. (http://conll.cemantix.org/2011/data.html)		
+		Introduced in CoNLL-05 as FULL_SYNT, but we follow CoNLL-11/PropBank for readability."""@en;
+	:hasMapping [ a :ColumnMapping; :column "6"^^xsd:int; :dialect :CoNLL-05,
+																   :CoNLL-11,
+																   :CoNLL-12]; 
+	:hasMapping [ a :ColumnMapping; :column "5"^^xsd:int; :dialect :PropBank]. 
+	
+:WORD_SENSE rdfs:subPropertyOf :DatatypeProperty ;
+	rdfs:label "WORD_SENSE";
+	rdfs:comment """Word sense 	This is the word sense of the word in Column 3. (http://conll.cemantix.org/2011/data.html)"""@en;
+	:hasMapping [ a :ColumnMapping; :column "9"^^xsd:int; :dialect :CoNLL-11,:CoNLL-12 ].
+	
+:SPEAKER rdfs:subPropertyOf :DatatypeProperty ;
+	rdfs:label "SPEAKER", "AUTHOR";
+	rdfs:comment """Speaker/Author 	This is the speaker or author name where available. Mostly in Broadcast Conversation and Web Log data. (http://conll.cemantix.org/2011/data.html)"""@en;
+	:hasMapping [ a :ColumnMapping; :column "10"^^xsd:int; :dialect :CoNLL-11,:CoNLL-12 ].
+	
+:NER rdfs:subPropertyOf :DatatypeProperty ;
+	rdfs:label "NER", "NE";
+    rdfs:comment """Named entities are phrases that contain the names of persons, organizations, locations, times and quantities. Example:
+
+    [PER Wolff ] , currently a journalist in [LOC Argentina ] , played with [PER Del Bosque ] in the final years of the seventies in [ORG Real Madrid ] . 
+	(https://www.clips.uantwerpen.be/conll2002/ner/)"""@en;
+	owl:versionInfo "CoNLL-02 and CoNLL-03 referred to this data as NER annotations, CoNLL-05 as NE annotations"@en;
+	:hasMapping [ a :ColumnMapping; :column "2"^^xsd:int; :dialect :CoNLL-02, :CoNLL-05 ];
+	:hasMapping [ a :ColumnMapping; :column "4"^^xsd:int; :dialect :CoNLL-03 ];
+	:hasMapping [ a :ColumnMapping; :column "11"^^xsd:int; :dialect :CoNLL-11,:CoNLL-12 ];
+	:hasMapping [ a :ColumnMapping; :column "5"^^xsd:int; :dialect :CoNLL-04 ].
+	
+:HEAD rdfs:subPropertyOf :ObjectProperty ;
+	  rdfs:label "HEAD", "HEAD_ID" ;
+	  rdfs:comment """Head of the current token, which is either a value of ID or zero ('0'). Note that depending on the original treebank annotation, there may be multiple tokens with an ID of zero. (https://depparse.uvt.nl/DataFormat.html)"""@en;
+	  owl:versionInfo """In CoNLL-RDF, the sentence URI is formed with the virtual word number 0. This corresponds to the way how CoNLL identifies syntactic roots. In CoNLL-RDF, the HEAD property (cast as an object property/foreign key) thus takes over the function of nif:sentence.
+	  
+	  In UniversalPropositions renamed as HeadId (https://github.com/System-T/UniversalPropositions)
+	  """@en;
+	  :hasMapping [ a :ColumnMapping; :column "7"^^xsd:int; :dialect :CoNLL-07, 
+																	 :CoNLL-U ];
+	  :hasMapping [ a :ColumnMapping; :column "9"^^xsd:int; :dialect :CoNLL-08,
+																	 :CoNLL-X ];
+	  :hasMapping [ a :ColumnMapping; :column "4"^^xsd:int; :dialect :UniversalPropositions ].
+																 
+
+:HEAD2 rdfs:subPropertyOf :HEAD;
+	rdfs:label "HEAD2","PHEAD","SECEDGE";
+	rdfs:comment """Second head annotation. Note that the *kind* of dependency annotation in relation to HEAD is undetermined and has been used differently in different CoNLL Shared Tasks.
+	
+	CoNLL-07: PHEAD (projective head): Projective head of current token, which is either a value of ID or zero ('0'), or an underscore if not available. Note that depending on the original treebank annotation, there may be multiple tokens an with ID of zero. The dependency structure resulting from the PHEAD column is guaranteed to be projective (but is not available for all languages), whereas the structures resulting from the HEAD column will be non-projective for some sentences of some languages (but is always available).
+	CoNLL-X: PHEAD (predicted head): The P-columns (PLEMMA, PPOS, PFEAT, PHEAD and PDEPREL) are the autoamtically predicted variants of the gold-standard LEMMA, POS, FEAT, HEAD and DEPREL columns. (http://ufal.mff.cuni.cz/conll2009-st/task-description.html)
+	"""@en;
+	owl:versionInfo """In CoNLL-RDF, the label PHEAD is used. We follow the naming pattern introduced in the TIGER XML format ("secondary edge", https://www.ims.uni-stuttgart.de/forschung/ressourcen/werkzeuge/TIGERSearch/doc/html/TigerXML.html).
+	However, the TIGER XML format has been extended for semantic role annotations with yet another layer of edges (SALSA), so that CoNLL-RDF employs a numbering scheme instead of adjectival prefixes for naming.
+	For SALSA, cf. Erk, K., & Pado, S. (2004). A Powerful and Versatile XML Format for Representing Role-semantic Annotation. In Proc. LREC 2004.
+	"""@en;
+	:hasMapping [ a :ColumnMapping; :column "9"^^xsd:int; :dialect :CoNLL-07 ];
+	:hasMapping [ a :ColumnMapping; :column "10"^^xsd:int; :dialect :CoNLL-X ].
+
+:EDGE rdfs:subPropertyOf :DatatypeProperty;
+	rdfs:label "EDGE","DEPREL";
+	rdfs:comment """Dependency relation to the HEAD. The set of dependency relations depends on the particular language. Note that depending on the original treebank annotation, the dependency relation may be meaningful or simply 'ROOT'. (https://depparse.uvt.nl/DataFormat.html)"""@en;
+	owl:versionInfo """CoNLL-RDF recommends using the label EDGE as introduced in the TIGER XML format (https://www.ims.uni-stuttgart.de/forschung/ressourcen/werkzeuge/TIGERSearch/doc/html/TigerXML.html).
+	In CoNLL-07 and UniversalPropositions, this column is labelled DEPREL, resp. Deprel."""@en;
+	:hasMapping [ a :ColumnMapping; :column "8"^^xsd:int; :dialect :CoNLL-07, :CoNLL-U ];
+	:hasMapping [ a :ColumnMapping; :column "10"^^xsd:int; :dialect :CoNLL-08 ];
+	:hasMapping [ a :ColumnMapping; :column "5"^^xsd:int; :dialect :UniversalPropositions ];
+	:hasMapping [ a :ColumnMapping; :column "11"^^xsd:int; :dialect :CoNLL-X ].
+
+:EDGE2 rdfs:subPropertyOf :EDGE;
+	rdfs:label "EDGE2","PDEPREL";
+	rdfs:comment """Dependency relation to the PHEAD [HEAD2 -- CC], or an underscore if not available. The set of dependency relations depends on the particular language. Note that depending on the original treebank annotation, the dependency relation may be meaningful or simply 'ROOT'. (https://depparse.uvt.nl/DataFormat.html)"""@en;
+	owl:versionInfo """Naming pattern follows HEAD2 and EDGE.
+	In CoNLL-07 and CoNLL-X, this column was labelled PDEPREL (but with different definitions)."""@en;
+	:hasMapping [ a :ColumnMapping; :column "10"^^xsd:int; :dialect :CoNLL-07 ];
+	:hasMapping [ a :ColumnMapping; :column "12"^^xsd:int; :dialect :CoNLL-X ].
+
+:DEPS rdfs:subPropertyOf :DatatypeProperty;
+	rdfs:label "DEPS";
+	rdfs:comment """List of secondary dependencies (head-deprel pairs). (https://universaldependencies.org/docsv1/format.html)"""@en;
+	owl:versionInfo "This was introduced as an alternative way to express secondary edges."@en;
+	:hasMapping [ a :ColumnMapping; :column "9"^^xsd:int; :dialect :CoNLL-U ].
+
+:MISC rdfs:subPropertyOf :DatatypeProperty;
+	rdfs:label "MISC";
+	rdfs:comment """Any other annotation. (https://universaldependencies.org/docsv1/format.html)"""@en;
+	:hasMapping [ a :ColumnMapping; :column "10"^^xsd:int; :dialect :CoNLL-U ].
+	
+:PRED rdfs:subPropertyOf :DatatypeProperty;
+	rdfs:label "PRED", "ROLESET", "FRAME";
+	rdfs:comment """PRED Rolesets of the semantic predicates in this sentence. (http://surdeanu.info/conll08/conll08.pdf)
+	
+	The roleset column gives the actual sense used, and that sense provides roleset specific meanings for each of the numbered arguments. (https://github.com/propbank/propbank-release/blob/master/docs/conll-conversion-notes.md)
+
+	Note that this concatenates information alternatively provided in columns TARGETS/PRED_LEMMA (lemma of predicate) and VS/PRED_FRAMESET (sense number), these are thus superseded by PRED and should no longer be used.	
+	"""@en;
+	owl:versionInfo """Named "Frame" in UniversalPropositions (https://github.com/System-T/UniversalPropositions)"""^^xsd:string;
+	:hasMapping [ a :ColumnMapping; :column "11"^^xsd:int; :dialect :CoNLL-08 ];
+	:hasMapping [ a :ColumnMapping; :column "7"^^xsd:int; :dialect :PropBank ];
+	:hasMapping [ a :ColumnMapping; :column "6"^^xsd:int; :dialect :UniversalPropositions ];
+	:hasMapping [ a :ColumnMapping; :column "14"^^xsd:int; :dialect :CoNLL-X ].
+
+:FILLPRED rdfs:subPropertyOf :DatatypeProperty;
+	rdfs:label "FILLPRED";
+	rdfs:comment """FILLPRED contains Y for lines where PRED is/should be filled. (http://ufal.mff.cuni.cz/conll2009-st/task-description.html)"""@en;
+	:hasMapping [ a :ColumnMapping; :column "13"^^xsd:int; :dialect :CoNLL-X ].
+	
+:PRED_FRAMESET rdfs:subPropertyOf :DatatypeProperty;
+	rdfs:label "VS", "Predicate Frameset ID";
+	rdfs:comment """VS: VerbNet sense of target verbs [in Semantic Role Labelling -- CC]. These are hand-crafted annotations that will be available only in training and development sets (not for the test set). (https://www.cs.upc.edu/~srlconll/conll05st-release/README)
+
+	Predicate Frameset ID 	This is the PropBank frameset ID of the predicate in Column 7. (http://conll.cemantix.org/2011/data.html)
+	"""@en;
+	:hasMapping [ a :ColumnMapping; :column "7"^^xsd:int; :dialect :CoNLL-05 ] ;
+	:hasMapping [ a :ColumnMapping; :column "8"^^xsd:int; :dialect :CoNLL-11,:CoNLL-12 ] .
+	
+:PRED_LEMMA rdfs:subPropertyOf :DatatypeProperty ;
+	rdfs:label "TARGETS", "PREDICATE_LEMMA", "FRAME_FILE";
+	rdfs:comment """Target verbs [of Semantic Role Labelling -- CC], marking N predicative verbs. This column (...) specifies the governing verbs of the propositions to be analyzed. Each target verb is in its infinitive form.
+	(https://www.cs.upc.edu/~srlconll/st04/conll04st-release.tar.gz: README)
+	
+	 The "frame file" column lets you know which ".xml" file contains the actual semantic form for the predicate in question (which is not always the same as the predicate: one must reference "lighten.xml" for lighten_up.02).
+	 (https://github.com/propbank/propbank-release/blob/master/docs/conll-conversion-notes.md)
+	
+	Predicate lemma 	The predicate lemma is mentioned for the rows for which we have semantic role information. All other rows are marked with a "-" (http://conll.cemantix.org/2011/data.html)
+	
+	In the CoNLL-04 format, this column was followed by a variable number of argument columns. 
+	These are treated differently than other conll columns in that the annotations become property labels if alphanumerical labels are provided (as with CoNLL-05).
+	The CoNLL-04 bracketing notation is not directly supported by CoNLL-RDF, but can be easily produced out of the bracket notation.
+	"""@en;
+	:hasMapping [ a :ColumnMapping; :column "6"^^xsd:int; :dialect :CoNLL-04, :PropBank ];
+	:hasMapping [ a :ColumnMapping; :column "7"^^xsd:int; :dialect :CoNLL-11, :CoNLL-12 ];
+	:hasMapping [ a :ColumnMapping; :column "8"^^xsd:int; :dialect :CoNLL-05 ] .
+
+	
+:arguments rdfs:subPropertyOf :ObjectProperty;
+	rdfs:label "ARG","PROP", "APREDs" ,"PRED_ARGs", "ROLE";
+	rdfs:comment """
+	Columns with argument labels for each semantic predicate following textual order. (http://surdeanu.info/conll08/conll08.pdf)
+	
+	Every column after the eighth is a predicate, in order that they appear in the sentence. Thus the ninth column is for the "have" auxiliary as token #1, the tenth is for "like.02" which is token #8, and so forth. (https://github.com/propbank/propbank-release/blob/master/docs/conll-conversion-notes.md)
+	
+	Abstract property for arguments in semantic role annotations. 
+	Here, each argument role label (bereft of IOBES- and C-/R-prefixes) is represented as an independent object property.
+	
+	In the CoNLL-04 Shared Task on Semantic Role Labelling, the TARGET column was followed by 	
+	"[f]or each of the N target verbs, a column in Start-End format specifying the arguments of the proposition." (https://www.cs.upc.edu/~srlconll/st04/conll04st-release.tar.gz: README)
+	
+	The roles in CoNLL-04 etc were defined by PropBank, with the following role inventory in the test set: 
+	predicate: V;
+	core roles: A0, A1, A2, A3, A4, A5;
+	modifiers: AM-ADV, AM-CAU, AM-DIR, AM-DIS, AM-EXT, AM-LOC, AM-MNR, AM-MOD, AM-NEG, AM-PNC, AM-PRD, AM-TMP
+
+	PropBank (https://github.com/propbank/propbank-release) uses roughly the same role inventory, but with expanded abbreviations: ARG0, ARG1, etc. We follow CoNLL-04 practice, but provide PropBank labels as label information.
+	predicate: V;
+	core roles: ARG0, ARG1, ARG1-DSP, ARG2, ARG2-DSP, ARG3, ARG3-DSP, ARG4, ARG5, ARGA;
+	modifiers: ARGM-ADJ, ARGM-ADV, ARGM-CAU, ARGM-COM, ARGM-CXN, ARGM-DIR, ARGM-DIS, ARGM-EXT, ARGM-GOL, ARGM-LOC, ARGM-LVB, ARGM-MNR, ARGM-MOD, 
+	           ARGM-NEG, ARGM-PRD, ARGM-PRP, ARGM-PRR, ARGM-REC, ARGM-TMP
+	
+	Note that the mapping described below refers to the first column only.
+	"""@en; 
+	owl:versionInfo """CoNLL-04 introduced these columns as "argument" and we follow this practice, in CoNLL-05, they were referred to as "PROPS", in CoNLL-08 as "ARG", in CoNLL-X as "APREDs", in CoNLL-11/12 as "predicate arguments", in UniversalPropositions as "role". PropBank does not provide an explicit name for this data.
+	CoNLL-RDF parses groups of columns as argument columns only with reference to another column.
+	If this column is called PRED (cf. :PRED), the CoNLL-RDF label would be PRED_ARGs."""@en;
+	:hasMapping [ a :ColumnMapping; :column "7"^^xsd:int; :dialect :CoNLL-04, :UniversalPropositions ];
+	:hasMapping [ a :ColumnMapping; :column "12"^^xsd:int; :dialect :CoNLL-08, :CoNLL-11,:CoNLL-12 ];
+	:hasMapping [ a :ColumnMapping; :column "15"^^xsd:int; :dialect :CoNLL-X ];
+	:hasMapping [ a :ColumnMapping; :column "9"^^xsd:int; :dialect :CoNLL-05 ];
+	:hasMapping [ a :ColumnMapping; :column "8"^^xsd:int; :dialect :PropBank ].
+
+:V rdfs:subPropertyOf :arguments; rdfs:label "V".
+:A0 rdfs:subPropertyOf :arguments; rdfs:label "A0", "ARG0".
+:A1 rdfs:subPropertyOf :arguments; rdfs:label "A1", "ARG1".
+:A2 rdfs:subPropertyOf :arguments; rdfs:label "A2", "ARG2".
+:A3 rdfs:subPropertyOf :arguments; rdfs:label "A3", "ARG3".
+:A4 rdfs:subPropertyOf :arguments; rdfs:label "A4", "ARG4".
+:A5 rdfs:subPropertyOf :arguments; rdfs:label "A5", "ARG5".
+:AA rdfs:subPropertyOf :arguments; rdfs:label "AA", "ARGA".
+:A1-DSP rdfs:subPropertyOf :arguments; rdfs:label "A1-DSP", "ARG1-DSP".
+:A2-DSP rdfs:subPropertyOf :arguments; rdfs:label "A2-DSP", "ARG2-DSP".
+:A3-DSP rdfs:subPropertyOf :arguments; rdfs:label "A3-DSP", "ARG3-DSP".
+:A4-DSP rdfs:subPropertyOf :arguments; rdfs:label "A4-DSP", "ARG4-DSP".
+:A5-DSP rdfs:subPropertyOf :arguments; rdfs:label "A5-DSP", "ARG5-DSP".
+:AM-ADJ rdfs:subPropertyOf :arguments; rdfs:label "AM-ADJ", "ARGM-ADJ".
+:AM-ADV rdfs:subPropertyOf :arguments; rdfs:label "AM-ADV", "ARGM-ADV".
+:AM-CAU rdfs:subPropertyOf :arguments; rdfs:label "AM-CAU", "ARGM-CAU".
+:AM-COM rdfs:subPropertyOf :arguments; rdfs:label "AM-COM", "ARGM-COM".
+:AM-CXN rdfs:subPropertyOf :arguments; rdfs:label "AM-CXN", "ARGM-CXN".
+:AM-DIR rdfs:subPropertyOf :arguments; rdfs:label "AM-DIR", "ARGM-DIR".
+:AM-DIS rdfs:subPropertyOf :arguments; rdfs:label "AM-DIS", "ARGM-DIS".
+:AM-EXT rdfs:subPropertyOf :arguments; rdfs:label "AM-EXT", "ARGM-EXT".
+:AM-GOL rdfs:subPropertyOf :arguments; rdfs:label "AM-GOL", "ARGM-GOL".
+:AM-LOC rdfs:subPropertyOf :arguments; rdfs:label "AM-LOC", "ARGM-LOC".
+:AM-LVB rdfs:subPropertyOf :arguments; rdfs:label "AM-LVB", "ARGM-LVB".
+:AM-MNR rdfs:subPropertyOf :arguments; rdfs:label "AM-MNR", "ARGM-MNR".
+:AM-MOD rdfs:subPropertyOf :arguments; rdfs:label "AM-MOD", "ARGM-MOD".
+:AM-NEG rdfs:subPropertyOf :arguments; rdfs:label "AM-NEG", "ARGM-NEG".
+:AM-PNC rdfs:subPropertyOf :arguments; rdfs:label "AM-PNC", "ARGM-PNC".
+:AM-PRD rdfs:subPropertyOf :arguments; rdfs:label "AM-PRD", "ARGM-PRD".
+:AM-PRP rdfs:subPropertyOf :arguments; rdfs:label "AM-PRP", "ARGM-PRP".
+:AM-PRR rdfs:subPropertyOf :arguments; rdfs:label "AM-PRR", "ARGM-PRR".
+:AM-REC rdfs:subPropertyOf :arguments; rdfs:label "AM-REC", "ARGM-REC".
+:AM-TMP rdfs:subPropertyOf :arguments; rdfs:label "AM-TMP", "ARGM-TMP".
+
+:COREF rdfs:subPropertyOf :DatatypeProperty;
+	rdfs:label "COREFERENCE";
+	rdfs:comment """Coreference 	Coreference chain information encoded in a parenthesis structure. (http://surdeanu.info/conll08/conll08.pdf)
+	"""@en;
+	owl:versionInfo "The position is after PRED_ARGs, hence 13 is only the first possible column."@en;
+	:hasMapping [ a :ColumnMapping; :column "13"^^xsd:int; :dialect :CoNLL-11, :CoNLL-12 ].
+

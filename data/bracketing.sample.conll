@@ -1,0 +1,70 @@
+# First sentence of WSJ 0655, with POS and syntax annotation from PennTreebank (cols 2-3) and OntoNotes (cols 4-5)
+# The sentence and its OntoNotes annotation was previously published in https://catalog.ldc.upenn.edu/docs/LDC2011T03/OntoNotes-Release-4.0.pdf
+# The PTB annotation is quoted here for illustrative purposes. Both annotations are similar, but not identical.
+# Both OntoNotes and PTB CoNLL representations have been created from the PTB bracketing format and 
+# automatically merged using CoNLL-Merge (https://github.com/acoli-repo/conll, force [-f] mode).
+
+# Note that for reasons of copyright, we cannot quote more than one sentence here.
+Nicaraguan	JJ	( (S (NP-SBJ *	JJ	(TOP (S (NP-SBJ (NML *
+President	NNP	*	NNP	*)
+Daniel	NNP	*	NNP	*
+Ortega	NNP	*)	NNP	*)
+may	MD	(VP *	MD	(VP *
+have	VB	(VP *	VB	(VP *
+accomplished	VBN	(VP *	VBN	(VP *
+over	IN	(PP-TMP *	IN	(PP-TMP *
+the	DT	(NP *	DT	(NP *
+weekend	NN	*))	NN	*))
+what	WP	(NP (SBAR-NOM (WHNP-2 *)	WP	(NP (SBAR-NOM (WHNP-2 *)
+his	PRP$	(S (NP-SBJ-1 *	PRP$	(S (NP-SBJ-1 *
+U.S.	NNP	*	NNP	*
+antagonists	NNS	*)	NNS	*)
+have	VBP	(VP *	VBP	(VP *
+failed	VBN	(VP *	VBN	(VP *
+*-1	-NONE-	(S (NP-SBJ *)	-NONE-	(S (NP-SBJ *)
+to	TO	(VP *	TO	(VP *
+do	VB	(VP *	VB	(VP *
+*T*-2	-NONE-	(NP *))))))))	-NONE-	(NP *))))))))
+:	:	*	:	*
+*	-NONE-	(S (NP-SBJ *)	-NONE-	(S (NP-SBJ *)
+revive	VB	(VP *	VB	(VP *
+a	DT	(NP (NP *	DT	(NP (NP *
+constituency	NN	*)	NN	*)
+for	IN	(PP *	IN	(PP *
+the	DT	(NP *	DT	(NP *
+Contra	NNP	*	NNP	*
+rebels	NNS	*)))))))))	NNS	*)))))))))
+.	.	*))	.	*))
+
+# Repeated to illustrate how this works for text.
+Nicaraguan	JJ	( (S (NP-SBJ *	JJ	(TOP (S (NP-SBJ (NML *
+President	NNP	*	NNP	*)
+Daniel	NNP	*	NNP	*
+Ortega	NNP	*)	NNP	*)
+may	MD	(VP *	MD	(VP *
+have	VB	(VP *	VB	(VP *
+accomplished	VBN	(VP *	VBN	(VP *
+over	IN	(PP-TMP *	IN	(PP-TMP *
+the	DT	(NP *	DT	(NP *
+weekend	NN	*))	NN	*))
+what	WP	(NP (SBAR-NOM (WHNP-2 *)	WP	(NP (SBAR-NOM (WHNP-2 *)
+his	PRP$	(S (NP-SBJ-1 *	PRP$	(S (NP-SBJ-1 *
+U.S.	NNP	*	NNP	*
+antagonists	NNS	*)	NNS	*)
+have	VBP	(VP *	VBP	(VP *
+failed	VBN	(VP *	VBN	(VP *
+*-1	-NONE-	(S (NP-SBJ *)	-NONE-	(S (NP-SBJ *)
+to	TO	(VP *	TO	(VP *
+do	VB	(VP *	VB	(VP *
+*T*-2	-NONE-	(NP *))))))))	-NONE-	(NP *))))))))
+:	:	*	:	*
+*	-NONE-	(S (NP-SBJ *)	-NONE-	(S (NP-SBJ *)
+revive	VB	(VP *	VB	(VP *
+a	DT	(NP (NP *	DT	(NP (NP *
+constituency	NN	*)	NN	*)
+for	IN	(PP *	IN	(PP *
+the	DT	(NP *	DT	(NP *
+Contra	NNP	*	NNP	*
+rebels	NNS	*)))))))))	NNS	*)))))))))
+.	.	*))	.	*))
+

@@ -1,0 +1,30 @@
+# xAttributes2value
+# concatenate all properties that reflect xml attributes (i.e., from the x: namespace)
+# (note that we keep the xml attribute properties)
+
+PREFIX conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#>
+PREFIX  powla: <http://purl.org/powla/powla.owl#> 
+PREFIX  tmp: <http://purl.org/acoli/open-ie/> 
+PREFIX  rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
+PREFIX  conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#> 
+PREFIX  x:     <http://purl.org/acoli/conll-rdf/xml#> 
+PREFIX  rdfs:  <http://www.w3.org/2000/01/rdf-schema#> 
+PREFIX  nif:   <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#> 
+
+DELETE {
+	?x rdf:value ?oldVal
+} INSERT {
+	?x rdf:value ?newVal
+} WHERE {
+	{ 	SELECT ?x (GROUP_CONCAT(distinct ?att; separator=" ") AS ?atts) 
+		WHERE {
+			?x a powla:Node; ?rel ?feat.
+			FILTER(strstarts(str(?rel), 'http://purl.org/acoli/conll-rdf/xml#'))
+			BIND(concat(strafter(str(?rel),'http://purl.org/acoli/conll-rdf/xml#'),'="',str(?feat),'"') AS ?att)
+		} GROUP BY ?x ORDER BY ?att
+	}		
+	OPTIONAL {
+		?x rdf:value ?oldVal
+	}
+	BIND(if(bound(?oldVal),concat(?oldVal,' ',?atts), ?atts) AS ?newVal)
+};

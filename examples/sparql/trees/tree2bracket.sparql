@@ -1,0 +1,111 @@
+# tree2bracket
+# assume that we have CoNLL-RDF+POWLA, with POWLA data representing one or multiple trees
+# note that we expect continuous spans and projective trees, but we don't test for it.
+# for every powla:Node with a second type assignment from the conll namespace, use this type assignment as property name
+# (e.g., conll:PARSE, if the original data contained a statement like ?x a powla:Node, conll:PARSE)
+
+# for testing, run (in conll-rdf root directory)
+# cat data/bracketing.sample.conll | \
+# ./run.sh CoNLLBrackets2RDF http://ignore.me/ WORD POS PARSE_ON POS PARSE_PTB | \
+# ./run.sh CoNLLRDFUpdater -custom -updates examples/trees/tree2bracket.sparql | \
+# ./run.sh CoNLLRDFFormatter -conll WORD PARSE_ON
+
+PREFIX conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#>
+PREFIX  powla: <http://purl.org/powla/powla.owl#> 
+PREFIX  tmp: <http://purl.org/acoli/open-ie/> 
+PREFIX  rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
+PREFIX  conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#> 
+PREFIX  x:     <http://purl.org/acoli/conll-rdf/xml#> 
+PREFIX  rdfs:  <http://www.w3.org/2000/01/rdf-schema#> 
+PREFIX  nif:   <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#> 
+
+# (1) establish first and last child per powla:Node
+INSERT {
+	?x tmp:first ?first; tmp:last ?last
+} WHERE {
+	?x a powla:Node.
+	?first powla:hasParent ?x.
+	?last powla:hasParent ?x.
+	MINUS { [ powla:hasParent ?x ] powla:next+ ?first. ?first powla:hasParent ?x }
+	MINUS { ?last powla:hasParent ?x; powla:next+ [ powla:hasParent ?x ] }
+};
+
+# (2) create string representation for every powla:Node type assignment from the CoNLL namespace
+INSERT {
+	?w ?type ?b
+} WHERE {
+	?w a nif:Word; powla:hasParent ?powlaNode.
+	?powlaNode a powla:Node, ?type.
+	FILTER(?type!=powla:Node)
+	
+	OPTIONAL 
+		{ SELECT ?w ?type (GROUP_CONCAT(?brack1; separator='') as ?pre)
+		  WHERE {
+			?w a nif:Word; (^tmp:first)+ ?node.
+			?node a ?type.
+			FILTER(?type!=powla:Node)
+			OPTIONAL {
+				SELECT ?node ?type (GROUP_CONCAT(distinct ?v; separator="|") as ?vals)
+				WHERE {
+					?node a powla:Node, ?type.
+					?node rdf:value ?v.
+				} GROUP BY ?node ?type ORDER BY ?v
+			}
+			{ SELECT ?node ?type (count(?parent) as ?depth)
+			  WHERE {
+				?node a powla:Node, ?type.
+			    ?parent tmp:first* ?node; a ?type.
+				[] tmp:first* ?parent; a ?type.
+			  } GROUP BY ?node ?type ORDER BY ASC(?depth)
+			}
+			BIND(if(bound(?vals), concat("(",str(?vals)," "), "(") as ?brack1)
+		  } GROUP BY ?w ?type 
+		}
+	OPTIONAL 
+		{ SELECT distinct ?w ?type (GROUP_CONCAT(?brack2; separator='') as ?post)
+		  WHERE {
+			SELECT distinct ?node ?type ?w ?brack2
+			WHERE {
+				?w a nif:Word; (^tmp:last)+ ?node.
+				?node a ?type.
+				FILTER(?type!=powla:Node)
+				BIND(")" as ?brack2)
+			} GROUP BY ?node ?type ?w ?brack2
+		  } GROUP BY ?w ?type
+		}
+	BIND(
+				if(bound(?pre) && bound(?post), concat(str(?pre),' * ',str(?post)),
+				if(bound(?pre), concat(str(?pre),' *'),
+				if(bound(?post), concat('* ',str(?post)),
+				'*')))
+		AS ?b).
+};
+
+# (3) remove tmp:first and tmp:last
+DELETE {
+	?x ?y ?z.
+} WHERE {
+	?z powla:hasParent ?x.
+	?x ?y ?z.
+	FILTER(?y=tmp:first || ?y=tmp:last)
+};
+
+# (4) remove all powla nodes
+DELETE {
+	?a ?b ?node.
+	?node ?c ?d.
+} WHERE {
+	?node a powla:Node.
+	MINUS { ?node a nif:Word }.
+	MINUS { ?node a nif:Sentence }.
+	OPTIONAL { ?a ?b ?node }
+	?node ?c ?d. 			# because we have ?node a powla:Node
+};
+
+# (5) remove all powla information (slow)
+DELETE {
+	?a ?b ?c
+} WHERE {
+	?a ?b ?c.
+	FILTER(contains(str(?a),'powla.owl#') || contains(str(?b),'powla.owl#') || contains(str(?c),'powla.owl#'))
+};
