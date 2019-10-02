@@ -1,12 +1,12 @@
 /*
  * Copyright [2017] [ACoLi Lab, Prof. Dr. Chiarcos, Goethe University Frankfurt]
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,24 +37,24 @@ import org.apache.log4j.Logger;
  * @author Christian Faeth {@literal faeth@em.uni-frankfurt.de}
  **/
 public class CoNLL2RDF extends Format2RDF{
-	
-	
+
+
 	public CoNLL2RDF(String baseURI, String[] fields, Writer out) throws IOException {
 		super(baseURI, fields, out);
 	}
-	
+
 	public CoNLL2RDF(String baseURI, String[] fields) throws IOException {
 		super(baseURI, fields);
 	}
 
-	
+
 	private static Logger LOG = Logger.getLogger(CoNLL2RDF.class.getName());
-	
+
 	/** @param argv baseURI field1 field2 ... (see variable <code>help</code> and method <code>conll2ttl</code>) */
-	public static void main(String[] argv) throws Exception {		
+	public static void main(String[] argv) throws Exception {
 		Format2RDF.main("CoNLL",argv);
 	}
-	
+
 	/**
 	 * See conll2ttl(Reader), but note that we write *only* to the specified writer.
 	 * If this is not the pre-defined writer out, we define the prefixes.<br>
@@ -72,7 +72,6 @@ public class CoNLL2RDF extends Format2RDF{
 		TreeSet<String> argTriples = new TreeSet<String>();
 		Set<String> argsProperties = new TreeSet<String>();
 		Set<String> headSubProperties = new TreeSet<String>();
-		ArrayList<String> comments = new ArrayList<>();
 
 		for(String line = ""; line!=null; line=bin.readLine()) {
 			//if(line.contains("#"))
@@ -89,30 +88,22 @@ public class CoNLL2RDF extends Format2RDF{
 					// sentence=sentence+".\n";
 					argTriples.clear();
 					if(col2field.get(col2field.size()-1).toLowerCase().matches(".*args")) {
-						for(int i = 0; i<predicates.size(); i++) {
-							sentence=sentence.replaceAll("_TMP_"+col2field.get(col2field.size()-1).replaceFirst("[\\-_]*[Aa][rR][gG][sS]$","_"+i),predicates.get(i));
-						}
-					}
-					if (comments.size()>0) {
-						out.write(sentence);
-						out.write(root+" rdfs:comment \""+(String.join("\\\\n",comments))+"\" ."+"\n");
-					} else
-						out.write(sentence+"\n");
+                        for (int i = 0; i < predicates.size(); i++) {
+                            sentence = sentence.replaceAll("_TMP_" + col2field.get(col2field.size() - 1).replaceFirst("[\\-_]*[Aa][rR][gG][sS]$", "_" + i), predicates.get(i));
+                        }
+                    }
+					out.write(sentence+"\n");
 					predicates.clear();
 					sentence="";
 					tok=0;
 					sent++;
 				} else {
-					if(line.contains("#")) {
-						out.write(line.replaceFirst("^[^#]*#", "#")+"\n");
-						comments.add(line.replaceFirst("^[^#]*#", "#"));
-					}
 					// if(line.contains("#")) out.write(line.replaceFirst("^[^#]*#", "#")+"\n");
 					// uncomment to keep comments
 					line=line.replaceFirst("#.*","").trim();
 					if(!line.equals("")) {
 						if(sentence.equals("")) {
-							if(sent>1) { 
+							if(sent>1) {
 								String lastRoot = ":s"+(sent-1)+"_"+0;
 								sentence=sentence+lastRoot+" nif:nextSentence "+root+".\n";
 							}
@@ -129,7 +120,7 @@ public class CoNLL2RDF extends Format2RDF{
 							throw new NumberFormatException("the ID column must contain integers, only");
 						}
 						String URI = ":s"+sent+"_"+id_string; // URI naming scheme follows the German TIGER Corpus
-						
+
 						if(tok>1)
 							sentence=sentence+"; nif:nextWord "+URI+"."+
 							//" # offset="+pos+
@@ -180,69 +171,16 @@ public class CoNLL2RDF extends Format2RDF{
 						sentence=sentence.replaceAll("\\?"+col2field.get(col2field.size()-1).replaceFirst("[\\-_]*[Aa][rR][gG][sS]$","+"+i),predicates.get(i));
 				out.write(sentence); //+"\n");
 			//out.write("\n");
-			for(String p : headSubProperties) 
+			for(String p : headSubProperties)
 				out.write(p.trim()+"\n");
 			//out.write("\n");
 			for(String p : argsProperties)
 				out.write(p.trim()+"\n");
-			out.flush();			
+			out.flush();
 		}
 			if(tok>0) {
 				sent++;
 				tok=0;
 			}
-	}
-	/**
-	 * Searches a BufferedReader for a global.columns = field to extract the column names from (CoNLL-U Plus feature).
-	 * We allow for arbitrary lines to search, however as of September 2019, CoNLL-U Plus only allows first line.
-	 * Does NOT validate if custom columns are in a separate name space, as required by the format.
-	 * @see <a href="https://universaldependencies.org/ext-format.html">CoNLL-U Plus Format</a>
-	 * @param inputStream an untouched BufferedReader
-	 * @param fields The List the found field names will be written to
-	 * @param maxLinesToSearch how many lines to search. CoNLL-U Plus requires this to be 1.
-	 */
-	static List<String> findFieldsFromComments(BufferedReader inputStream, int maxLinesToSearch) {
-		List<String> fields = new ArrayList<>();
-		int readAheadLimit = 10000;
-		float meanByteSizeOfLine = 0.0f;
-		int m = 0;
-		int peekedChars = 0;
-		if (!inputStream.markSupported()) {
-			LOG.warn("Marking is not supported, could lead to cutting off the beginning of the stream.");
-		}
-		try {
-			LOG.info("Testing for CoNLL-U Plus");
-			inputStream.mark(readAheadLimit);
-
-			String peekedLine;
-			while ((peekedLine = inputStream.readLine()) != null && m < maxLinesToSearch) {
-				m++;
-				meanByteSizeOfLine = ((meanByteSizeOfLine * (m - 1)) + peekedLine.length()) / m;
-				LOG.debug("Mean Byte size: " + meanByteSizeOfLine);
-				peekedChars += peekedLine.length();
-				System.err.println("Peeking line: "+peekedLine);
-				if ((peekedChars + meanByteSizeOfLine) > readAheadLimit) {
-					LOG.info("Couldn't find CoNLL-U Plus columns.");
-					inputStream.reset();
-					return fields;
-				}
-				LOG.debug("Testing line: " + peekedLine);
-				if (peekedLine.matches("^#\\s?global\\.columns\\s?=.*")) {
-					fields.addAll(Arrays.asList(peekedLine.trim()
-							.replaceFirst("#\\s?global\\.columns\\s?=", "")
-							.split("#")[0]
-							.trim().split(" |\t")));
-					inputStream.reset();
-					LOG.info("Success");
-					return fields;
-				}
-
-			}
-			inputStream.reset();
-		} catch (IOException e) {
-			LOG.error(e);
-			LOG.warn("Couldn't figure out CoNLL-U Plus, searched for " + m + " lines.");
-		}
-		return fields;
 	}
 }

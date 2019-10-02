@@ -19,10 +19,8 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import org.apache.jena.rdf.model.*;		// Jena 2.x
-import org.apache.jena.update.*;
 import org.apache.log4j.Logger;
 import org.apache.jena.query.*;
-import org.acoli.conll.rdf.CoNLL2RDF;
 
 
 /** reads CoNLL-RDF from stdin, writes it formatted to stdout (requires a Un*x shell)<br>
@@ -778,7 +776,7 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 										m.setCols(conllColumns);
 									} else {
 										LOG.info("Trying conll columns now..");
-										conllColumns = CoNLL2RDF.findFieldsFromComments(new BufferedReader(new StringReader(buffer.trim())), 1);
+										conllColumns = CoNLLStreamExtractor.findFieldsFromComments(new BufferedReader(new StringReader(buffer.trim())), 1);
 										if (conllColumns.size()>0) {
 											m.setCols(conllColumns);
 										}

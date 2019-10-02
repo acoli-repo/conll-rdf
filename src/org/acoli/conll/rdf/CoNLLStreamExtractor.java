@@ -33,6 +33,8 @@ import org.apache.jena.query.*;
  *  @author Christian Faeth {@literal faeth@em.uni-frankfurt.de}
  */
 public class CoNLLStreamExtractor extends CoNLLRDFComponent {
+
+
 	public static class Pair<F, S> {
 		public F key;
 		public S value;
@@ -101,20 +103,25 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 	List<Pair<String, String>> updates = new ArrayList<Pair<String, String>>();
 
 	private void processSentenceStream() throws Exception {
+		int sc = 1;
 		CoNLL2RDF conll2rdf = new CoNLL2RDF(baseURI, columns.toArray(new String[columns.size()]));
 		List<Pair<Integer,Long> > dRTs = new ArrayList<Pair<Integer,Long> >(); // iterations and execution time of each update in seconds
 		LOG.info("process input ..");
 		BufferedReader in = getInputStream();
 		OutputStreamWriter out = new OutputStreamWriter(getOutputStream());
 		String buffer = "";
+		ArrayList<String> comments = new ArrayList<>();
 		for(String line = ""; line !=null; line=in.readLine()) {
 			if(line.contains("#")) {// trim.matches(^#)
 				out.write(line.replaceAll("^[^#]*#", "#") + "\n");
+				comments.add(line.replaceAll("^[^#]*#", "#"));
 			}
 			line=line.replaceAll("<[\\/]?[psPS]( [^>]*>|>)","").trim(); 		// in this way, we can also read sketch engine data and split at s and p elements
 			if(!(line.matches("^<[^>]*>$")))							// but we skip all other XML elements, as used by Sketch Engine or TreeTagger chunker
-				if(line.equals("") && !buffer.trim().equals("")) {
+				if(line.equals("") && !buffer.trim().equals("")) { // sentence boarder (?)
+
 					Model m = conll2rdf.conll2model(new StringReader(buffer+"\n"));
+
 					if(m!=null) { // null if an error occurred
 						List<Pair<Integer,Long> > ret = update(m, updates);
 						if (dRTs.isEmpty())
@@ -124,6 +131,11 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 								dRTs.set(x, new Pair<Integer, Long>(dRTs.get(x).getKey() + ret.get(x).getKey(), dRTs.get(x).getValue() + ret.get(x).getValue()));
 						print(m,select, out);
 					}
+					if (comments.size() > 0) {
+						out.write(":s" + sc + "_0 rdfs:comment \"" + (String.join("\\\\n", comments)) + "\" ." + "\n");
+						comments.clear();
+					}
+					sc++;
 					buffer="";
 				} else
 					buffer=buffer+line+"\n";
@@ -137,6 +149,11 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 				for (int x = 0; x < ret.size(); ++x)
 					dRTs.set(x, new Pair<Integer, Long>(dRTs.get(x).getKey() + ret.get(x).getKey(), dRTs.get(x).getValue() + ret.get(x).getValue()));
 			print(m,select,out);
+			if (comments.size() > 0) {
+				out.write(":s" + sc + "_0 rdfs:comment \"" + (String.join("\\\\n", comments)) + "\" ." + "\n");
+				comments.clear();
+			}
+			out.flush();
 		}
 		if (!dRTs.isEmpty())
 			LOG.debug("Done - List of interations and execution times for the updates done (in given order):\n\t\t" + dRTs.toString());
@@ -144,7 +161,58 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 		getOutputStream().close();
 
 	}
+	/**
+	 * Searches a BufferedReader for a global.columns = field to extract the column names from (CoNLL-U Plus feature).
+	 * We allow for arbitrary lines to search, however as of September 2019, CoNLL-U Plus only allows first line.
+	 * Does NOT validate if custom columns are in a separate name space, as required by the format.
+	 * @see <a href="https://universaldependencies.org/ext-format.html">CoNLL-U Plus Format</a>
+	 * @param inputStream an untouched BufferedReader
+	 * @param maxLinesToSearch how many lines to search. CoNLL-U Plus requires this to be 1.
+	 */
+	static List<String> findFieldsFromComments(BufferedReader inputStream, int maxLinesToSearch) {
+		List<String> fields = new ArrayList<>();
+		int readAheadLimit = 10000;
+		float meanByteSizeOfLine = 0.0f;
+		int m = 0;
+		int peekedChars = 0;
+		if (!inputStream.markSupported()) {
+			LOG.warn("Marking is not supported, could lead to cutting off the beginning of the stream.");
+		}
+		try {
+			LOG.info("Testing for CoNLL-U Plus");
+			inputStream.mark(readAheadLimit);
 
+			String peekedLine;
+			while ((peekedLine = inputStream.readLine()) != null && m < maxLinesToSearch) {
+				m++;
+				meanByteSizeOfLine = ((meanByteSizeOfLine * (m - 1)) + peekedLine.length()) / m;
+				LOG.debug("Mean Byte size: " + meanByteSizeOfLine);
+				peekedChars += peekedLine.length();
+				System.err.println("Peeking line: "+peekedLine);
+				if ((peekedChars + meanByteSizeOfLine) > readAheadLimit) {
+					LOG.info("Couldn't find CoNLL-U Plus columns.");
+					inputStream.reset();
+					return fields;
+				}
+				LOG.debug("Testing line: " + peekedLine);
+				if (peekedLine.matches("^#\\s?global\\.columns\\s?=.*")) {
+					fields.addAll(Arrays.asList(peekedLine.trim()
+							.replaceFirst("#\\s?global\\.columns\\s?=", "")
+							.split("#")[0]
+							.trim().split(" |\t")));
+					inputStream.reset();
+					LOG.info("Success");
+					return fields;
+				}
+
+			}
+			inputStream.reset();
+		} catch (IOException e) {
+			LOG.error(e);
+			LOG.warn("Couldn't figure out CoNLL-U Plus, searched for " + m + " lines.");
+		}
+		return fields;
+	}
 	public List<Pair<Integer,Long> > update(Model m, List<Pair<String,String>> updates) {
 		List<Pair<Integer,Long> > result = new ArrayList<Pair<Integer,Long> >();
 		for(Pair<String,String> update : updates) {
@@ -249,7 +317,7 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 			select=select+" "+argv[i++]; // because queries may be parsed by the shell (Cygwin)
 
 		if (fields.size() == 0) { // might be conllu plus, we check the first line for col names.
-			fields = CoNLL2RDF.findFieldsFromComments(inputStream, 1);
+			fields = findFieldsFromComments(inputStream, 1);
 		}
 
 
