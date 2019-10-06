@@ -103,7 +103,7 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 	List<Pair<String, String>> updates = new ArrayList<Pair<String, String>>();
 
 	private void processSentenceStream() throws Exception {
-		int sc = 1;
+		int current_sentence = 1; // keeps track of sentence id from CoNLL2RDF
 		CoNLL2RDF conll2rdf = new CoNLL2RDF(baseURI, columns.toArray(new String[columns.size()]));
 		List<Pair<Integer,Long> > dRTs = new ArrayList<Pair<Integer,Long> >(); // iterations and execution time of each update in seconds
 		LOG.info("process input ..");
@@ -119,7 +119,7 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 			line=line.replaceAll("<[\\/]?[psPS]( [^>]*>|>)","").trim(); 		// in this way, we can also read sketch engine data and split at s and p elements
 			if(!(line.matches("^<[^>]*>$")))							// but we skip all other XML elements, as used by Sketch Engine or TreeTagger chunker
 				if(line.equals("") && !buffer.trim().equals("")) { // sentence boarder (?)
-
+				    current_sentence = conll2rdf.sent;
 					Model m = conll2rdf.conll2model(new StringReader(buffer+"\n"));
 
 					if(m!=null) { // null if an error occurred
@@ -132,15 +132,16 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 						print(m,select, out);
 					}
 					if (comments.size() > 0) {
-						out.write(":s" + sc + "_0 rdfs:comment \"" + (String.join("\\\\n", comments)) + "\" ." + "\n");
+					    System.err.println("CoNLL2RDF count is "+conll2rdf.sent);
+						out.write(":s" + current_sentence + "_0 rdfs:comment \"" + (String.join("\\\\n", comments)) + "\" ." + "\n");
 						comments.clear();
 					}
-					sc++;
 					buffer="";
 				} else
 					buffer=buffer+line+"\n";
 		}
 		if(!buffer.trim().equals("")) {
+		    current_sentence = conll2rdf.sent;
 			Model m = conll2rdf.conll2model(new StringReader(buffer+"\n"));
 			List<Pair<Integer,Long> > ret = update(m, updates);
 			if (dRTs.isEmpty())
@@ -150,7 +151,7 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 					dRTs.set(x, new Pair<Integer, Long>(dRTs.get(x).getKey() + ret.get(x).getKey(), dRTs.get(x).getValue() + ret.get(x).getValue()));
 			print(m,select,out);
 			if (comments.size() > 0) {
-				out.write(":s" + sc + "_0 rdfs:comment \"" + (String.join("\\\\n", comments)) + "\" ." + "\n");
+				out.write(":s" + current_sentence + "_0 rdfs:comment \"" + (String.join("\\\\n", comments)) + "\" ." + "\n");
 				comments.clear();
 			}
 			out.flush();
