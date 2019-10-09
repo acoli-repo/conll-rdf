@@ -569,6 +569,7 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 						comments.add(result);
 				}
 			}
+			System.err.println(select);
 			qexec = QueryExecutionFactory.create(select, m);
 			results = qexec.execSelect();
 			List<String> cols = results.getResultVars();

@@ -121,7 +121,6 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 				if(line.equals("") && !buffer.trim().equals("")) { // sentence boarder (?)
 				    current_sentence = conll2rdf.sent;
 					Model m = conll2rdf.conll2model(new StringReader(buffer+"\n"));
-
 					if(m!=null) { // null if an error occurred
 						List<Pair<Integer,Long> > ret = update(m, updates);
 						if (dRTs.isEmpty())
@@ -129,13 +128,13 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 						else
 							for (int x = 0; x < ret.size(); ++x)
 								dRTs.set(x, new Pair<Integer, Long>(dRTs.get(x).getKey() + ret.get(x).getKey(), dRTs.get(x).getValue() + ret.get(x).getValue()));
-						print(m,select, out);
+                        if (comments.size() > 0) {
+                            m = injectSentenceComments(m, comments);
+                            comments.clear();
+                        }
+                        print(m,select, out);
 					}
-					if (comments.size() > 0) {
-					    System.err.println("CoNLL2RDF count is "+conll2rdf.sent);
-						out.write(":s" + current_sentence + "_0 rdfs:comment \"" + (String.join("\\\\n", comments)) + "\" ." + "\n");
-						comments.clear();
-					}
+
 					buffer="";
 				} else
 					buffer=buffer+line+"\n";
@@ -149,12 +148,11 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 			else
 				for (int x = 0; x < ret.size(); ++x)
 					dRTs.set(x, new Pair<Integer, Long>(dRTs.get(x).getKey() + ret.get(x).getKey(), dRTs.get(x).getValue() + ret.get(x).getValue()));
-			print(m,select,out);
 			if (comments.size() > 0) {
-				out.write(":s" + current_sentence + "_0 rdfs:comment \"" + (String.join("\\\\n", comments)) + "\" ." + "\n");
-				comments.clear();
+				m = injectSentenceComments(m, comments);
+			    comments.clear();
 			}
-			out.flush();
+            print(m,select,out);
 		}
 		if (!dRTs.isEmpty())
 			LOG.debug("Done - List of interations and execution times for the updates done (in given order):\n\t\t" + dRTs.toString());
@@ -162,6 +160,22 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 		getOutputStream().close();
 
 	}
+
+	Model injectSentenceComments(Model m, ArrayList<String> comments) {
+        LOG.debug("Injecting comments.");
+        // alternative to ParameterizeSparqlString: UpdateQuery
+        ParameterizedSparqlString s = new ParameterizedSparqlString();
+        s.setCommandText("PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n"
+                +"PREFIX nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#>\n"
+                +"INSERT { ?node rdfs:comment ?comment . }"
+                +"WHERE { ?node a nif:Sentence . }");
+        s.setLiteral("comment", String.join("\\n", comments));
+
+        UpdateAction.execute(s.asUpdate(), m);
+        return m;
+
+    }
+
 	/**
 	 * Searches a BufferedReader for a global.columns = field to extract the column names from (CoNLL-U Plus feature).
 	 * We allow for arbitrary lines to search, however as of September 2019, CoNLL-U Plus only allows first line.
