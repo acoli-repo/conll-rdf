@@ -569,7 +569,6 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 						comments.add(result);
 				}
 			}
-			System.err.println(select);
 			qexec = QueryExecutionFactory.create(select, m);
 			results = qexec.execSelect();
 			List<String> cols = results.getResultVars();
@@ -734,7 +733,15 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 			f.processSentenceStream();
 			
 		}
-		List<String> findColumnNamesInRDFBuffer(String buffer) {
+
+	/**
+	 * Searches a string buffer that is expected to represent a sentence for any
+	 * <code>rdfs:comment</code> properties and checks them for a CoNLL-U Plus like global.columns comments.
+	 * Defaults to an empty columnNames Array if not present.
+	 * @param buffer a string buffer representing a sentence in conll-rdf
+	 * @return ArrayList of column names, empty if not present.
+	 */
+	private List<String> findColumnNamesInRDFBuffer(String buffer) {
 			List<String> columnNames = new ArrayList<>();
 			Model m = ModelFactory.createDefaultModel().read(new StringReader(buffer),null, "TTL");
 			String selectComments = "PREFIX nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#>\n"
@@ -756,6 +763,7 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 			}
 			return columnNames;
 		}
+
 		public void processSentenceStream() throws IOException {
 			String line;
 			String lastLine ="";

@@ -161,7 +161,13 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 
 	}
 
-	Model injectSentenceComments(Model m, ArrayList<String> comments) {
+	/**
+	 * Adds a list of conll comments to a sentence model as a rdfs:comment property separated by escaped newlines.
+	 * @param model a RDF Model representing a sentence
+	 * @param comments a list of single line comments
+	 * @return the updated model
+	 */
+	private Model injectSentenceComments(Model model, ArrayList<String> comments) {
         LOG.debug("Injecting comments.");
         // alternative to ParameterizeSparqlString: UpdateQuery
         ParameterizedSparqlString s = new ParameterizedSparqlString();
@@ -171,8 +177,8 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
                 +"WHERE { ?node a nif:Sentence . }");
         s.setLiteral("comment", String.join("\\n", comments));
 
-        UpdateAction.execute(s.asUpdate(), m);
-        return m;
+        UpdateAction.execute(s.asUpdate(), model);
+        return model;
 
     }
 
