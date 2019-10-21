@@ -584,25 +584,17 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 							comments.add(splitComment);
 					}
 				}
-//                    for (String comment : commentsLinewise) {
-//                        if (comment.matches("^#\\s?global\\.columns\\s?=.*"))
-//                            out.write("# global.columns = " + String.join(" ", cols) + "\n");
-//                        else out.write(comment + "\n");
-//                    }
-//                }
+				
 			}
 			if (hasGlobalComments)
 				out.write("# global.columns = " + String.join(" ", cols) + "\n");
-
+			else {
+				out.write("# global.columns = "+String.join(" ", cols)+"\n");
+			}
 			for (String comment : comments) {
 				out.write(comment+"\n");
 			}
 
-			out.write("# "); 									// well, this may be redundant, but permitted in CoNLL
-			for(String col : cols)
-				out.write(col+"\t");
-			out.write("\n");
-			out.flush();
 			while(results.hasNext()) {
 				QuerySolution sol = results.next();
 				for(String col : cols)

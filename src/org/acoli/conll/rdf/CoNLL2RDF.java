@@ -1,12 +1,12 @@
 /*
  * Copyright [2017] [ACoLi Lab, Prof. Dr. Chiarcos, Goethe University Frankfurt]
- *
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,24 +37,24 @@ import org.apache.log4j.Logger;
  * @author Christian Faeth {@literal faeth@em.uni-frankfurt.de}
  **/
 public class CoNLL2RDF extends Format2RDF{
-
-
+	
+	
 	public CoNLL2RDF(String baseURI, String[] fields, Writer out) throws IOException {
 		super(baseURI, fields, out);
 	}
-
+	
 	public CoNLL2RDF(String baseURI, String[] fields) throws IOException {
 		super(baseURI, fields);
 	}
 
-
+	
 	private static Logger LOG = Logger.getLogger(CoNLL2RDF.class.getName());
-
+	
 	/** @param argv baseURI field1 field2 ... (see variable <code>help</code> and method <code>conll2ttl</code>) */
-	public static void main(String[] argv) throws Exception {
+	public static void main(String[] argv) throws Exception {		
 		Format2RDF.main("CoNLL",argv);
 	}
-
+	
 	/**
 	 * See conll2ttl(Reader), but note that we write *only* to the specified writer.
 	 * If this is not the pre-defined writer out, we define the prefixes.<br>
@@ -72,7 +72,7 @@ public class CoNLL2RDF extends Format2RDF{
 		TreeSet<String> argTriples = new TreeSet<String>();
 		Set<String> argsProperties = new TreeSet<String>();
 		Set<String> headSubProperties = new TreeSet<String>();
-
+		
 		for(String line = ""; line!=null; line=bin.readLine()) {
 			//if(line.contains("#"))
 				//out.write(line.replaceFirst("^[^#]*","")); // uncomment to keep commentaries
@@ -88,7 +88,7 @@ public class CoNLL2RDF extends Format2RDF{
 					// sentence=sentence+".\n";
 					argTriples.clear();
 					if(col2field.get(col2field.size()-1).toLowerCase().matches(".*args")) {
-						for (int i = 0; i<predicates.size(); i++) {
+						for(int i = 0; i<predicates.size(); i++) {
 							sentence=sentence.replaceAll("_TMP_"+col2field.get(col2field.size()-1).replaceFirst("[\\-_]*[Aa][rR][gG][sS]$","_"+i),predicates.get(i));
 						}
 					}
@@ -103,7 +103,7 @@ public class CoNLL2RDF extends Format2RDF{
 					line=line.replaceFirst("#.*","").trim();
 					if(!line.equals("")) {
 						if(sentence.equals("")) {
-							if(sent>1) {
+							if(sent>1) { 
 								String lastRoot = ":s"+(sent-1)+"_"+0;
 								sentence=sentence+lastRoot+" nif:nextSentence "+root+".\n";
 							}
@@ -120,7 +120,7 @@ public class CoNLL2RDF extends Format2RDF{
 							throw new NumberFormatException("the ID column must contain integers, only");
 						}
 						String URI = ":s"+sent+"_"+id_string; // URI naming scheme follows the German TIGER Corpus
-
+						
 						if(tok>1)
 							sentence=sentence+"; nif:nextWord "+URI+"."+
 							//" # offset="+pos+
@@ -171,12 +171,12 @@ public class CoNLL2RDF extends Format2RDF{
 						sentence=sentence.replaceAll("\\?"+col2field.get(col2field.size()-1).replaceFirst("[\\-_]*[Aa][rR][gG][sS]$","+"+i),predicates.get(i));
 				out.write(sentence); //+"\n");
 			//out.write("\n");
-			for(String p : headSubProperties)
+			for(String p : headSubProperties) 
 				out.write(p.trim()+"\n");
 			//out.write("\n");
 			for(String p : argsProperties)
 				out.write(p.trim()+"\n");
-			out.flush();
+			out.flush();			
 		}
 			if(tok>0) {
 				sent++;
