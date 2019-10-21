@@ -88,10 +88,10 @@ public class CoNLL2RDF extends Format2RDF{
 					// sentence=sentence+".\n";
 					argTriples.clear();
 					if(col2field.get(col2field.size()-1).toLowerCase().matches(".*args")) {
-                        for (int i = 0; i < predicates.size(); i++) {
-                            sentence = sentence.replaceAll("_TMP_" + col2field.get(col2field.size() - 1).replaceFirst("[\\-_]*[Aa][rR][gG][sS]$", "_" + i), predicates.get(i));
-                        }
-                    }
+						for (int i = 0; i<predicates.size(); i++) {
+							sentence=sentence.replaceAll("_TMP_"+col2field.get(col2field.size()-1).replaceFirst("[\\-_]*[Aa][rR][gG][sS]$","_"+i),predicates.get(i));
+						}
+					}
 					out.write(sentence+"\n");
 					predicates.clear();
 					sentence="";
