@@ -584,7 +584,7 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 							comments.add(splitComment);
 					}
 				}
-				
+
 			}
 			if (hasGlobalComments)
 				out.write("# global.columns = " + String.join(" ", cols) + "\n");
