@@ -563,7 +563,7 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 			boolean hasGlobalComments = false;
 			while (results.hasNext()) {
 				for (String result : results.next().getLiteral("c").toString().split("\\\\n")) {
-					if (result.trim().matches("^#\\s?global\\.columns\\s?=.*") )
+					if (result.trim().matches("^\\s?global\\.columns\\s?=.*") )
 						hasGlobalComments = true;
 					else
 						comments.add(result);
@@ -581,7 +581,7 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 						if (splitComment.trim().matches("^#\\s?global\\.columns\\s?=.*"))
 							hasGlobalComments = true;
 						else
-							comments.add(splitComment);
+							comments.add(splitComment.replace("#",""));
 					}
 				}
 
@@ -592,7 +592,7 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 				out.write("# global.columns = "+String.join(" ", cols)+"\n");
 			}
 			for (String comment : comments) {
-				out.write(comment+"\n");
+				out.write("#"+comment+"\n");
 			}
 
 			while(results.hasNext()) {
@@ -744,9 +744,9 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 			while (results.hasNext()) {
 				String[] comments = results.next().getLiteral("c").toString().split("\\\\n");
 				for (String comment : comments) {
-					if (comment.matches("^#\\s?global\\.columns\\s?=.*")) {
+					if (comment.matches("^\\s?global\\.columns\\s?=.*")) {
 						columnNames.addAll(Arrays.asList(comment.trim()
-								.replaceFirst("#\\s?global\\.columns\\s?=", "")
+								.replaceFirst("\\s?global\\.columns\\s?=", "")
 								.trim().split(" |\t")));
 						LOG.info("Found global columns comment in rdfs:comment");
 						return columnNames;

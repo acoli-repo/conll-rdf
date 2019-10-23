@@ -112,7 +112,7 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 		for(String line = ""; line !=null; line=in.readLine()) {
 			if(line.contains("#")) {
 				out.write(line.replaceAll("^[^#]*#", "#") + "\n");
-				comments.add(line.replaceAll("^[^#]*#", "#"));
+				comments.add(line.replaceAll("^[^#]*#", ""));
 			}
 			line=line.replaceAll("<[\\/]?[psPS]( [^>]*>|>)","").trim(); // in this way, we can also read sketch engine data and split at s and p elements
 			if(!(line.matches("^<[^>]*>$")))							// but we skip all other XML elements, as used by Sketch Engine or TreeTagger chunker
