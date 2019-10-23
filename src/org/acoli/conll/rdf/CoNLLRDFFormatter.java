@@ -824,7 +824,21 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 				if(m.getMode()==Mode.CONLLRDF) m.getOutputStream().println(reorderTTLBuffer(buffer, m.getCols()));
 				if(m.getMode()==Mode.DEBUG) System.err.println(colorTTL(reorderTTLBuffer(buffer, m.getCols())));
 				if(m.getMode()==Mode.CONLL) {
-					if (m.getCols().size() < 1) 
+					if (m.getCols().size() < 1) {
+						LOG.info("No column names in cmd args, searching rdf comments..");
+						List<String> conllColumns = findColumnNamesInRDFBuffer(buffer);
+						if (conllColumns.size()>0) {
+							LOG.info("Using #global.comments from rdf");
+							m.setCols(conllColumns);
+						} else {
+							LOG.info("Trying conll columns now..");
+							conllColumns = CoNLLStreamExtractor.findFieldsFromComments(new BufferedReader(new StringReader(buffer.trim())), 1);
+							if (conllColumns.size()>0) {
+								m.setCols(conllColumns);
+							}
+						}
+					}
+					if (m.getCols().size() < 1)
 						throw new IOException("-conll argument needs at least one COL to export!");
 					else
 						printSparql(buffer, columnsAsSelect(m.getCols()), new OutputStreamWriter(m.getOutputStream()));
