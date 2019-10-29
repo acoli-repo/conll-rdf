@@ -69,9 +69,11 @@ IMPORTANT USAGE HINT: All given data is parsed sentence-wise (if applicable). Me
 Synopsis: ```CoNLLStreamExtractor baseURI FIELD1[.. FIELDn] [-u SPARQL_UPDATE1..m] [-s SPARQL_SELECT]```
 
 * `baseURI` (required): ideally a resolvable URL to adhere to the five stars of LOD.
-* `FIELD1[.. FIELDn]` (required): name each column of input conll. 
+* `FIELD1[.. FIELDn]`: name each column of input conll. 
 	* at least one column name is required.
 	* note that `CoNLLStreamExtractor` will not check the number of columns. Make sure the list of fields match the number of columns of your CoNLL input. 
+	* In case input is [CoNLL-U Plus](https://universaldependencies.org/ext-format.html), we read the fieldnames from the `# global.comments = [FIELDS]` comment.
+	This comment MUST be in the first line.
 * `[-u SPARQL_UPDATE1 .. m]`: execute sparql updates before writing to stdout. 
 	* can be followed by an optional integer x in {}-parentheses = number of repetitions e.g. `-u examples/sparql/remove-ID.sparql{5}`. Will repeat the update x times or until model stops changing.
 		* `{u}` for unlimited will repeat 999 times.
@@ -100,7 +102,10 @@ Hint: The -updates parameter can take a SPARQL-update-query as a String. If this
 Synopsis: ```CoNLLRDFFormatter [-rdf [COLS]] [-debug] [-grammar] [-semantics] [-conll COLS] [-sparqltsv SPARQL]```
 
 * `-rdf` (default): writes canonical conll-rdf as .ttl.
-* `-conll [COLS]`: writes .conll of specified columns in order of arguments.  At least one COL must be provided, otherwise writes original conll-rdf.
+* `-conll [COLS]`: writes .conll of specified columns in order of arguments. 
+  * If no cols are provided, we assume the original conll was [CoNLL-U Plus](https://universaldependencies.org/ext-format.html).
+    We first search for a `rdfs:comment` property with a `global.columns` comment, then the raw conll-like comments.
+  * Note that we will overwrite any `global.columns` comments with the new column names, so you may read them with the `CoNLLStreamExtractor` again right away.
 * `-debug`: writes highlighted .ttl to `stderr`, e.g. highlighting triples representing conll columns or sentence structure differently. 
   * does not work in combination with `-conll`.
   * to add custom highlighting you can add rules to `colorTTL(String buffer)` in `CoNLLRDFFormatter.java`. Don't forget to recompile!

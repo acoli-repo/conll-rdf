@@ -19,7 +19,6 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import org.apache.jena.rdf.model.*;		// Jena 2.x
-import org.apache.jena.update.*;
 import org.apache.log4j.Logger;
 import org.apache.jena.query.*;
 
@@ -89,7 +88,7 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 	public static enum Mode {
 		CONLLRDF, CONLL, DEBUG, SPARQLTSV, GRAMMAR, SEMANTICS, GRAMMAR_SEMANTICS
 	}
-	
+
 	private List<Module> modules = new ArrayList<Module>();
 	
 	public List<Module> getModules() {
@@ -554,22 +553,48 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 		*  Note: this CoNLL-like export has limitations, of course: it will export one property per column, hence, collapsed dependencies or 
 		*  SRL annotations cannot be reconverted */		
 		public static void printSparql(String buffer, String select, Writer out) throws IOException {
+			Model m = ModelFactory.createDefaultModel().read(new StringReader(buffer),null, "TTL");
+			String selectComments = "PREFIX nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#>\n"
+					+ "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n"
+					+ "SELECT ?c WHERE {?x a nif:Sentence . ?x rdfs:comment ?c}";
+			QueryExecution qexec = QueryExecutionFactory.create(selectComments, m);
+			ResultSet results = qexec.execSelect();
+			Set<String> comments = new HashSet<>();
+			boolean hasGlobalComments = false;
+			while (results.hasNext()) {
+				for (String result : results.next().getLiteral("c").toString().split("\\\\n")) {
+					if (result.trim().matches("^\\s?global\\.columns\\s?=.*") )
+						hasGlobalComments = true;
+					else
+						comments.add(result);
+				}
+			}
+			qexec = QueryExecutionFactory.create(select, m);
+			results = qexec.execSelect();
+			List<String> cols = results.getResultVars();
 			BufferedReader in = new BufferedReader(new StringReader(buffer));
 			Hashtable<String,String> key2line = new Hashtable<String,String>();
 			String line;
 			while((line=in.readLine())!=null) {
-				line=line.trim();
-				if(line.startsWith("#")) out.write(line+"\n");
+				if (line.trim().startsWith("#")) {
+					for (String splitComment : line.split("\t")) {
+						if (splitComment.trim().matches("^#\\s?global\\.columns\\s?=.*"))
+							hasGlobalComments = true;
+						else
+							comments.add(splitComment.replace("#",""));
+					}
+				}
+
 			}
-			Model m = ModelFactory.createDefaultModel().read(new StringReader(buffer),null, "TTL");
-			QueryExecution qexec = QueryExecutionFactory.create(select, m);
-			ResultSet results = qexec.execSelect();
-			List<String> cols = results.getResultVars();
-			out.write("# "); 									// well, this may be redundant, but permitted in CoNLL
-			for(String col : cols)
-				out.write(col+"\t");
-			out.write("\n");
-			out.flush();
+			if (hasGlobalComments)
+				out.write("# global.columns = " + String.join(" ", cols) + "\n");
+			else {
+				out.write("# global.columns = "+String.join(" ", cols)+"\n");
+			}
+			for (String comment : comments) {
+				out.write("#"+comment+"\n");
+			}
+
 			while(results.hasNext()) {
 				QuerySolution sol = results.next();
 				for(String col : cols)
@@ -701,22 +726,67 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 			
 		}
 
+	/**
+	 * Searches a string buffer that is expected to represent a sentence for any
+	 * <code>rdfs:comment</code> properties and checks them for a CoNLL-U Plus like global.columns comments.
+	 * Defaults to an empty columnNames Array if not present.
+	 * @param buffer a string buffer representing a sentence in conll-rdf
+	 * @return ArrayList of column names, empty if not present.
+	 */
+	private List<String> findColumnNamesInRDFBuffer(String buffer) {
+			List<String> columnNames = new ArrayList<>();
+			Model m = ModelFactory.createDefaultModel().read(new StringReader(buffer),null, "TTL");
+			String selectComments = "PREFIX nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#>\n"
+					+ "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n"
+					+ "SELECT ?c WHERE {?x a nif:Sentence . ?x rdfs:comment ?c}";
+			QueryExecution qexec = QueryExecutionFactory.create(selectComments, m);
+			ResultSet results = qexec.execSelect();
+			while (results.hasNext()) {
+				String[] comments = results.next().getLiteral("c").toString().split("\\\\n");
+				for (String comment : comments) {
+					if (comment.matches("^\\s?global\\.columns\\s?=.*")) {
+						columnNames.addAll(Arrays.asList(comment.trim()
+								.replaceFirst("\\s?global\\.columns\\s?=", "")
+								.trim().split(" |\t")));
+						LOG.info("Found global columns comment in rdfs:comment");
+						return columnNames;
+					}
+				}
+			}
+			return columnNames;
+		}
+
 		public void processSentenceStream() throws IOException {
 			String line;
 			String lastLine ="";
 			String buffer="";
 			while((line = getInputStream().readLine())!=null) {
 				line=line.replaceAll("[\t ]+"," ").trim();
-				
+
 				if(!buffer.trim().equals(""))
 					if((line.startsWith("@") || line.startsWith("#")) && !lastLine.startsWith("@") && !lastLine.startsWith("#")) { //!buffer.matches("@[^\n]*\n?$")) {
 						for (Module m:modules) {
 							if(m.getMode()==Mode.CONLLRDF) m.getOutputStream().println(reorderTTLBuffer(buffer, m.getCols()));
 							if(m.getMode()==Mode.DEBUG) System.err.println(colorTTL(reorderTTLBuffer(buffer, m.getCols())));
 							if(m.getMode()==Mode.CONLL) {
-								if (m.getCols().size() < 1) 
-									throw new IOException("-conll argument needs at least one COL to export!"); 
-								else 
+								if (m.getCols().size() < 1) {// no column args supplied
+									LOG.info("No column names in cmd args, searching rdf comments..");
+									List<String> conllColumns = findColumnNamesInRDFBuffer(buffer);
+									if (conllColumns.size()>0) {
+										LOG.info("Using #global.comments from rdf");
+										m.setCols(conllColumns);
+									} else {
+										LOG.info("Trying conll columns now..");
+										conllColumns = CoNLLStreamExtractor.findFieldsFromComments(new BufferedReader(new StringReader(buffer.trim())), 1);
+										if (conllColumns.size()>0) {
+											m.setCols(conllColumns);
+										}
+									}
+								}
+								if (m.getCols().size() < 1) {
+									LOG.info("Supply column names some way! (-conll arg, global.columns or rdf comments");
+								}
+								else
 									printSparql(buffer, columnsAsSelect(m.getCols()), new OutputStreamWriter(m.getOutputStream()));
 							}
 							if(m.getMode()==Mode.SPARQLTSV) printSparql(buffer, m.getSelect(), new OutputStreamWriter(m.getOutputStream()));
@@ -754,9 +824,23 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 				if(m.getMode()==Mode.CONLLRDF) m.getOutputStream().println(reorderTTLBuffer(buffer, m.getCols()));
 				if(m.getMode()==Mode.DEBUG) System.err.println(colorTTL(reorderTTLBuffer(buffer, m.getCols())));
 				if(m.getMode()==Mode.CONLL) {
-					if (m.getCols().size() < 1) 
-						throw new IOException("-conll argument needs at least one COL to export!"); 
-					else 
+					if (m.getCols().size() < 1) {
+						LOG.info("No column names in cmd args, searching rdf comments..");
+						List<String> conllColumns = findColumnNamesInRDFBuffer(buffer);
+						if (conllColumns.size()>0) {
+							LOG.info("Using #global.comments from rdf");
+							m.setCols(conllColumns);
+						} else {
+							LOG.info("Trying conll columns now..");
+							conllColumns = CoNLLStreamExtractor.findFieldsFromComments(new BufferedReader(new StringReader(buffer.trim())), 1);
+							if (conllColumns.size()>0) {
+								m.setCols(conllColumns);
+							}
+						}
+					}
+					if (m.getCols().size() < 1)
+						throw new IOException("-conll argument needs at least one COL to export!");
+					else
 						printSparql(buffer, columnsAsSelect(m.getCols()), new OutputStreamWriter(m.getOutputStream()));
 				}
 				if(m.getMode()==Mode.SPARQLTSV) printSparql(buffer, m.getSelect(), new OutputStreamWriter(m.getOutputStream()));
