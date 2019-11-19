@@ -10,8 +10,8 @@
 @base <http://ufal.mff.cuni.cz/conll2009-st/task-description.html> .
 
 <http://ufal.mff.cuni.cz/conll2009-st/task-description.html> rdf:type owl:Ontology ;
-                                                             
-                                                             rdfs:comment """CoNLL-RDF ontology
+                                                         
+                                                         rdfs:comment """CoNLL-RDF ontology
 
 Column structure for various one-word-per-line TSV formats as used, e.g., by CorpusWorkBench/SketchEngine and for most CoNLL Shared Tasks.
 
@@ -24,8 +24,8 @@ history
 
 contributors
 CC - Christian Chiarcos, chiarcos@informatik.uni-frankfurt.de"""@en ;
-                                                             
-                                                             dc:description """Ontology covering the following CoNLL TSV dialects and related one-word-per-line formats.
+                                                         
+                                                         dc:description """Ontology covering the following CoNLL TSV dialects and related one-word-per-line formats.
 
 In chronological order, these are:
 - CWB (Corpus WorkBench) format (1994) [column structure only]: http://txm.sourceforge.net/doc/cwb/technical-manual.pdf
@@ -58,8 +58,8 @@ Other (non-TSV) CoNLL Shared Task formats (not covered by CoNLL-RDF):
 - CoNLL-13/14 SGML format (https://www.comp.nus.edu.sg/~nlp/conll13st/CoNLLST01.pdf, https://www.comp.nus.edu.sg/~nlp/conll14st/conll14st-test-data.tar.gz)
 - CoNLL-15/16 JSON format (https://www.cs.brandeis.edu/~clp/conll15st/dataset.html, https://www.cs.brandeis.edu/~clp/conll16st/; a CoNLL TSV version was provided, but not used by any of the participants)
 """@en ;
-                                                             
-                                                             owl:versionInfo "TODO: check whether not to migrate Word and Sentence into conll namespace. Note that this breaks downward-compability."@en .
+                                                         
+                                                         owl:versionInfo "TODO: check whether not to migrate Word and Sentence into conll namespace. Note that this breaks downward-compability."@en .
 
 
 ###############################
@@ -73,42 +73,42 @@ Other (non-TSV) CoNLL Shared Task formats (not covered by CoNLL-RDF):
 	It can contain several column mappings, but as some formats support user-defined columns, this is optional.
 	"""@en; 
 	rdfs:subClassOf [ rdf:type owl:Restriction ;
-                                 owl:onProperty rdfs:label ;
-                                 owl:minCardinality "1"^^xsd:nonNegativeInteger
-                               ];
+                             owl:onProperty rdfs:label ;
+                             owl:minCardinality "1"^^xsd:nonNegativeInteger
+                           ];
 	rdfs:subClassOf [ rdf:type owl:Restriction ;
-                                 owl:onProperty rdfs:isDefinedBy ;
-                                 owl:minCardinality "1"^^xsd:nonNegativeInteger
-                               ].
+                             owl:onProperty rdfs:isDefinedBy ;
+                             owl:minCardinality "1"^^xsd:nonNegativeInteger
+                           ].
 
 :hasMapping rdf:type owl:AnnotationProperty;
 			rdfs:domain rdfs:Property;
-            rdfs:comment "Assigns a CoNLL property a ColumnMapping. Note that this cannot be formally axiomatized in OWL."@en ;
-            rdfs:range :ColumnMapping .
+        rdfs:comment "Assigns a CoNLL property a ColumnMapping. Note that this cannot be formally axiomatized in OWL."@en ;
+        rdfs:range :ColumnMapping .
 			
 :property rdf:type owl:ObjectProperty;
 	owl:versionInfo "Inverse of :hasMapping, provided for OWL reasoning, do not use for data modelling"@en;
 	owl:inverseOf :hasMapping .
 	  
 :column rdf:type owl:DatatypeProperty ;
-        rdfs:comment "column number (starting with 1) in a particular CoNLL or TSV format"@en ;
-        rdfs:domain :ColumnMapping ;
-        rdfs:range xsd:int .
+    rdfs:comment "column number (starting with 1) in a particular CoNLL or TSV format"@en ;
+    rdfs:domain :ColumnMapping ;
+    rdfs:range xsd:int .
 
 :dialect rdf:type owl:ObjectProperty ;
-         rdfs:comment "format identifier, identifies the CoNLL dialect"@en ;
-         rdfs:domain :ColumnMapping ;
-         rdfs:range :Dialect .
+     rdfs:comment "format identifier, identifies the CoNLL dialect"@en ;
+     rdfs:domain :ColumnMapping ;
+     rdfs:range :Dialect .
 
 :ColumnMapping rdfs:subClassOf [ rdf:type owl:Restriction ;
-                                 owl:onProperty :dialect ;
-                                 owl:minCardinality "1"^^xsd:nonNegativeInteger
-                               ] ,
-                               [ rdf:type owl:Restriction ;
-                                 owl:onProperty :column ;
-                                 owl:cardinality "1"^^xsd:nonNegativeInteger
-                               ] ;
-               rdfs:comment "n-ary annotation property that maps a CoNLL-RDF property to a column (integer value starting with 1) in a particular CoNLL or TSV dialect (identified as a string)."@en .
+                             owl:onProperty :dialect ;
+                             owl:minCardinality "1"^^xsd:nonNegativeInteger
+                           ] ,
+                           [ rdf:type owl:Restriction ;
+                             owl:onProperty :column ;
+                             owl:cardinality "1"^^xsd:nonNegativeInteger
+                           ] ;
+           rdfs:comment "n-ary annotation property that maps a CoNLL-RDF property to a column (integer value starting with 1) in a particular CoNLL or TSV dialect (identified as a string)."@en .
 
 ###########################################
 # external classes, reused and/or refined #
@@ -122,47 +122,47 @@ rdfs:isDefinedBy a owl:DatatypeProperty, owl:AnnotationProperty;
 dc:description rdf:type owl:AnnotationProperty .
 
 nif:nextSentence rdf:type owl:FunctionalProperty ,
-                               owl:ObjectProperty ;
-                      
-                      rdfs:comment """NIF: This property can be used to make resources of nif:Sentence and nif:Word traversable, it can not be assumed that no gaps or whitespaces between sentences or words exist, i.e. string adjacency is not mandatory. 
-
-In CoNLL-RDF, neither inverse nor transitive versions of this property are employed. Otherwise, the use of nif:nextSentence is compliant with the original NIF definition, and thus, we do not introduce a novel vocabulary element for this purpose."""@en ;
-                      
-                      rdfs:range nif:Sentence ;
-                      
-                      rdfs:domain nif:Sentence .
-
-nif:nextWord rdf:type owl:FunctionalProperty ,
                            owl:ObjectProperty ;
                   
-                  rdfs:comment """In CoNLL-RDF, the nif:nextWord property is used to link adjacent words (adjacent rows with text and/or annotation). Note that we do not use the transitive or inverse versions provided by NIF. Also note that nif:nextWord should *not* hold between words that belong to different sentences.
+                  rdfs:comment """NIF: This property can be used to make resources of nif:Sentence and nif:Word traversable, it can not be assumed that no gaps or whitespaces between sentences or words exist, i.e. string adjacency is not mandatory. 
+
+In CoNLL-RDF, neither inverse nor transitive versions of this property are employed. Otherwise, the use of nif:nextSentence is compliant with the original NIF definition, and thus, we do not introduce a novel vocabulary element for this purpose."""@en ;
+                  
+                  rdfs:range nif:Sentence ;
+                  
+                  rdfs:domain nif:Sentence .
+
+nif:nextWord rdf:type owl:FunctionalProperty ,
+                       owl:ObjectProperty ;
+              
+              rdfs:comment """In CoNLL-RDF, the nif:nextWord property is used to link adjacent words (adjacent rows with text and/or annotation). Note that we do not use the transitive or inverse versions provided by NIF. Also note that nif:nextWord should *not* hold between words that belong to different sentences.
 
 Our use of nif:nextWord is more restricted than in NIF, but it is compliant with it, so that we do not introduce an novel vocabulary element."""@en ;
-                  
-                  rdfs:range nif:Word ;
-                  
-                  rdfs:domain nif:Word .
+              
+              rdfs:range nif:Word ;
+              
+              rdfs:domain nif:Word .
 
 
 nif:sentence rdf:type owl:ObjectProperty ;
-                  
-                  owl:deprecated "true"^^xsd:boolean ;
-                  
-                  rdfs:comment """NIF definition: 
+              
+              owl:deprecated "true"^^xsd:boolean ;
+              
+              rdfs:comment """NIF definition: 
 This property links words and other structures to their sentence.
 
 In CoNLL-RDF, this function is taken over by conll:HEAD, hence, this property is deprecated. This property is preserved in the CoNLL-RDF ontology in order to explicate this difference from NIF."""@en ;
-                  
-                  rdfs:range nif:Sentence .
+              
+              rdfs:range nif:Sentence .
 
 nif:Sentence rdf:type owl:Class ;
-                  rdfs:comment """NIF definition: A sentence.
+              rdfs:comment """NIF definition: A sentence.
 
 In CoNLL-RDF, a nif:Sentence corresponds to a block of rows that contain text and/or annotations and that are separated from other sentences by an empty line."""@en .
 
 
 nif:Word rdf:type owl:Class ;
-              rdfs:comment """NIF definition: The Word class represents strings that are tokens or words. A string is a Word, if it is a word. We don't nitpic about whether it is a a pronoun, a name, a punctuation mark or an apostrophe or whether it is separated by white space from another Word or something else. ...
+          rdfs:comment """NIF definition: The Word class represents strings that are tokens or words. A string is a Word, if it is a word. We don't nitpic about whether it is a a pronoun, a name, a punctuation mark or an apostrophe or whether it is separated by white space from another Word or something else. ...
 
 In CoNLL-RDF, a nif:Word corresponds to a row in a CoNLL TSV file that contains text and/or annotations. Normally, this will be a (linguistic) word, but as NIF delegates the definitions of nif:Word to external tokenizers, we delegate the definition of nif:Word to data providers. If rows are being used for morpheme-level segmentation instead of word segmentation, they will still be considered as nif:Word."""@en .
 							   
@@ -197,45 +197,45 @@ In CoNLL-RDF, a nif:Word corresponds to a row in a CoNLL TSV file that contains 
 #######################################
 
 :DatatypeProperty rdf:type owl:DatatypeProperty ,
-                           owl:FunctionalProperty ;
-                  rdfs:comment """Abstract data type property for text and annotations in CoNLL TSV files. This property must be instantiated before being used.
+                       owl:FunctionalProperty ;
+              rdfs:comment """Abstract data type property for text and annotations in CoNLL TSV files. This property must be instantiated before being used.
 
 In CoNLL-RDF, the domain must be a nif:Word, range must be a string, and its subproperties must be functional."""@en ;
-                  rdfs:domain nif:Word ;
-                  rdfs:range xsd:string .
+              rdfs:domain nif:Word ;
+              rdfs:range xsd:string .
 
 :ObjectProperty rdf:type owl:ObjectProperty ;                
-                rdfs:comment """Abstract property for relations, e.g., syntactic relations (HEAD column) or semantic roles (argument columns following the predicate column).
+            rdfs:comment """Abstract property for relations, e.g., syntactic relations (HEAD column) or semantic roles (argument columns following the predicate column).
 
 All CoNLL properties point from one word (row) to something else (sentence or other word)."""@en ;
-                
-                rdfs:domain nif:Word .
+            
+            rdfs:domain nif:Word .
 
 :DOCUMENT_ID rdfs:subPropertyOf :DatatypeProperty ;
 	  rdfs:label "DOCUMENT_ID", "FILE_NAME";
-      rdfs:comment """Document ID 	This is a variation on the document filename (http://conll.cemantix.org/2011/data.html)"""@en;
+  rdfs:comment """Document ID 	This is a variation on the document filename (http://conll.cemantix.org/2011/data.html)"""@en;
 	  owl:versionInfo """roughly equivalent to the filename column in the PropBank skel format (cf. https://github.com/propbank/propbank-release/blob/master/docs/conll-conversion-notes.md)"""@en;
-      :hasMapping [ a :ColumnMapping; :column "1"^^xsd:int ; :dialect :CoNLL-11,:CoNLL-12,:PropBank] .
+  :hasMapping [ a :ColumnMapping; :column "1"^^xsd:int ; :dialect :CoNLL-11,:CoNLL-12,:PropBank] .
 	
 :PART_NUMBER rdfs:subPropertyOf :DatatypeProperty ;
 	  rdfs:label "PART_NUMBER";
-      rdfs:comment """Part number 	Some files are divided into multiple parts numbered as 000, 001, 002, ... etc. (http://conll.cemantix.org/2011/data.html)"""@en;
-      :hasMapping [ a :ColumnMapping; :column "2"^^xsd:int ; :dialect :CoNLL-11,:CoNLL-12] .
+  rdfs:comment """Part number 	Some files are divided into multiple parts numbered as 000, 001, 002, ... etc. (http://conll.cemantix.org/2011/data.html)"""@en;
+  :hasMapping [ a :ColumnMapping; :column "2"^^xsd:int ; :dialect :CoNLL-11,:CoNLL-12] .
 
 :SENTENCE_ID rdfs:subPropertyOf :DatatypeProperty;
 	  rdfs:label "SENTENCE_ID";
 	  rdfs:comment "sentence ID (https://github.com/propbank/propbank-release/blob/master/docs/conll-conversion-notes.md)";
-      :hasMapping [ a :ColumnMapping; :column "2"^^xsd:int ; :dialect :PropBank] .
+  :hasMapping [ a :ColumnMapping; :column "2"^^xsd:int ; :dialect :PropBank] .
 	  
 :ID rdfs:subPropertyOf :DatatypeProperty ;
 	  rdfs:label "ID", "WORD_NUMBER", "TOKEN_INDEX";
-      rdfs:comment """ID - Token counter, starting at 1 for each new sentence. (https://depparse.uvt.nl/DataFormat.html)
+  rdfs:comment """ID - Token counter, starting at 1 for each new sentence. (https://depparse.uvt.nl/DataFormat.html)
 	  ID: Word index, integer starting at 1 for each new sentence; may be a range for tokens with multiple words. (https://universaldependencies.org/docsv1/format.html)
 	  token index (https://github.com/propbank/propbank-release/blob/master/docs/conll-conversion-notes.md)
 	  """@en ;
 	  owl:versionInfo """For annotations of single sentences, this column is systematically named ID. In CoNLL-11, it has been named "word number"."""@en;
-      :hasMapping [ a :ColumnMapping; :column "1"^^xsd:int ; :dialect :CoNLL-07, :CoNLL-08, :CoNLL-X, :CoNLL-U, :UniversalPropositions] ;
-      :hasMapping [ a :ColumnMapping; :column "3"^^xsd:int ; :dialect :CoNLL-11,:CoNLL-12,:PropBank ].
+  :hasMapping [ a :ColumnMapping; :column "1"^^xsd:int ; :dialect :CoNLL-07, :CoNLL-08, :CoNLL-X, :CoNLL-U, :UniversalPropositions] ;
+  :hasMapping [ a :ColumnMapping; :column "3"^^xsd:int ; :dialect :CoNLL-11,:CoNLL-12,:PropBank ].
 
 :FORM rdfs:subPropertyOf :DatatypeProperty ;	  
 	  rdfs:label "FORM";
@@ -251,8 +251,8 @@ All CoNLL properties point from one word (row) to something else (sentence or ot
 
 :WORD rdfs:subPropertyOf :FORM;
 	  rdfs:label "WORD";
-      rdfs:comment """The first item on each line is a word (https://www.clips.uantwerpen.be/conll2003/ner/)"""@en;
-      :hasMapping [ a :ColumnMapping; :column "1"^^xsd:int ; :dialect 
+  rdfs:comment """The first item on each line is a word (https://www.clips.uantwerpen.be/conll2003/ner/)"""@en;
+  :hasMapping [ a :ColumnMapping; :column "1"^^xsd:int ; :dialect 
 													:TreeTagger, 
 													:CWB,
 													:SketchEngine,
@@ -262,11 +262,11 @@ All CoNLL properties point from one word (row) to something else (sentence or ot
 													:CoNLL-03,
 													:CoNLL-04,
 													:CoNLL-05];
-      :hasMapping [ a :ColumnMapping; :column "4"^^xsd:int ; :dialect 
+  :hasMapping [ a :ColumnMapping; :column "4"^^xsd:int ; :dialect 
 													:CoNLL-11,
 													:CoNLL-12,
 													:PropBank];
-      :hasMapping [ a :ColumnMapping; :column "3"^^xsd:int ; :dialect 
+  :hasMapping [ a :ColumnMapping; :column "3"^^xsd:int ; :dialect 
 													:UniMorph ].
 
 :LEMMA rdfs:subPropertyOf :DatatypeProperty;
@@ -370,7 +370,7 @@ All CoNLL properties point from one word (row) to something else (sentence or ot
 :CHUNK rdfs:subPropertyOf :DatatypeProperty ;
 	rdfs:label "CHUNK";
 	rdfs:comment """Text chunking consists of dividing a text in syntactically correlated parts of words. For example, the sentence He reckons the current account deficit will narrow to only # 1.8 billion in September . can be divided as follows:
-    [NP He ] [VP reckons ] [NP the current account deficit ] [VP will narrow ] [PP to ] [NP only # 1.8 billion ] [PP in ] [NP September ] . 
+[NP He ] [VP reckons ] [NP the current account deficit ] [VP will narrow ] [PP to ] [NP only # 1.8 billion ] [PP in ] [NP September ] . 
 	...
 	
 	 The chunk tags contain the name of the chunk type, for example I-NP for noun phrase words and I-VP for verb phrase words.
@@ -412,9 +412,9 @@ All CoNLL properties point from one word (row) to something else (sentence or ot
 	
 :NER rdfs:subPropertyOf :DatatypeProperty ;
 	rdfs:label "NER", "NE";
-    rdfs:comment """Named entities are phrases that contain the names of persons, organizations, locations, times and quantities. Example:
+rdfs:comment """Named entities are phrases that contain the names of persons, organizations, locations, times and quantities. Example:
 
-    [PER Wolff ] , currently a journalist in [LOC Argentina ] , played with [PER Del Bosque ] in the final years of the seventies in [ORG Real Madrid ] . 
+[PER Wolff ] , currently a journalist in [LOC Argentina ] , played with [PER Del Bosque ] in the final years of the seventies in [ORG Real Madrid ] . 
 	(https://www.clips.uantwerpen.be/conll2002/ner/)"""@en;
 	owl:versionInfo "CoNLL-02 and CoNLL-03 referred to this data as NER annotations, CoNLL-05 as NE annotations"@en;
 	:hasMapping [ a :ColumnMapping; :column "2"^^xsd:int; :dialect :CoNLL-02, :CoNLL-05 ];
