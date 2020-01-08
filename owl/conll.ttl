@@ -18,6 +18,7 @@ Column structure for various one-word-per-line TSV formats as used, e.g., by Cor
 The input format is “vertical” or “word-per-line (WPL)” text, as defined at the University of Stuttgart in the 1990s. Words are written one word per line, so each line contains one word, number or punctuation mark. (https://www.sketchengine.eu/documentation/preparing-corpus-text/)
 															 
 history
+2020-01-08 added lexical formats (CC)
 2019-09-07 added CWB and SketchEngine formats (CC)
 2019-09-04 :dialect recast as ObjectProperty (CC)
 2019-08-30 created (CC)
@@ -51,6 +52,11 @@ In chronological order, these are:
 - UniversalPropositions format: https://github.com/System-T/UniversalPropositions
   
 Note that we formalize the column structure of CoNLL formats only. Comments are preserved by CoNLL-RDF, but we do not formalize conventions for providing sentence-level metadata as *required* by CoNLL-U Plus.
+
+Related standards for lexical resources include:
+- UniMorph format (also used for CoNLL-SIGMORPHON 2017/2018, see above)
+- OMW format: Open Multilingual WordNet tab format (http://compling.hss.ntu.edu.sg/omw/)
+- TIAD-TSV: used in a series of Shared Tasks on Translation Inference Across Dictionaries (http://tiad2020.unizar.es/task.html)
   
 Other (non-TSV) CoNLL Shared Task formats (not covered by CoNLL-RDF):
 - CoNLL-99 bracketing format (https://nlp.cs.nyu.edu/evalb/EVALB.tgz, sample files)
@@ -191,6 +197,8 @@ In CoNLL-RDF, a nif:Word corresponds to a row in a CoNLL TSV file that contains 
 :CoNLL-U-Plus a :Dialect; rdfs:label "CoNLL-U Plus"; rdfs:isDefinedBy <https://universaldependencies.org/ext-format.html>.
 :PropBank a :Dialect; rdfs:label "PropBank CoNLL format", "PropBank Skel format"; rdfs:isDefinedBy <https://github.com/propbank/propbank-release/blob/master/docs/conll-conversion-notes.md>.
 :UniversalPropositions a :Dialect; rdfs:label "UniversalPropositions CoNLL format", "UniversalPropositions Skel format"; rdfs:isDefinedBy <https://github.com/System-T/UniversalPropositions>.
+:OMW a :Dialect; rdfs:label "Open Multilingual WordNet tab format"; rdfs:isDefinedBy <http://compling.hss.ntu.edu.sg/omw/>.
+:TIAD-TSV a :Dialect; rdfs:label "Translation Inference Across Dictionaries TSV format", "TIAD-2017 TSV format", "TIAD-2019 TSV format", "TIAD-2020 TSV format"; rdfs:isDefinedBy <http://tiad2020.unizar.es/task.html>.
 
 #######################################
 # selected column( label)s/properties #
@@ -238,20 +246,29 @@ All CoNLL properties point from one word (row) to something else (sentence or ot
   :hasMapping [ a :ColumnMapping; :column "3"^^xsd:int ; :dialect :CoNLL-11,:CoNLL-12,:PropBank ].
 
 :FORM rdfs:subPropertyOf :DatatypeProperty ;	  
-	  rdfs:label "FORM";
+	  rdfs:label "FORM", "WRITTEN_REP";
 	  rdfs:comment """Word form or punctuation symbol. (https://depparse.uvt.nl/DataFormat.html) 	  
 	  Until CoNLL-05 and in CoNLL-11, the label for this column was WORD. 
 	  CoNLL-07 introduced FORM as an alternative label (and generalization?). 
-	  The CoNLL-RDF ontology supports both versions, but using the original terminology (WORD) is encouraged."""@en;
+	  The CoNLL-RDF ontology supports both versions, but using the original terminology (WORD) is encouraged for linguistic annotations (not for lexical formats).
+	  
+	  In lexicon formats, FORM can be used for the (written representation of) a the lexical form of a lexical entry (ontolex:writtenRep, ontolex:Form), e.g., in TIAD-TSV. Note that ontolex:canonicalForm would be reserved for the LEMMA. For the sake of consistency, lexical formats should use FORM, note WORD.
+	  Also note that TIAD-TSV written representations are Turtle strings, i.e., they may be enclosed by double quotes and complemented with language tags. 
+	  This feature is not being used for TIAD-2017, TIAD-2019, or TIAD-2020 data, but for the TIAD-TSV format of the ACoLi Dictionary Collection (https://github.com/acoli-repo/acoli-dicts)
+	  """@en;
+	  :hasMapping [ a :ColumnMapping; :column "1"^^xsd:int; :dialect :TIAD-TSV ];
 	  :hasMapping [ a :ColumnMapping; :column "2"^^xsd:int ; :dialect :CoNLL-07, 
 																	  :CoNLL-08, 
 																	  :CoNLL-X, 
 																	  :CoNLL-U,
-																	  :UniversalPropositions].
+																	  :UniversalPropositions] ;
+	  :hasMapping [ a :ColumnMapping; :column "3"^^xsd:int ; :dialect :UniMorph ] .
 
 :WORD rdfs:subPropertyOf :FORM;
 	  rdfs:label "WORD";
-  rdfs:comment """The first item on each line is a word (https://www.clips.uantwerpen.be/conll2003/ner/)"""@en;
+  rdfs:comment """Word form in an annotated text (not in a lexical resource, cf. FORM), typically string-identical with the annotated data (unlike normalized forms such as LEMMA).
+  
+  The first item on each line is a word (https://www.clips.uantwerpen.be/conll2003/ner/)"""@en;
   :hasMapping [ a :ColumnMapping; :column "1"^^xsd:int ; :dialect 
 													:TreeTagger, 
 													:CWB,
@@ -265,13 +282,44 @@ All CoNLL properties point from one word (row) to something else (sentence or ot
   :hasMapping [ a :ColumnMapping; :column "4"^^xsd:int ; :dialect 
 													:CoNLL-11,
 													:CoNLL-12,
-													:PropBank];
-  :hasMapping [ a :ColumnMapping; :column "3"^^xsd:int ; :dialect 
-													:UniMorph ].
+													:PropBank] .
 
+:LEXICAL_ENTRY_URI rdfs:subPropertyOf :ObjectProperty ;
+		rdfs:comment """OntoLex lexical entry URI as provided by TIAD-TSV, must be a URI. Original TIAD abbreviation was lex_entry_a."""@en;
+		rdfs:label "LEXICAL_ENTRY";
+		:hasMapping [ a :ColumnMapping; :column "2"^^xsd:int; :dialect :TIAD-TSV ].
+
+:LEXICAL_SENSE_URI rdfs:subPropertyOf :ObjectProperty ;
+		rdfs:comment """OntoLex lexical sense (word sense) as provided by TIAD-TSV, must be a URI. Note that this must not be confused with WORD_SENSE, which is a string identifier."""@en;
+		rdfs:label "LEXICAL_SENSE";
+		:hasMapping [ a :ColumnMapping; :column "3"^^xsd:int; :dialect :TIAD-TSV ].
+
+:TRANSLATION_URI rdfs:subPropertyOf :ObjectProperty ;
+		rdfs:comment """OntoLex translation object, as provided by TIAD-TSV, must be a URI. Note that this must not be confused with TRANSLATION, which is a string."""@en;
+		rdfs:label "TRANSLATION_URI";
+		:hasMapping [ a :ColumnMapping; :column "4"^^xsd:int; :dialect :TIAD-TSV].
+
+:TRANSLATION_SENSE_URI rdfs:subPropertyOf :LEXICAL_SENSE_URI;
+		rdfs:comment """OntoLex sense URI of a translation (description language/target language expression). TIAD-TSV label is sense_b."""@en;
+		rdfs:label "TRANSLATION_SENSE_URI", "SENSE_B";
+		:hasMapping [ a :ColumnMapping; :column "5"^^xsd:int; :dialect :TIAD-TSV ].
+		
+:TRANSLATION_ENTRY_URI rdfs:subPropertyOf :LEXICAL_ENTRY_URI;
+		rdfs:comment """OntoLex lexical entry URI of the translation. TIAD-TSV label is lex_entry_b. Revised here for readability."""@en;
+		rdfs:label "TRANSLATION_ENTRY";
+		:hasMapping [ a :ColumnMapping; :column "6"^^xsd:int; :dialect :TIAD-TSV ].
+		
+:TRANSLATION rdfs:subPropertyOf :FORM ;
+		rdfs:comment """Written representation of the translation in TIAD-TSV. TIAD label is written_rep_b.
+		Not to be confused with TRANSLATION_URI, which is a URI. This is a plain string with optional language typing (cf. FORM)."""@en;
+		rdfs:label "TRANSLATION", "WRITTEN_REP_B";
+		:hasMapping [ a :ColumnMapping; :column "7"^^xsd:int; :dialect :TIAD-TSV].
+		
 :LEMMA rdfs:subPropertyOf :DatatypeProperty;
 	rdfs:label "LEMMA", "ROOT";
-	rdfs:comment """lemma information (https://www.ims.uni-stuttgart.de/forschung/ressourcen/werkzeuge/treetagger.en.html)
+	rdfs:comment """Lemma information (in linguistic annotation), canonical form of a lexical entry (in machine-readable dictionaries)
+
+	lemma information (https://www.ims.uni-stuttgart.de/forschung/ressourcen/werkzeuge/treetagger.en.html)
 	
 	Lemma or stem (depending on particular data set) of word form, or an underscore if not available. (https://depparse.uvt.nl/DataFormat.html)
 	"""@en;
@@ -281,7 +329,8 @@ All CoNLL properties point from one word (row) to something else (sentence or ot
 																	:CoNLL-07, 
 																	:CoNLL-08, 
 																	:CoNLL-X,
-																	:CoNLL-U];
+																	:CoNLL-U,
+																	:OWM];
 	:hasMapping [ a :ColumnMapping; :column "1"^^xsd:int; :dialect :UniMorph ].
 																	
 :PLEMMA rdfs:subPropertyOf :LEMMA;
@@ -296,7 +345,10 @@ All CoNLL properties point from one word (row) to something else (sentence or ot
 	
 	POSTAG: Fine-grained part-of-speech tag, where the tagset depends on the language, or identical to the coarse-grained part-of-speech tag if not available. (https://depparse.uvt.nl/DataFormat.html)
 	"""@en;
-	owl:versionInfo "The abbreviation POSTAG was only used in CoNLL-07. CoNLL-08 provides two POS columns, one for gold annotation (GPOS), one for automated annotation (PPOS), we assume that GPOS and POS are identical. CoNLL-X uses POS, again. The SketchEngine documentation uses both POS and TAG."@en;
+	owl:versionInfo "The abbreviation POSTAG was only used in CoNLL-07. CoNLL-08 provides two POS columns, one for gold annotation (GPOS), one for automated annotation (PPOS), we assume that GPOS and POS are identical. CoNLL-X uses POS, again. The SketchEngine documentation uses both POS and TAG.
+	
+	TIAD-TSV uses LexInfo URIs for POS annotation. If these are to be treated as :ObjectProperties, use POS_URI. In most cases, it will be sufficient/preferrable to treat them as as plain strings. Then, use POS as column label.
+	"@en;
 	:hasMapping [ a :ColumnMapping; :column "2"^^xsd:int; :dialect :TreeTagger,
 												 :CWB,
 												 :SketchEngine,
@@ -310,8 +362,14 @@ All CoNLL properties point from one word (row) to something else (sentence or ot
 																   :CoNLL-X,
 																   :CoNLL-11,
 																   :CoNLL-12,
-																   :PropBank].
+																   :PropBank];
+	:hasMapping [ a :ColumMapping; :column "8"^^xsd:int; :dialect :TIAD-TSV] .
 
+:POS_URI rdfs:subPropertyOf :ObjectProperty;
+	rdfs:label "POS_URI";
+	rdfs:comment """POS column in TIAD-TSV, must resolve to a URI, hence not to be confused with POS (with is a string)."""@en;
+	:hasMapping [ a :ColumMapping; :column "8"^^xsd:int; :dialect :TIAD-TSV].
+																		   
 :UPOS rdfs:subPropertyOf :POS;
 	rdfs:label "UPOSTAG";
 	rdfs:comment """UPOSTAG: Universal part-of-speech tag drawn from our revised version of the Google universal POS tags. (https://universaldependencies.org/docsv1/format.html)"""@en;
@@ -404,6 +462,16 @@ All CoNLL properties point from one word (row) to something else (sentence or ot
 	rdfs:label "WORD_SENSE";
 	rdfs:comment """Word sense 	This is the word sense of the word in Column 3. (http://conll.cemantix.org/2011/data.html)"""@en;
 	:hasMapping [ a :ColumnMapping; :column "9"^^xsd:int; :dialect :CoNLL-11,:CoNLL-12 ].
+	
+:LEXICAL_CONCEPT rdfs:subPropertyOf :DatatypeProperty;
+	rdfs:comment """OWM: "Princeton WordNet" (synset ID), terminology here follows OntoLex-Lemon and WordNet conventions"""@en;
+	rdfs:label "LEXICAL_CONCEPT", "SYNSET";
+	:hasMapping [ a :ColumnMapping; :column "1"^^xsd:int; :dialect :OMW ].
+	
+:PROPERTY rdfs:subPropertyOf :DatatypeProperty;
+	rdfs:comment """relation identifier, in OMW, this contains the static string "lemma" or (for French) "fra:lemma". Terminology here follows RDF terminology."""@en;
+	rdfs:label "PROPERTY", "RELATION";
+	:hasMapping [ a :ColumnMapping; :column "2"^^xsd:int; :dialect :OMW ].
 	
 :SPEAKER rdfs:subPropertyOf :DatatypeProperty ;
 	rdfs:label "SPEAKER", "AUTHOR";

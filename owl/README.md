@@ -19,6 +19,7 @@ https://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core
 but the original link does currently not resolve.
 
 ## History
+2020-01-08 added lexical formats (CC)
 2019-08-30 - 2019-09-07 initial submit (CC)
 
 ## Contributors
