@@ -10,7 +10,7 @@ We also provide a [hands-on tutorial](./examples) which comes with prepared scri
 ### Installing
 
 
-java is required, use `java --version` to check if you have java installed.
+java is required, use `java -version` to check if you have java installed.
 (Java version 8 or 9 is required for logging with log4j)
 
 Note: If you prefer using OpenJDK instead of Oracle Java, it might be necessary to install openjfx. (Thanks to Francesco Mambrini for finding out!)
@@ -21,6 +21,7 @@ sudo apt-get install openjfx
 All required java libraries are contained in [lib/](./lib).
 
 * `run.sh` is used to make things feel more bash-like. It determines the classpath, updates class files if necessary and runs the specified java class with the provided arguments. 
+* In case you are are not able to execute .sh scripts due to missing permission, make them executable with: `chmod +x <SCRIPT>`
 * eg. `cat foo.ttl | ./run.sh CoNLLRDFFormatter > foo_formatted.ttl` would pipe `foo.ttl` through `CoNLLRDFFormatter` into `foo_formatted.ttl`.
 * In case the respective `.class` files cannot be found, `run.sh` calls `compile.sh` to compile the java classes from source. Of course, you may also run `compile.sh` independently.
 
