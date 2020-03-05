@@ -139,7 +139,7 @@ Note, that we did not pipe the output through the **CoNLLRDFFormatter**, thus th
 [...]
 ```
 
-Now that the data is converted to CoNNL-RDF, we can perform SPARQL update and select statements on it, as explained in the next section.
+Now that the data is converted to CoNLL-RDF, we can perform SPARQL update and select statements on it, as explained in the next section.
 It's not a problem, if you're not familiar with SPARQL. We have already prepared SPARQL scripts in the `sparql/` folder for you to use and construct a pipeline with.
 
 2. **combining SPARQL updates to form a pipeline**
