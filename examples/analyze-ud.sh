@@ -17,11 +17,12 @@ SPARQL=$HOME/sparql;
 for file in `find $DATA/ud | grep 'dev.conllu.gz$'`; do gunzip -c $file; done | \
 egrep '^[0-9]+\s.*$|^$' |								# remove multiword tokens
 $ROOT/run.sh CoNLLStreamExtractor \
-	    https://github.com/UniversalDependencies/UD_English# \
-		IGNORE WORD IGNORE UPOS IGNORE IGNORE HEAD EDGE IGNORE IGNORE \
-		-u $SPARQL/remove-IGNORE.sparql \
-		   $SPARQL/analyze/UPOS-to-POSsynt.sparql \
-		   $SPARQL/analyze/EDGE-to-POSsynt.sparql \
-		   $SPARQL/analyze/consolidate-POSsynt.sparql \
-		-s $SPARQL/analyze/eval-POSsynt.sparql \
+    https://github.com/UniversalDependencies/UD_English# \
+	IGNORE WORD IGNORE UPOS IGNORE IGNORE HEAD EDGE IGNORE IGNORE \
+    |../run.sh CoNLLRDFUpdater -custom \
+    -updates sparql/remove-IGNORE.sparql \
+        sparql/analyze/UPOS-to-POSsynt.sparql \
+        sparql/analyze/EDGE-to-POSsynt.sparql \
+        sparql/analyze/consolidate-POSsynt.sparql \
+    | ../run.sh CoNLLRDFFormatter -sparqltsv sparql/analyze/eval-POSsynt.sparql \
 	| grep -v '#';

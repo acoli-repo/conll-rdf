@@ -3,11 +3,11 @@
 ## Requirements
 
 * make sure to download the repository from GitHub: `git clone https://github.com/acoli-repo/CoNLL-RDF.git`.
-* java is required, use `java --version` to check if you have java installed. 
+* java is required, use `java -version` to check if you have java installed. 
 * all paths up from this point assume you are in `examples/`, so make sure you move to this directory in the terminal.
-* In case you are are not able to execute .sh scripts due to missing permission, this helps: `chmod +x <SCRIPT>`
+* in some cases you might get an error like ```bash: ./../test.sh: Permission denied``` when trying to run a script. Use this command to change the filemode: `chmod +x <SCRIPT>`
 * so in this tutorials case: `chmod +x convert-ud.sh analyze-ud.sh ../run.sh ../compile.sh` 
-* Note: In some steps we will write the output directly to the terminal, use CTRL+C to stop the execution.
+* Note: In some steps we will write the output directly to the terminal, use `CTRL+C` to stop the execution.
 
 ## I.: Converting CoNLL to CoNLL-RDF (and back!)
 In this first section we will use the CoNLL-RDF API to convert an English corpus provided by Universal Dependencies to CoNLL-RDF.
@@ -20,9 +20,9 @@ The raw data can be found in [data/](../data/ud/UD_English-master), the full scr
 You now should have the unzipped .conllu file in the `example/` working directory. It should look something like this:
 
 ```CoNLL
-1       From    from    ADP     IN      _       3       case    _       _
-2       the     the     DET     DT      Definite=Def|PronType=Art       3       det     _       _
-3       AP      AP      PROPN   NNP     Number=Sing     4       nmod    _       _
+1	From	from	ADP	IN	_	3	case	_	_
+2	the	the	DET	DT	Definite=Def|PronType=Art	3	det	_	_
+3	AP	AP	PROPN	NNP	Number=Sing	4	nmod	_	_
 
 [...]
 ```
@@ -51,16 +51,20 @@ https://github.com/UniversalDependencies/UD_English# ID WORD LEMMA UPOS POS FEAT
 You should now find the `en-ud-dev.ttl` file which should look something like this:
 
 ```Turtle
-@prefix : <https://github.com/UniversalDependencies/UD_English> .
+@prefix : <https://github.com/UniversalDependencies/UD_English#> .
+@prefix powla: <http://purl.org/powla/powla.owl#> .
 @prefix terms: <http://purl.org/acoli/open-ie/> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#> .
+@prefix x: <http://purl.org/acoli/conll-rdf/xml#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#> .
 :s1_0 a nif:Sentence .
-:s1_1 a nif:Word; conll:WORD "From"; conll:ID "1"; conll:LEMMA "from"; conll:UPOS "ADP"; conll:POS "IN"; conll:HEAD :s1_3; conll:EDGE "case"; nif:nextWord :s1_2 .
-:s1_2 a nif:Word; conll:WORD "the"; conll:ID "2"; conll:LEMMA "the"; conll:UPOS "DET"; conll:POS "DT"; conll:FEAT "Definite=Def|PronType=Art"; conll:HEAD :s1_3; conll:EDGE "det"; nif:nextWord :s1_3 .
-:s1_3 a nif:Word; conll:WORD "AP"; conll:ID "3"; conll:LEMMA "AP"; conll:UPOS "PROPN"; conll:POS "NNP"; conll:FEAT "Number=Sing"; conll:HEAD :s1_4; conll:EDGE "nmod"; nif:nextWord :s1_4 .
+:s1_1 a nif:Word; conll:WORD "From"; conll:EDGE "case"; conll:HEAD :s1_3; conll:ID "1"; conll:LEMMA "from"; conll:POS "IN"; conll:UPOS "ADP"; nif:nextWord :s1_2 .
+:s1_2 a nif:Word; conll:WORD "the"; conll:EDGE "det"; conll:FEAT "Definite=Def|PronType=Art"; conll:HEAD :s1_3; conll:ID "2"; conll:LEMMA "the"; conll:POS "DT"; conll:UPOS "DET"; nif:nextWord :s1_3 .
+:s1_3 a nif:Word; conll:WORD "AP"; conll:EDGE "nmod"; conll:FEAT "Number=Sing"; conll:HEAD :s1_4; conll:ID "3"; conll:LEMMA "AP"; conll:POS "NNP"; conll:UPOS "PROPN"; nif:nextWord :s1_4 .
+
+[...]
 ```
 
 And that's it, you generated your first CoNLL-RDF file!
@@ -70,14 +74,15 @@ And that's it, you generated your first CoNLL-RDF file!
 To keep CoNLL-RDF integrated with all prior technology that depends on CoNLL, we can use the **CoNLLRDFFormatter** to quickly convert CoNLL-RDF back to CoNLL. To do so, use the `-conll` flag, followed by the column names that you want to transfer to CoNLL. Say we are only interested in the word, lemma and feature columns and want to limit the output to these columns:
 
 ```shell
-cat en-ud-dev.ttl | ../run.sh CoNLLRDFFormatter \
--conll ID WORD LEMMA FEAT > en-ud-dev-roundtrip.conll
+cat en-ud-dev.ttl \
+	| ../run.sh CoNLLRDFFormatter -conll ID WORD LEMMA FEAT \
+	> en-ud-dev-roundtrip.conll
 ```
 
 Which will result in the (reduced) CoNLL file:
 
 ```CoNLL
-# ID	WORD	LEMMA	FEAT	
+# global.columns = ID WORD LEMMA FEAT
 1	From	from	_	
 2	the	the	Definite=Def|PronType=Art	
 3	AP	AP	Number=Sing	
@@ -87,7 +92,7 @@ Which will result in the (reduced) CoNLL file:
 
 ## II.: Integrating SPARQL into your pipeline
 
-Now we can make things more interesting, by adding SPARQL updates to our pipeline. I advice you move to a text editor, since putting everything in one shell command should get impractical by now. 
+Now we can make things more interesting, by adding SPARQL updates to our pipeline. I advise you move to a text editor, since editing the command in the shell should get impractical by now. 
 
 In this example we will perform a soundness check for Universal Dependency POS tags. UD POS tags are meant to be universal, but they mix (presumably universal) syntactic criteria with (language-specific) morphological/lexical criteria. We test to what extent syntactic criteria are overridden by other criteria.
 We will do this by mapping UD tags to syntactic prototypes, then deriving syntactic prototypes from UD dependencies and compare them afterwards whether they match.
@@ -99,8 +104,8 @@ If you get stuck, see [analyze-ud.sh](analyze-ud.sh) for the full solution.
 As in the first example we uncompress our corpus file and run it through the **CoNLLStreamExtractor**. Because we don't need all columns for our analysis, we simply name them IGNORE to later clear them.
 
 ```shell
-gunzip -c ../data/ud/UD_English-master/en-ud-dev.conllu.gz | \
-	../run.sh CoNLLStreamExtractor https://github.com/UniversalDependencies/UD_English# \
+gunzip -c ../data/ud/UD_English-master/en-ud-dev.conllu.gz \
+	| ../run.sh CoNLLStreamExtractor https://github.com/UniversalDependencies/UD_English# \
 	IGNORE WORD IGNORE UPOS IGNORE IGNORE HEAD EDGE IGNORE IGNORE 
 ```
 
@@ -108,9 +113,11 @@ Note, that we did not pipe the output through the **CoNLLRDFFormatter**, thus th
 
 ```Turtle
 @prefix :      <https://github.com/UniversalDependencies/UD_English#> .
+@prefix powla: <http://purl.org/powla/powla.owl#> .
 @prefix terms: <http://purl.org/acoli/open-ie/> .
 @prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#> .
+@prefix x:     <http://purl.org/acoli/conll-rdf/xml#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix nif:   <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#> .
 
@@ -129,22 +136,44 @@ Note, that we did not pipe the output through the **CoNLLRDFFormatter**, thus th
         conll:UPOS    "PUNCT" ;
         conll:WORD    ":" .
 
+[...]
 ```
 
-We now get to use another functionality of the **CoNLLStreamExtractor**, namely performing SPARQL update and select statements. We do this via the `-u` argument for updates and `-s` for a select statement. It's not a problem, if you're not familiar with SPARQL. We have already prepared SPARQL scripts in the `sparql/` folder for you to use and construct a pipeline with.
+Now that the data is converted to CoNLL-RDF, we can perform SPARQL update and select statements on it, as explained in the next section.
+It's not a problem, if you're not familiar with SPARQL. We have already prepared SPARQL scripts in the `sparql/` folder for you to use and construct a pipeline with.
 
 2. **combining SPARQL updates to form a pipeline**
 
-Now we have the first part of our pipeline ready. We can now start to append the SPARQL updates to it, as I will explain below. I suggest you add the updates one after the other to see the progress and get a feel how things work. You can `CTRL+C` after a few lines have been written to stdout.
+* Note: a previous version of this document explained how to apply SPARQL updates using the **CoNLLStreamExtractor** class. The following describes the new recommended method of using the dedicated **CoNLLRDFUpdater** class.
 
+Now we have the first part of our pipeline ready. We can now start to append the SPARQL updates to it, as I will explain below. I suggest you add the updates one after the other to see the progress and get a feel how things work. You can `CTRL+C` after a few lines have been written to stdout.
 
 * First, we remove everything that originated from a column that we don't need and named ignore before:
 
 ```shell
-gunzip -c ../data/ud/UD_English-master/en-ud-dev.conllu.gz | \
-	../run.sh CoNLLStreamExtractor https://github.com/UniversalDependencies/UD_English# \
+cat en-ud-dev.conllu \
+	| ../run.sh CoNLLStreamExtractor https://github.com/UniversalDependencies/UD_English# \
 	IGNORE WORD IGNORE UPOS IGNORE IGNORE HEAD EDGE IGNORE IGNORE \
-	-u sparql/remove-IGNORE.sparql
+	| ../run.sh CoNLLRDFUpdater -custom \
+	-updates sparql/remove-IGNORE.sparql
+```
+```Turtle
+[...]
+
+:s1_2   a             nif:Word ;
+        nif:nextWord  :s1_3 ;
+        conll:EDGE    "det" ;
+        conll:HEAD    :s1_3 ;
+        conll:UPOS    "DET" ;
+        conll:WORD    "the" .
+
+:s1_7   a           nif:Word ;
+        conll:EDGE  "punct" ;
+        conll:HEAD  :s1_4 ;
+        conll:UPOS  "PUNCT" ;
+        conll:WORD  ":" .
+
+[...]
 ```
 
 * Second, we derive syntactic prototypes. First from the UPOS column and then from the EDGE column: 
@@ -153,24 +182,87 @@ gunzip -c ../data/ud/UD_English-master/en-ud-dev.conllu.gz | \
 	sparql/analyze/UPOS-to-POSsynt.sparql \
 	sparql/analyze/EDGE-to-POSsynt.sparql
 ```
+```Turtle
+[...]
+
+:s1_2   a                   nif:Word ;
+        nif:nextWord        :s1_3 ;
+        conll:EDGE          "det" ;
+        conll:HEAD          :s1_3 ;
+        conll:POSsynt_UD    "AN" ;
+        conll:POSsynt_UPOS  "AN" ;
+        conll:UPOS          "DET" ;
+        conll:WORD          "the" .
+
+:s1_7   a                   nif:Word ;
+        conll:EDGE          "punct" ;
+        conll:HEAD          :s1_4 ;
+        conll:POSsynt_UD    "X" ;
+        conll:POSsynt_UPOS  "X" ;
+        conll:UPOS          "PUNCT" ;
+        conll:WORD          ":" .
+
+[...]
+```
 
 * We then compare both syntactic prototypes and create another attribute which is 1 if both match and 0 if they don't. Finally, we generate the output in columns with our first SPARQL select statement.  
 
 ```shell
-	sparql/analyze/consolidate-POS-synt.sparql \
-	-s sparql/analyze/eval-POSsynt.sparql
+	sparql/analyze/consolidate-POSsynt.sparql
+```
+```Turtle
+[...]
+
+:s1_2   a                    nif:Word ;
+        nif:nextWord         :s1_3 ;
+        conll:EDGE           "det" ;
+        conll:HEAD           :s1_3 ;
+        conll:POSsynt_UD     "AN" ;
+        conll:POSsynt_UPOS   "AN" ;
+        conll:POSsynt_match  "1" ;
+        conll:UPOS           "DET" ;
+        conll:WORD           "the" .
+
+:s1_7   a                    nif:Word ;
+        conll:EDGE           "punct" ;
+        conll:HEAD           :s1_4 ;
+        conll:POSsynt_UD     "X" ;
+        conll:POSsynt_UPOS   "X" ;
+        conll:POSsynt_match  "1" ;
+        conll:UPOS           "PUNCT" ;
+        conll:WORD           ":" .
+
+[...]
+```
+```shell
+	| ../run.sh CoNLLRDFFormatter -sparqltsv sparql/analyze/eval-POSsynt.sparql
+```
+```Turtle
+# global.columns = word upos udep POSsynt_UPOS POSsynt_UDEP match
+From	ADP	case	AN	AN	1	
+the	DET	det	AN	AN	1	
+AP	PROPN	nmod	N	N	1	
+comes	VERB	root	V	V	1	
+this	DET	det	AN	AN	1	
+story	NOUN	nsubj	N	N	1	
+:	PUNCT	punct	X	X	1	
+
+[...]
 ```
 
 3. **Final pipeline**:
 
 ```shell
-gunzip -c ../data/ud/UD_English-master/en-ud-dev.conllu.gz | \
-	../run.sh CoNLLStreamExtractor https://github.com/UniversalDependencies/UD_English# \
-	IGNORE WORD IGNORE UPOS IGNORE IGNORE HEAD EDGE IGNORE IGNORE \
-	-u 	sparql/remove-IGNORE.sparql \
-		sparql/analyze/UPOS-to-POSsynt.sparql \
-		sparql/analyze/EDGE-to-POSsynt.sparql \
-		sparql/analyze/consolidate-POSsynt.sparql \
-	-s 	sparql/analyze/eval-POSsynt.sparql \
-	| grep -v '#';
+gunzip -c ../data/ud/UD_English-master/en-ud-dev.conllu.gz > en-ud-dev.conllu
+
+cat en-ud-dev.conllu \
+    |../run.sh CoNLLStreamExtractor https://github.com/UniversalDependencies/UD_English# \
+    IGNORE WORD IGNORE UPOS IGNORE IGNORE HEAD EDGE IGNORE IGNORE \
+    |../run.sh CoNLLRDFUpdater -custom \
+    -updates sparql/remove-IGNORE.sparql \
+        sparql/analyze/UPOS-to-POSsynt.sparql \
+        sparql/analyze/EDGE-to-POSsynt.sparql \
+        sparql/analyze/consolidate-POSsynt.sparql \
+    | ../run.sh CoNLLRDFFormatter -sparqltsv sparql/analyze/eval-POSsynt.sparql \
+    | grep -v '#';
 ```
