@@ -20,9 +20,9 @@ The raw data can be found in [data/](../data/ud/UD_English-master), the full scr
 You now should have the unzipped .conllu file in the `example/` working directory. It should look something like this:
 
 ```CoNLL
-1       From    from    ADP     IN      _       3       case    _       _
-2       the     the     DET     DT      Definite=Def|PronType=Art       3       det     _       _
-3       AP      AP      PROPN   NNP     Number=Sing     4       nmod    _       _
+1	From	from	ADP	IN	_	3	case	_	_
+2	the	the	DET	DT	Definite=Def|PronType=Art	3	det	_	_
+3	AP	AP	PROPN	NNP	Number=Sing	4	nmod	_	_
 
 [...]
 ```
@@ -51,16 +51,18 @@ https://github.com/UniversalDependencies/UD_English# ID WORD LEMMA UPOS POS FEAT
 You should now find the `en-ud-dev.ttl` file which should look something like this:
 
 ```Turtle
-@prefix : <https://github.com/UniversalDependencies/UD_English> .
+@prefix : <https://github.com/UniversalDependencies/UD_English#> .
+@prefix powla: <http://purl.org/powla/powla.owl#> .
 @prefix terms: <http://purl.org/acoli/open-ie/> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#> .
+@prefix x: <http://purl.org/acoli/conll-rdf/xml#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#> .
 :s1_0 a nif:Sentence .
-:s1_1 a nif:Word; conll:WORD "From"; conll:ID "1"; conll:LEMMA "from"; conll:UPOS "ADP"; conll:POS "IN"; conll:HEAD :s1_3; conll:EDGE "case"; nif:nextWord :s1_2 .
-:s1_2 a nif:Word; conll:WORD "the"; conll:ID "2"; conll:LEMMA "the"; conll:UPOS "DET"; conll:POS "DT"; conll:FEAT "Definite=Def|PronType=Art"; conll:HEAD :s1_3; conll:EDGE "det"; nif:nextWord :s1_3 .
-:s1_3 a nif:Word; conll:WORD "AP"; conll:ID "3"; conll:LEMMA "AP"; conll:UPOS "PROPN"; conll:POS "NNP"; conll:FEAT "Number=Sing"; conll:HEAD :s1_4; conll:EDGE "nmod"; nif:nextWord :s1_4 .
+:s1_1 a nif:Word; conll:WORD "From"; conll:EDGE "case"; conll:HEAD :s1_3; conll:ID "1"; conll:LEMMA "from"; conll:POS "IN"; conll:UPOS "ADP"; nif:nextWord :s1_2 .
+:s1_2 a nif:Word; conll:WORD "the"; conll:EDGE "det"; conll:FEAT "Definite=Def|PronType=Art"; conll:HEAD :s1_3; conll:ID "2"; conll:LEMMA "the"; conll:POS "DT"; conll:UPOS "DET"; nif:nextWord :s1_3 .
+:s1_3 a nif:Word; conll:WORD "AP"; conll:EDGE "nmod"; conll:FEAT "Number=Sing"; conll:HEAD :s1_4; conll:ID "3"; conll:LEMMA "AP"; conll:POS "NNP"; conll:UPOS "PROPN"; nif:nextWord :s1_4 .
 
 [...]
 ```
@@ -72,14 +74,15 @@ And that's it, you generated your first CoNLL-RDF file!
 To keep CoNLL-RDF integrated with all prior technology that depends on CoNLL, we can use the **CoNLLRDFFormatter** to quickly convert CoNLL-RDF back to CoNLL. To do so, use the `-conll` flag, followed by the column names that you want to transfer to CoNLL. Say we are only interested in the word, lemma and feature columns and want to limit the output to these columns:
 
 ```shell
-cat en-ud-dev.ttl | ../run.sh CoNLLRDFFormatter \
--conll ID WORD LEMMA FEAT > en-ud-dev-roundtrip.conll
+cat en-ud-dev.ttl \
+	| ../run.sh CoNLLRDFFormatter -conll ID WORD LEMMA FEAT \
+	> en-ud-dev-roundtrip.conll
 ```
 
 Which will result in the (reduced) CoNLL file:
 
 ```CoNLL
-# ID	WORD	LEMMA	FEAT	
+# global.columns = ID WORD LEMMA FEAT
 1	From	from	_	
 2	the	the	Definite=Def|PronType=Art	
 3	AP	AP	Number=Sing	
@@ -101,8 +104,8 @@ If you get stuck, see [analyze-ud.sh](analyze-ud.sh) for the full solution.
 As in the first example we uncompress our corpus file and run it through the **CoNLLStreamExtractor**. Because we don't need all columns for our analysis, we simply name them IGNORE to later clear them.
 
 ```shell
-gunzip -c ../data/ud/UD_English-master/en-ud-dev.conllu.gz | \
-	../run.sh CoNLLStreamExtractor https://github.com/UniversalDependencies/UD_English# \
+gunzip -c ../data/ud/UD_English-master/en-ud-dev.conllu.gz \
+	| ../run.sh CoNLLStreamExtractor https://github.com/UniversalDependencies/UD_English# \
 	IGNORE WORD IGNORE UPOS IGNORE IGNORE HEAD EDGE IGNORE IGNORE 
 ```
 
@@ -110,9 +113,11 @@ Note, that we did not pipe the output through the **CoNLLRDFFormatter**, thus th
 
 ```Turtle
 @prefix :      <https://github.com/UniversalDependencies/UD_English#> .
+@prefix powla: <http://purl.org/powla/powla.owl#> .
 @prefix terms: <http://purl.org/acoli/open-ie/> .
 @prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#> .
+@prefix x:     <http://purl.org/acoli/conll-rdf/xml#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix nif:   <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#> .
 
@@ -130,6 +135,8 @@ Note, that we did not pipe the output through the **CoNLLRDFFormatter**, thus th
         conll:IGNORE  ":" , "7" ;
         conll:UPOS    "PUNCT" ;
         conll:WORD    ":" .
+
+[...]
 ```
 
 Now that the data is converted to CoNNL-RDF, we can perform SPARQL update and select statements on it, as explained in the next section.
@@ -141,7 +148,6 @@ It's not a problem, if you're not familiar with SPARQL. We have already prepared
 
 Now we have the first part of our pipeline ready. We can now start to append the SPARQL updates to it, as I will explain below. I suggest you add the updates one after the other to see the progress and get a feel how things work. You can `CTRL+C` after a few lines have been written to stdout.
 
-
 * First, we remove everything that originated from a column that we don't need and named ignore before:
 
 ```shell
@@ -152,12 +158,7 @@ cat en-ud-dev.conllu \
 	-updates sparql/remove-IGNORE.sparql
 ```
 ```Turtle
-@prefix :      <https://github.com/UniversalDependencies/UD_English#> .
-@prefix terms: <http://purl.org/acoli/open-ie/> .
-@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#> .
-@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix nif:   <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#> .
+[...]
 
 :s1_2   a             nif:Word ;
         nif:nextWord  :s1_3 ;
@@ -166,11 +167,11 @@ cat en-ud-dev.conllu \
         conll:UPOS    "DET" ;
         conll:WORD    "the" .
 
-:s1_7   a             nif:Word ;
-        conll:EDGE    "punct" ;
-        conll:HEAD    :s1_4 ;
-        conll:UPOS    "PUNCT" ;
-        conll:WORD    ":" .
+:s1_7   a           nif:Word ;
+        conll:EDGE  "punct" ;
+        conll:HEAD  :s1_4 ;
+        conll:UPOS  "PUNCT" ;
+        conll:WORD  ":" .
 
 [...]
 ```
@@ -207,7 +208,7 @@ cat en-ud-dev.conllu \
 * We then compare both syntactic prototypes and create another attribute which is 1 if both match and 0 if they don't. Finally, we generate the output in columns with our first SPARQL select statement.  
 
 ```shell
-	sparql/analyze/consolidate-POS-synt.sparql
+	sparql/analyze/consolidate-POSsynt.sparql
 ```
 ```Turtle
 [...]
@@ -237,15 +238,7 @@ cat en-ud-dev.conllu \
 	| ../run.sh CoNLLRDFFormatter -sparqltsv sparql/analyze/eval-POSsynt.sparql
 ```
 ```Turtle
-# word	upos	udep	POSsynt_UPOS	POSsynt_UDEP	match	
-From	ADP	case	AN	AN	1	
-the	DET	det	AN	AN	1	
-AP	PROPN	nmod	N	N	1	
-comes	VERB	root	V	V	1	
-this	DET	det	AN	AN	1	
-story	NOUN	nsubj	N	N	1	
-:	PUNCT	punct	X	X	1	
-## after grep
+# global.columns = word upos udep POSsynt_UPOS POSsynt_UDEP match
 From	ADP	case	AN	AN	1	
 the	DET	det	AN	AN	1	
 AP	PROPN	nmod	N	N	1	
