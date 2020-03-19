@@ -1,7 +1,8 @@
 
 # conll-rdf
 
-tool package for converting between formats of annotated linguistic corpora. (e.g. `.conll` files into conll-rdf (`.ttl`) and back.) We support a variety of CoNLL formats.
+tool package for converting between formats of annotated linguistic corpora. (e.g. `.conll` files into conll-rdf (`.ttl`) and back.)  
+We support a variety of CoNLL formats.  
 conll-rdf consists of a number of java modules which can be stacked to construct a data processing pipeline. 
 
 ## Getting Started
