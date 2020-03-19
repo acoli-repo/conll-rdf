@@ -70,15 +70,14 @@ IMPORTANT USAGE HINT: All given data is parsed sentence-wise (if applicable). Me
 Synopsis: ```CoNLLStreamExtractor baseURI FIELD1[.. FIELDn] [-u SPARQL_UPDATE1..m] [-s SPARQL_SELECT]```
 
 * `baseURI` (required): ideally a resolvable URL to adhere to the five stars of LOD.
-* `FIELD1[.. FIELDn]`: name each column of input conll. 
-	* at least one column name is required.
-	* note that `CoNLLStreamExtractor` will not check the number of columns. Make sure the list of fields match the number of columns of your CoNLL input. 
-	* In case input is [CoNLL-U Plus](https://universaldependencies.org/ext-format.html), we read the fieldnames from the `# global.comments = [FIELDS]` comment.
-	This comment MUST be in the first line.
-* `[-u SPARQL_UPDATE1 .. m]`: execute sparql updates before writing to stdout. 
-	* can be followed by an optional integer x in {}-parentheses = number of repetitions e.g. `-u examples/sparql/remove-ID.sparql{5}`. Will repeat the update x times or until model stops changing.
+* `FIELD1[.. FIELDn]`: name each column of input conll.
+       * this option overrides any column names specified in the comments of the input.
+       * If no fields are provided here, we check the first line of the input for a `# global.columns = [FIELDS]` comment, as specified in [CoNLL-U Plus](https://universaldependencies.org/ext-format.html).
+	* note that `CoNLLStreamExtractor` will not check if the fields match the input. Make sure the number of fields matches the number of columns of your CoNLL input. 
+* `[-u SPARQL_UPDATE1 .. m]`: execute sparql updates before writing to stdout.
+       * **The SPARQL_UPDATE parameter is DEPRECATED - please use CoNLLRDFUpdater instead!**
+       * can be followed by an optional integer x in {}-parentheses = number of repetitions e.g. `-u examples/sparql/remove-ID.sparql{5}`. Will repeat the update x times or until model stops changing.
 		* `{u}` for unlimited will repeat 999 times.
-	* See [examples/](./examples) for reference. 
 * `[-s SPARQL_SELECT]`: Optional select statement for generating TSV output.
 
 ### CoNLLRDFUpdater
@@ -89,13 +88,14 @@ Synopsis: ```CoNLLRDFUpdater -custom [-model URI [GRAPH]]* -updates [UPDATE]+```
 
 * `-custom [-model URI [GRAPH]]* -updates [UPDATE]+` : for executing customized set of SPARQL updates
 	* `-updates [SPARQL_UPDATE1 .. m]` (required): List of paths to SPARQL scripts. Will be executed before writing to stdout.
-		* can be followed by an optional integer x in {}-parentheses = number of repetitions e.g. `-u examples/sparql/remove-ID.sparql{5}`. Will repeat the update x times or until model stops changing.
-			* `{u}` for unlimited will repeat 999 times.
+		* can be followed by an optional integer x in {}-parentheses = number of repetitions e.g. `-updates examples/sparql/remove-ID.sparql{5}`. Will repeat the update x times or until model stops changing.
+			* `{u}` for unlimited will repeat up to 999 times.
+	* See [examples/](./examples) for reference. 
 	* `-model URI [GRAPH]` (optional): List of external resources to be loaded before updating.
 		* `URI` (required): Path to external ontology. Will be pre-loaded by the Updater and available for the whole runtime.
 		* `GRAPH` (optional): GRAPH into which the ontology should be loaded. If empty: `URI` is used as graph name.
 
-Hint: The -updates parameter can take a SPARQL-update-query as a String. If this String is passed on by BASH/SHELL the String must be enclosed in \`-qutoation marks (will be otherwise split into several arguments)!
+Hint: The -updates parameter can take a SPARQL-update-query as a String. If this String is passed on by BASH/SHELL the String must be enclosed in \`-quotation marks (will be otherwise split into several arguments)!
 
 ### CoNLLRDFFormatter
 
