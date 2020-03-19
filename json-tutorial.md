@@ -11,10 +11,23 @@ The entire Pipeline is configured in the json document that we pass along with t
 Let's take a look at the structure:
 ```json
 {
+```
+The outermost struct is a dictionary with the keys "input", "output", "pipeline".
+```json
 "input" : "data/ud/UD_English-master/en-ud-dev.conllu.gz"
+```
+"input" in this case has the path to a .connlu.gz file.  
+The tool recognizes the file-extension and decompresses the file before passing the stream to the first class in the pipeline.
+```json
 , "output" : "System.out"
-, "pipeline" : [ 
-
+```
+"output" has the literal "System.out".  
+System.out doesn't represent a file, but a stream to the shell. The last tool in the pipeline will stream its output to the shell.
+```json
+, "pipeline" : [
+```
+"pipeline" stores a list of dicts. The order within the list is the order in which the tools are chained.
+```json
 	{ "class" : "CoNLLStreamExtractor",
 		"baseURI" : "https://github.com/UniversalDependencies/UD_English#",
 		"columns" : ["IGNORE", "WORD", "IGNORE", "UPOS", "IGNORE", "IGNORE", "HEAD", "EDGE", "IGNORE", "IGNORE"]
@@ -37,18 +50,10 @@ Let's take a look at the structure:
 ]
 }
 ```
-The outermost struct is a dictionary with the keys "input", "output", "pipeline".
-
-"input" stores a literal that is the path to a .connlu.gz file.  
-The tool automatically decompresses .connlu.gz files before passing the stream to the first class in the pipeline.
-
-"output" stores a literal that is "System.out".  
-System.out doesn't represent a file, but a stream to the shell. The last tool in the pipeline will stream its output to the shell.
-
-"pipeline" stores a list of dicts. The order within it is the order in which the tools are chained.
 
 Each entry in the list contains the key "class", which stores the name of the class to be used. The remaining keys vary depending on this class.
 
+See [the template](src/template.conf.json) for more options.
 
 ```json
 {
