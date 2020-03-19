@@ -68,6 +68,11 @@ All relevant classes are in [src/](./src/org/acoli/conll/rdf). Sample scripts in
 
 IMPORTANT USAGE HINT: All given data is parsed sentence-wise (if applicable). Meaning that for CoNLL data as input a newline is considered as a sentence boundary marker (in regard to the CoNLL data model). The ID column (if present) must contain sentence internal IDs (if this is not the case this column must be renamed before conversion/parsing) - if no such column is provided sentence internal IDs will be generated. Please refer to the paper mentioned below under Reference.
 
+### CoNLLRDFManager
+`CoNLLRDFManager` processes a pipeline provided as JSON.
+Synopsis: `CoNLLRDFManager -c [JSON-config]`
+* `-c [JSON-config]` (required): provide the path to a json-file.
+
 ### CoNLLStreamExtractor
 
 `CoNLLStreamExtractor` expects CoNLL from `stdin` and writes conll-rdf to `stdout`.  
