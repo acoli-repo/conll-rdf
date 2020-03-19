@@ -1,6 +1,6 @@
-#CoNLL-RDF Pipelines with Json
+# CoNLL-RDF Pipelines with Json
 CoNLL-RDF tools can be called from the shell individually and chained with pipes, but there is a better method.
-##CoNLLRDFManager
+## CoNLLRDFManager
 You can run the CoNLL-RDF_Manager just like the other Java-classes.
 ```bash
 ./run.sh CoNLLRDFManager -c examples/analyze-ud.json
@@ -11,34 +11,40 @@ The entire Pipeline is configured in the json document that we pass along with t
 Let's take a look at the structure:
 ```json
 {
+"input" : ""
+, "output" : ""
+, "pipeline" : [ ]
+}
 ```
-The outermost struct is a dictionary with the keys "input", "output", "pipeline".
+The config-json is a dictionary with the keys "input", "output" and "pipeline".
 ```json
 "input" : "data/ud/UD_English-master/en-ud-dev.conllu.gz"
 ```
 "input" in this case has the path to a .connlu.gz file.  
 The tool recognizes the file-extension and decompresses the file before passing the stream to the first class in the pipeline.
 ```json
-, "output" : "System.out"
+"output" : "System.out"
 ```
 "output" has the literal "System.out".  
 System.out doesn't represent a file, but a stream to the shell. The last tool in the pipeline will stream its output to the shell.
 ```json
-, "pipeline" : [
+"pipeline" : [
+	{ "class" : "CoNLLStreamExtractor", ... },
+	{ "class" : "CoNLLRDFUpdater", ... },
+	{ "class" : "CoNLLRDFFormatter", ... }
+]
 ```
 "pipeline" stores a list of dicts. The order within the list is the order in which the tools are chained.
 ```json
 	{ "class" : "CoNLLStreamExtractor",
-		"baseURI" : "https://github.com/UniversalDependencies/UD_English#",
-		"columns" : ["IGNORE", "WORD", "IGNORE", "UPOS", "IGNORE", "IGNORE", "HEAD", "EDGE", "IGNORE", "IGNORE"]
+		"baseURI" : "",
+		"columns" : [ ]
 	},
 	
-	{ "class" : "CoNLLRDFUpdater"
-		, "updates" : [
-			{"path":"examples/sparql/remove-IGNORE.sparql", "iter":"1"},
-			{"path":"examples/sparql/analyze/UPOS-to-POSsynt.sparql", "iter":"1"},
-			{"path":"examples/sparql/analyze/EDGE-to-POSsynt.sparql", "iter":"1"},
-			{"path":"examples/sparql/analyze/consolidate-POSsynt.sparql", "iter":"1"}
+	{ "class" : "CoNLLRDFUpdater",
+		"updates" : [
+			{"path":"", "iter":"1"},
+			...
 		]
 	} ,
 	
@@ -51,7 +57,7 @@ System.out doesn't represent a file, but a stream to the shell. The last tool in
 }
 ```
 
-Each entry in the list contains the key "class", which stores the name of the class to be used. The remaining keys vary depending on this class.
+Each entry in the list contains the key "class", which stores the name of the class to be used. The remaining keys vary depending on the class.
 
 See [the template](src/template.conf.json) for more options.
 
