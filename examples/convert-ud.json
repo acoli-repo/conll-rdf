@@ -1,0 +1,35 @@
+// CoNLL-RDF EXAMPLE: convert a corpus to RDF
+// 
+// example pipeline for the RDF edition of Universal Dependencies (UD) corpora 
+// cf. link-ud.sh for linking such data
+//
+// 1. read
+//for file in `find data/ud -name '\.conllu.gz$'`; do \
+//	echo $file; 
+//	filename=$(basename "$file"); 
+//	tmp=UD_${file#*UD_}; 
+//	lang=${tmp%-master/*}; 
+//	gunzip -c $file | \
+// 2. parse UD data to RDF
+//	CoNLLStreamExtractor https://github.com/UniversalDependencies/$lang#
+// 3. format
+//	$* > $DATA/ud/UD_English-master/$filename.ttl \ # nicht abhängig von lang?
+//; done
+//
+{
+"input" : "data/ud/UD_English-master/en-ud-dev.conllu.gz"
+, "output" : "data/ud/UD_English-master/en-ud-dev.ttl"
+, "pipeline" : [ 
+
+	{ "class" : "CoNLLStreamExtractor",
+		"baseURI" : "https://github.com/UniversalDependencies/UD_English#",
+		"columns" : ["ID", "WORD", "LEMMA", "UPOS", "POS", "FEAT", "HEAD", "EDGE", "DEPS", "MISC"]
+	},
+	
+	{ "class" : "CoNLLRDFFormatter",
+		"modules" : [
+				{"mode":"RDF", "columns": ["ID", "WORD", "LEMMA", "UPOS", "POS", "FEAT", "HEAD", "EDGE", "DEPS", "MISC"]}
+		]
+	}
+]
+}
