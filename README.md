@@ -12,8 +12,11 @@ We also provide a [hands-on tutorial](./examples) which comes with prepared scri
 ### Installing
 
 
-java is required, use `java -version` to check if you have java installed.
+java is required, use `java -version` to check if Java is installed.
 (Java version 8 or 9 is required for logging with log4j)
+
+javac, the JDK compiler, is required to compile the source.  
+Check with `javac -version` if you have it installed.
 
 Note: If you prefer using OpenJDK instead of Oracle Java, it might be necessary to install openjfx. (Thanks to Francesco Mambrini for finding out!)
 ```shell
