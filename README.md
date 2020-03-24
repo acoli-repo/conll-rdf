@@ -1,17 +1,19 @@
 
 # conll-rdf
+__conll-rdf__ is a tool package for converting between formats of annotated linguistic corpora and linking to external ontologies.  
+It consists of a number of java modules which can be chained to construct a data processing pipeline.  
+A variety of CoNLL formats are supported.
 
-tool package for converting between formats of annotated linguistic corpora. (e.g. `.conll` files into conll-rdf (`.ttl`) and back.)  
-We support a variety of CoNLL formats.  
-conll-rdf consists of a number of java modules which can be stacked to construct a data processing pipeline. 
+## What it can do
+* convert any CoNLL-like tsv format (e.g. `.conll`) to conll-rdf (`.ttl`).
+* perform SPARQL Updates on conll-rdf data.
+* visualize conll-rdf structure.
+* convert conll-rdf back to conll.
 
 ## Getting Started
-
 We also provide a [hands-on tutorial](./examples) which comes with prepared scripts and data.
 
 ### Installing
-
-
 java is required, use `java -version` to check if Java is installed.
 (Java version 8 or 9 is required for logging with log4j)
 
@@ -35,13 +37,6 @@ All required java libraries are contained in [lib/](./lib).
 
 Getting **conll-rdf** ready can be acomplished easily, see [Installing](#Installing). In general, we read data line by line from `stdin`, process it and write results to `stdout`. For quick setup we recommend using .sh scripts to direct your data through your pipeline. Then, each pipeline element can be called via `./run $CLASS [args]`. A variety of sample scripts can be found in [examples/](./examples) which you can adapt to your needs. Of course you can also use the provided classes within java as any other library.
 
-### What it can do
-
-
-* convert any CoNLL-like tsv format to conll-rdf.
-* perform SPARQL Updates on conll-rdf data.
-* visualize conll-rdf structure.
-* convert conll-rdf back to conll.
 
 ### Example
 
