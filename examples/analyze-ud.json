@@ -1,0 +1,26 @@
+{
+"input" : "data/ud/UD_English-master/en-ud-dev.conllu.gz"
+, "output" : "System.out"
+, "pipeline" : [ 
+
+	{ "class" : "CoNLLStreamExtractor",
+		"baseURI" : "https://github.com/UniversalDependencies/UD_English#",
+		"columns" : ["IGNORE", "WORD", "IGNORE", "UPOS", "IGNORE", "IGNORE", "HEAD", "EDGE", "IGNORE", "IGNORE"]
+	},
+	
+	{ "class" : "CoNLLRDFUpdater"
+		, "updates" : [
+			{"path":"examples/sparql/remove-IGNORE.sparql", "iter":"1"},
+			{"path":"examples/sparql/analyze/UPOS-to-POSsynt.sparql", "iter":"1"},
+			{"path":"examples/sparql/analyze/EDGE-to-POSsynt.sparql", "iter":"1"},
+			{"path":"examples/sparql/analyze/consolidate-POSsynt.sparql", "iter":"1"}
+		]
+	} ,
+	
+	{ "class" : "CoNLLRDFFormatter"
+		, "modules" : [
+			{"mode":"SPARQLTSV", "select": "examples/sparql/analyze/eval-POSsynt.sparql"}
+		]
+	}
+]
+}
