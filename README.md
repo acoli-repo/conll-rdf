@@ -10,38 +10,39 @@ A variety of CoNLL formats are supported.
 * visualize conll-rdf structure.
 * convert conll-rdf back to conll.
 
-## Getting Started
-We also provide a [hands-on tutorial](./examples) which comes with prepared scripts and data.
+## How it works
+A variety of sample-pipelines, which you can adapt to your needs, can be found in [examples/](./examples).
 
-### Installing
-java is required, use `java -version` to check if Java is installed.
-(Java version 8 or 9 is required for logging with log4j)
+In general, we read data line by line from `stdin`, process it and write results to `stdout`.  
+For quick set-up, we recommend using `.sh` scripts to pipe your data through the tools.  
+Each pipeline element can be called via `./run.sh $CLASS [args]`.  
 
-javac, the JDK compiler, is required to compile the source.  
-Check with `javac -version` if you have it installed.
+Another method is to configure the pipeline in a config-json and call the entire pipeline with `./run.sh CoNLLRDFManager -c $config-json`.
 
-Note: If you prefer using OpenJDK instead of Oracle Java, it might be necessary to install openjfx. (Thanks to Francesco Mambrini for finding out!)
-```shell
-sudo apt-get install openjfx
-```
+Of course you can also use the provided classes within java as any other library.
+
+## Installing
+Download the repository from GitHub: `git clone https://github.com/acoli-repo/CoNLL-RDF.git`.
+
+You need java and javac to run and compile the source.
+* use `java -version` to check if you have java installed. (Java version 8 or 9 is required for logging with log4j)
+* check with `javac -version` if the JDK compiler is installed.
+
+The source is compiled automatically once you run the tool.
+
+Note: If you prefer using OpenJDK instead of Oracle Java, it might be necessary to install openjfx. `sudo apt-get install openjfx` (Thanks to Francesco Mambrini for finding out!)  
 
 All required java libraries are contained in [lib/](./lib).
 
-* `run.sh` is used to make things feel more bash-like. It determines the classpath, updates class files if necessary and runs the specified java class with the provided arguments. 
-* In case you are are not able to execute .sh scripts due to missing permission, make them executable with: `chmod +x <SCRIPT>`
-* eg. `cat foo.ttl | ./run.sh CoNLLRDFFormatter > foo_formatted.ttl` would pipe `foo.ttl` through `CoNLLRDFFormatter` into `foo_formatted.ttl`.
-* In case the respective `.class` files cannot be found, `run.sh` calls `compile.sh` to compile the java classes from source. Of course, you may also run `compile.sh` independently.
+## Common Issues
+* you might get an error like `bash: ./../test.sh: Permission denied` when trying to run a script. Use this command to change the filemode: `chmod +x <SCRIPT>`
+* an error starting like `ERROR CoNLLRDFUpdater :: SPARQL parse exception for Update No. 0: DIRECTUPDATE [...]` when running the RDFUpdater can be raised if the path to a sparql query is wrong. Check for extra or missing `../`.
 
-### How it works
-
-
-Getting **conll-rdf** ready can be acomplished easily, see [Installing](#Installing). In general, we read data line by line from `stdin`, process it and write results to `stdout`. For quick setup we recommend using .sh scripts to direct your data through your pipeline. Then, each pipeline element can be called via `./run $CLASS [args]`. A variety of sample scripts can be found in [examples/](./examples) which you can adapt to your needs. Of course you can also use the provided classes within java as any other library.
-
+## Getting Started
+We also provide a [hands-on tutorial](./examples) which comes with prepared scripts and data.
 
 ### Example
-
-
-Suppose we have a corpus `example.conll` and want to convert it to conll-rdf to make it compartible with a given LLOD technology. We can do this with a simple shell-command:
+Suppose we have a corpus `example.conll` and want to convert it to conll-rdf to make it compatible with a given LLOD technology. We can do this with a simple shell-command:
 
 ```shell
 cat example.conll | ./run.sh CoNLLStreamExtractor my-baseuri.org/example.conll# \
@@ -51,12 +52,14 @@ cat example.conll | ./run.sh CoNLLStreamExtractor my-baseuri.org/example.conll# 
 This will create a new file `example.ttl` in conll-rdf by simply providing
 
 * a base-URI (ideally a resolvable URL to adhere to the five stars of LOD).
-* the names of the CoNLL columns from left to right. 
+* the names of the CoNLL columns from left to right.
 
+### run.sh
+`run.sh` is used to make things feel more bash-like. It determines the classpath, updates class files if necessary and runs the specified java class with the provided arguments. 
+* eg. `cat foo.ttl | ./run.sh CoNLLRDFFormatter > foo_formatted.ttl` would pipe `foo.ttl` through `CoNLLRDFFormatter` into `foo_formatted.ttl`.
+* In case the respective `.class` files cannot be found, `run.sh` calls `compile.sh` to compile the java classes from source. Of course, you may also run `compile.sh` independently.
 
-## Usage
-
-
+## Classes
 In this chapter you can find detailed information on all functionalities of **conll-rdf**.
 
 All relevant classes are in [src/](./src/org/acoli/conll/rdf). Sample scripts in [examples/](./examples). These convert data found in [data/](./data/ud/UD_English-master). In case your corpus directly corresponds to a format found there you can directly convert it with given scripts into conll-rdf. 
@@ -69,7 +72,6 @@ Synopsis: `CoNLLRDFManager -c [JSON-config]`
 * `-c [JSON-config]` (required): provide the path to a json-file.
 
 ### CoNLLStreamExtractor
-
 `CoNLLStreamExtractor` expects CoNLL from `stdin` and writes conll-rdf to `stdout`.  
 Synopsis: ```CoNLLStreamExtractor baseURI FIELD1[.. FIELDn] [-u SPARQL_UPDATE1..m] [-s SPARQL_SELECT]```
 
@@ -82,7 +84,6 @@ Synopsis: ```CoNLLStreamExtractor baseURI FIELD1[.. FIELDn] [-u SPARQL_UPDATE1..
 * `[-s SPARQL_SELECT]` (optional): select query for generating TSV output.
 
 ### CoNLLRDFUpdater
-
 `CoNLLRDFUpdater` expects conll-rdf from `stdin` and writes conll-rdf to `stdout`. It is designed for updating existing conll-rdf files and is able to load external ontologies or RDF data into separate Graphs during runtime. This is especially useful for linking CoNLL-RDF files to other ontologies.  
 Synopsis:
 ```
@@ -120,7 +121,6 @@ CoNLLRDFUpdater [-loglevel LEVEL] [-threads T] [-lookahead N] [-lookback N]
 otherwise identical to `graphsout`.
 
 ### CoNLLRDFFormatter
-
 `CoNLLRDFFormatter` expects conll-rdf in `.ttl` and writes to different formats. Can also visualize your data.  
 Synopsis: ```CoNLLRDFFormatter [-rdf [COLS]] [-debug] [-grammar] [-semantics] [-conll COLS] [-sparqltsv SPARQL]```
 
@@ -147,22 +147,17 @@ Synopsis: ```CoNLLRDFFormatter [-rdf [COLS]] [-debug] [-grammar] [-semantics] [-
 * `semantics`: seperate visualization of object properties of `conll:WORD` using `terms:` namespace, useful for visualizing knowledge graphs. **`EXPERIMENTAL`**
 
 ### CoNLLRDFAnnotator
-
-
 * can be used to manually annotate / change annotations in .ttl files. 
 * will visualize input just like `CoNLLRDFFormatter -grammar`. Will not make in-place changes but write the changed file to `stdout`
   * e.g. `./run.sh CoNLLRDFAnnotator file_old.ttl > file_new.ttl`.
 * **Note**: Piping output into old file is **not** supported! Will result in data loss.
 
 ### Other
-
-
 * `CoNLL2RDF` contains the central conversion functionality. For practical uses, interface with its functionality through CoNLLStreamExtractor. Arguments to CoNLLStreamExtractor will be passed through.
 * `CoNLLRDFViz` is an auxiliary class for the future development of debugging and visualizing complex SPARQL Update chains in their effects on selected pieces of CoNLL(-RDF) data
 * conll-rdf assumes UTF-8.
 
 ## Authors
-
 * **Christian Chiarcos** - chiarcos@informatik.uni-frankfurt.de
 * **Christian Fäth** - faeth@em.uni-frankfurt.de
 * **Benjamin Kosmehl** - bkosmehl@gmail.com
@@ -170,13 +165,9 @@ Synopsis: ```CoNLLRDFFormatter [-rdf [COLS]] [-debug] [-grammar] [-semantics] [-
 See also the list of [contributors](https://github.com/acoli-repo/conll-rdf/graphs/contributors) who participated in this project.
 
 ## Reference
-
-
 * Chiarcos C., Fäth C. (2017), CoNLL-RDF: Linked Corpora Done in an NLP-Friendly Way. In: Gracia J., Bond F., McCrae J., Buitelaar P., Chiarcos C., Hellmann S. (eds) Language, Data, and Knowledge. LDK 2017. pp 74-88.
 
 ## Acknowledgments
-
-
 This repository has been created in context of 
 * Applied Computational Linguistics ([ACoLi](http://acoli.cs.uni-frankfurt.de))
 * Specialised Information Service Linguistics ([FID](https://www.ub.uni-frankfurt.de/projekte/fid-linguistik_en.html))
@@ -186,10 +177,7 @@ This repository has been created in context of
 * QuantQual@CEDIFOR ([QuantQual](http://acoli.cs.uni-frankfurt.de/projects.html#quantqual)) 
   * funded by the Centre for the Digital Foundation of Research in the Humanities, Social and Educational Science (CEDIFOR, funding code 01UG1416A) 
 
-
 ## Licenses
-
-
 This repository is being published under two licenses. Apache 2.0 is used for code, see [LICENSE.main](LICENSE.main.txt). CC-BY 4.0 for all data from universal dependencies and SPARQL scripts, see [LICENSE.data](LICENSE.data.txt).
 
 ### LICENCE.main (Apache 2.0)
@@ -202,14 +190,12 @@ This repository is being published under two licenses. Apache 2.0 is used for co
 │	├── link-ud.sh  
 │	└── parse-ud.sh  
 ├── compile.sh  
-├── run.sh  
+└── run.sh  
 ```
 ### LICENCE.data (CC-BY 4.0)
 ```
 ├── data/  
-├── examples/  
+└── examples/  
 	└── sparql/  
 ```
-
 Please cite *Chiarcos C., Fäth C. (2017), CoNLL-RDF: Linked Corpora Done in an NLP-Friendly Way. In: Gracia J., Bond F., McCrae J., Buitelaar P., Chiarcos C., Hellmann S. (eds) Language, Data, and Knowledge. LDK 2017. pp 74-88*.
-
