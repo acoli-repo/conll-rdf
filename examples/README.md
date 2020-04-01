@@ -349,4 +349,4 @@ The resulting RDF is passed to the Updater. Several SPARQL Update Queries are ap
 Lastly the RDF is passed to the Formatter, which is configured to output the result of a SPARQL Select Query as Tab-seperated Values.  
 The output is streamed to the console.
 
-See [the template](src/template.conf.json) for a full list of options, and the documentation for in-depth explanations of each.
+See [the template](../src/template.conf.json) for a full list of options, and the documentation for in-depth explanations of each.
