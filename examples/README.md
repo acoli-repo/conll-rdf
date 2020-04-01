@@ -1,13 +1,14 @@
 # Hands-on CoNLL-RDF Tutorial
+In this document:
+* [CoNLL-RDF with piping in Bash](#i-converting-conll-to-conll-rdf-and-back)
+* [CoNLL-RDF Pipeline with SPARQL Updates](#ii-integrating-sparql-into-your-pipeline)
+* [CoNLL-RDF Pipeline from JSON](#iii-conll-rdf-manager-conll-rdf-pipelines-with-json)
 
-## Requirements
-
-* make sure to download the repository from GitHub: `git clone https://github.com/acoli-repo/CoNLL-RDF.git`.
-* java is required, use `java -version` to check if you have java installed. 
-* all paths up from this point assume you are in `examples/`, so make sure you move to this directory in the terminal.
-* in some cases you might get an error like ```bash: ./../test.sh: Permission denied``` when trying to run a script. Use this command to change the filemode: `chmod +x <SCRIPT>`
-* so in this tutorials case: `chmod +x convert-ud.sh analyze-ud.sh ../run.sh ../compile.sh` 
-* Note: In some steps we will write the output directly to the terminal, use `CTRL+C` to stop the execution.
+## Before you start
+* follow [the instructions on installing conll-rdf](../README.md#installing)
+* the command-examples in this tutorial only work if you're in the correct folder. Chapters (I) and (II) assume your `current working-directory` is `examples/`, (III) assumes you're in the folder above. Make sure you move to the respective directory in the terminal (or adjust the commands to match).
+* you might get an error like ```bash: ./test.sh: Permission denied``` when trying to run a script. Use this command to change the filemode: `chmod +x <SCRIPT>`
+* In some steps we will write the output directly to the terminal, you can use `CTRL+C` to stop the execution.
 
 ## I.: Converting CoNLL to CoNLL-RDF (and back!)
 In this first section we will use the CoNLL-RDF API to convert an English corpus provided by Universal Dependencies to CoNLL-RDF.
