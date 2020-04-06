@@ -1,13 +1,14 @@
 # Hands-on CoNLL-RDF Tutorial
+In this document:
+* [CoNLL-RDF with piping in Bash](#i-converting-conll-to-conll-rdf-and-back)
+* [CoNLL-RDF Pipeline with SPARQL Updates](#ii-integrating-sparql-into-your-pipeline)
+* [CoNLL-RDF Pipeline from JSON](#iii-conll-rdf-manager-conll-rdf-pipelines-with-json)
 
-## Requirements
-
-* make sure to download the repository from GitHub: `git clone https://github.com/acoli-repo/CoNLL-RDF.git`.
-* java is required, use `java -version` to check if you have java installed. 
-* all paths up from this point assume you are in `examples/`, so make sure you move to this directory in the terminal.
-* in some cases you might get an error like ```bash: ./../test.sh: Permission denied``` when trying to run a script. Use this command to change the filemode: `chmod +x <SCRIPT>`
-* so in this tutorials case: `chmod +x convert-ud.sh analyze-ud.sh ../run.sh ../compile.sh` 
-* Note: In some steps we will write the output directly to the terminal, use `CTRL+C` to stop the execution.
+## Before you start
+* follow [the instructions on installing conll-rdf](../README.md#installing)
+* the command-examples in this tutorial only work if you're in the correct folder. Chapters (I) and (II) assume your `current working-directory` is `examples/`, (III) assumes you're in the folder above. Make sure you move to the respective directory in the terminal (or adjust the commands to match).
+* you might get an error like ```bash: ./test.sh: Permission denied``` when trying to run a script. Use this command to change the filemode: `chmod +x <SCRIPT>`
+* In some steps we will write the output directly to the terminal, you can use `CTRL+C` to stop the execution.
 
 ## I.: Converting CoNLL to CoNLL-RDF (and back!)
 In this first section we will use the CoNLL-RDF API to convert an English corpus provided by Universal Dependencies to CoNLL-RDF.
@@ -266,3 +267,86 @@ cat en-ud-dev.conllu \
     | ../run.sh CoNLLRDFFormatter -sparqltsv sparql/analyze/eval-POSsynt.sparql \
     | grep -v '#';
 ```
+
+## III.: CoNLL-RDF Manager: CoNLL-RDF Pipelines with JSON
+One of the recommended ways to run a CoNLL-RDF pipeline is to use the CoNLL-RDF Manager.
+
+You can run the CoNLL-RDF Manager from the shell, just like the other Java-classes.
+```bash
+./run.sh CoNLLRDFManager -c examples/analyze-ud.json
+```
+The Class takes a single argument: `-c`, followed by the path to the `.json` configuration file.
+
+Let's take a look at the structure:
+```json
+{
+"input" : "",
+"output" : "",
+"pipeline" : [ ]
+}
+```
+The entire configuration is stored in the `.json` file as an Object with the Keys `"input"`, `"output"` and `"pipeline"`.
+```json
+"input" : "data/ud/UD_English-master/en-ud-dev.conllu.gz"
+```
+In `"input"` we store the path to a `.connlu.gz` file.  
+The tool recognizes the file-extension and decompresses the file before passing the stream to the first class in the pipeline.
+```json
+"output" : "System.out"
+```
+Here `"output"` is paired with the String `"System.out"`.  
+System.out is a string with a special meaning. It tells the CoNLL-RDF-Manager that the last tool in the pipeline should default to streaming its output to the shell.
+```json
+"pipeline" : [
+  { "class" : "CoNLLStreamExtractor", "..." },
+  { "class" : "CoNLLRDFUpdater", "..." },
+  { "class" : "CoNLLRDFFormatter", "..." }
+]
+```
+The Key `"pipeline"` stores an Array of Objects. The order within the Array is the order in which the tools are chained.
+```json
+{ "class" : "CoNLLStreamExtractor"
+  , "baseURI" : ""
+  , "columns" : [ ]
+},
+
+{ "class" : "CoNLLRDFUpdater"
+  , "updates" : [
+      {"path":"", "iter":"1"},
+	]
+} ,
+
+{ "class" : "CoNLLRDFFormatter"
+  , "modules" : [
+      {"mode":"SPARQLTSV", "select": "examples/sparql/analyze/eval-POSsynt.sparql"}
+	]
+}
+```
+Each Object in the Array corresponds to a class in the Pipeline, and contains the Key `"class"`, which stores the name of the class. The remaining Keys are specific to the class.
+```json
+"class" : "CoNLLStreamExtractor",  
+"baseURI" : "https://github.com/UniversalDependencies/UD_English#",  
+"columns" : ["IGNORE", "WORD", "IGNORE", "UPOS", "IGNORE", "IGNORE", "HEAD", "EDGE", "IGNORE", "IGNORE"]
+```
+As our input is CoNLLU, the first Class needs to be the Stream Extractor.  
+We provide a base-URI and an Array of column names.
+```json
+"class" : "CoNLLRDFUpdater",
+"updates" : [
+  {"path":"examples/sparql/remove-IGNORE.sparql", "iter":"1"},
+  {"path":"examples/sparql/analyze/UPOS-to-POSsynt.sparql", "iter":"1"},
+  {"path":"examples/sparql/analyze/EDGE-to-POSsynt.sparql", "iter":"1"},
+  {"path":"examples/sparql/analyze/consolidate-POSsynt.sparql", "iter":"1"}
+]
+```
+The resulting RDF is passed to the Updater. Several SPARQL Update Queries are applied to strip the ignored data, and to compare the values in the UPOS and EDGE columns.
+```json
+"class" : "CoNLLRDFFormatter",
+"modules" : [
+  {"mode":"SPARQLTSV", "select": "examples/sparql/analyze/eval-POSsynt.sparql"}
+] 
+```
+Lastly the RDF is passed to the Formatter, which is configured to output the result of a SPARQL Select Query as Tab-seperated Values.  
+The output is streamed to the console.
+
+See [the template](../src/template.conf.json) for a full list of options, and the documentation for in-depth explanations of each.
