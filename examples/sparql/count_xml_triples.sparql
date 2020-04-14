@@ -1,0 +1,5 @@
+PREFIX x: <http://purl.org/acoli/conll-rdf/xml#> 
+PREFIX conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#>
+SELECT COUNT(?x) WHERE {
+ ?x a conll:XML_DATA.
+}
