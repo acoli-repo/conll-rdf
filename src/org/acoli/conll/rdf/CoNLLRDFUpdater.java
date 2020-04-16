@@ -696,15 +696,15 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 	 */
 	public void parseUpdates(List<Triple<String, String, String>> updatesRaw) throws IOException {
 		this.updates.clear();
-		List<Triple<String, String, String>> updatesOut = new ArrayList<Triple<String, String, String>>(updatesRaw.size());
-		StringBuilder sb = new StringBuilder(); // debug output
+		final List<Triple<String, String, String>> updatesOut = new ArrayList<Triple<String, String, String>>(updatesRaw.size());
+		final StringBuilder sb = new StringBuilder(); // debug output
 
 		int updateNo = 0;
 		for(Triple<String, String, String> update: updatesRaw) {
 			String updateName = update.first;
-			String updateScriptRaw = update.second; // either an URL/ a path to, or the verbatim sparql
-			// updateScript will contain the sparql script
-			String updateIterations = update.third;
+			final String updateScriptRaw = update.second; // either an URL/ a path to, or the verbatim sparql
+			final String updateScript; // will eventually contain the sparql query
+			final String updateIterations = update.third;
 			updateNo++; // Used for logging
 
 			LOG.debug("Update No."+updateNo+" named "+updateName+" with "+updateIterations+" iterations is\n"+updateScriptRaw);
@@ -719,7 +719,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 			Reader sparqlreader = null;
 			URL url = null;
 			// Try if Update is a FilePath
-			File file = new File(updateScriptRaw);
+			final File file = new File(updateScriptRaw);
 
 			if(file.exists()) { // can be read from a file
 				try {
@@ -727,7 +727,8 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 					LOG.debug("FileReader ok");
 					sb.append("f");
 				} catch (FileNotFoundException e) {
-					LOG.error("Failed to read file " + updateScriptRaw, e); // the update is a path to a file which exists, but it could not be opened
+					// the update is a path to a file which exists, but it could not be opened
+					LOG.error("Failed to read file " + updateScriptRaw, e);
 					System.exit(1);
 				}
 			}
@@ -756,21 +757,22 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 				LOG.debug("StringReader ok");
 			}
 
-			BufferedReader in = new BufferedReader(sparqlreader);
+			final BufferedReader in = new BufferedReader(sparqlreader);
 
-			StringBuilder updateBuff = new StringBuilder();
+			final StringBuilder updateBuff = new StringBuilder();
 			for(String line = in.readLine(); line!=null; line=in.readLine()) {
 				updateBuff.append(line + "\n");
 			}
 
-			String updateScript = updateBuff.toString();
+			updateScript = updateBuff.toString();
 			isValidUTF8(updateScript, "SPARQL update String is not UTF-8 encoded for " + updateName);
 
 			try {
 				@SuppressWarnings("unused")
 				UpdateRequest qexec = UpdateFactory.create(updateScript);
 			} catch (QueryParseException e) {
-				if(updateScriptRaw.toLowerCase().endsWith(".sparql") && !(file.exists()) && (url == null)) { // looks like a file, but can't be found
+				// if update looks like a file, but can't be found
+				if(updateScriptRaw.toLowerCase().endsWith(".sparql") && !(file.exists()) && (url == null)) {
 					LOG.error("The passed update No. "+updateNo+" looks like a file-path, however the file " + updateScriptRaw + " could not be found.");
 					LOG.debug("SPARQL parse exception for Update No. "+updateNo+": "+updateName+"\n" + e + "\n" + updateScript);
 				} else {
@@ -779,6 +781,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 				System.exit(1);
 			}
 			updatesOut.add(new Triple<String, String, String> (updateName, updateScript, updateIterations));
+			LOG.debug("Update parsed ok");
 			sb.append(".");
 		}
 		this.updates.addAll(Collections.synchronizedList(updatesOut));
