@@ -718,9 +718,9 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 
 			Reader sparqlreader = null;
 			URL url = null;
+
 			// Try if Update is a FilePath
 			final File file = new File(updateScriptRaw);
-
 			if(file.exists()) { // can be read from a file
 				try {
 					sparqlreader = new FileReader(file);
@@ -758,7 +758,6 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 			}
 
 			final BufferedReader in = new BufferedReader(sparqlreader);
-
 			final StringBuilder updateBuff = new StringBuilder();
 			for(String line = in.readLine(); line!=null; line=in.readLine()) {
 				updateBuff.append(line + "\n");
@@ -771,6 +770,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 				@SuppressWarnings("unused")
 				UpdateRequest qexec = UpdateFactory.create(updateScript);
 			} catch (QueryParseException e) {
+				LOG.error("Failed to parse argument as sparql");
 				// if update looks like a file, but can't be found
 				if(updateScriptRaw.toLowerCase().endsWith(".sparql") && !(file.exists()) && (url == null)) {
 					LOG.error("The passed update No. "+updateNo+" looks like a file-path, however the file " + updateScriptRaw + " could not be found.");
