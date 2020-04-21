@@ -17,6 +17,7 @@ package org.acoli.conll.rdf;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -33,9 +34,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,8 +43,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 
-import org.apache.jena.atlas.logging.Log;
-import org.apache.jena.ext.com.google.common.collect.Lists;
 import org.apache.jena.query.Dataset;
 import org.apache.jena.query.DatasetFactory;
 import org.apache.jena.query.QueryParseException;
@@ -697,71 +694,100 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 	 * 			<Name of Update>, <update script>OR<path to script>, <iterations>
 	 * @throws IOException
 	 */
-	public void parseUpdates(List<Triple<String, String, String>> updatesRaw) throws IOException { 
+	public void parseUpdates(List<Triple<String, String, String>> updatesRaw) throws IOException {
 		this.updates.clear();
-		
-		List<Triple<String, String, String>> updatesTemp = new ArrayList<Triple<String, String, String>>();
-		updatesTemp.addAll(updatesRaw);
-		
-		StringBuilder sb = new StringBuilder();
-		for(int i = 0; i<updatesTemp.size(); i++) {
-			Reader sparqlreader = new StringReader(updatesTemp.get(i).second);
-			File f = new File(updatesTemp.get(i).second);
-			URL u = null;
-			try {
-				u = new URL(updatesTemp.get(i).second);
-			} catch (MalformedURLException e) {}
-			if(f.exists()) {			// can be read from a file 
+		final List<Triple<String, String, String>> updatesOut = new ArrayList<Triple<String, String, String>>(updatesRaw.size());
+		final StringBuilder sb = new StringBuilder(); // debug output
+
+		int updateNo = 0;
+		for(Triple<String, String, String> update: updatesRaw) {
+			String updateName = update.first;
+			final String updateScriptRaw = update.second; // either an URL/ a path to, or the verbatim sparql
+			final String updateScript; // will eventually contain the sparql query
+			final String updateIterations = update.third;
+			updateNo++; // Used for logging
+
+			LOG.debug("Update No."+updateNo+" named "+updateName+" with "+updateIterations+" iterations is\n"+updateScriptRaw);
+
+			/* Possible issues to catch gracefully:
+			 * - Path to update query is wrong (Issue#5)
+			 * - URL cannot be reached
+			 * - provided query is a select query
+			 * - verbatim query was not quoted
+			 */
+
+			Reader sparqlreader = null;
+			URL url = null;
+
+			// Try if Update is a FilePath
+			final File file = new File(updateScriptRaw);
+			if(file.exists()) { // can be read from a file
 				try {
-					sparqlreader = new FileReader(f);
+					sparqlreader = new FileReader(file);
+					LOG.debug("FileReader ok");
 					sb.append("f");
-				} catch (Exception e) {}
-			} else if(u!=null) {
-				try {
-					sparqlreader = new InputStreamReader(u.openStream());
-					sb.append("u");
-				} catch (Exception e) {
+				} catch (FileNotFoundException e) {
+					// the update is a path to a file which exists, but it could not be opened
+					LOG.error("Failed to read file " + updateScriptRaw, e);
+					System.exit(1);
 				}
 			}
-			
-			String updateName = updatesTemp.get(i).first;
-			// check for String as Update and set update name to default
-			if (!(sparqlreader instanceof FileReader) && !(sparqlreader instanceof InputStreamReader)) {
-				updateName = DEFAULTUPDATENAME;
+
+			// Try if update is an URL
+			if (sparqlreader == null) {
+				try {
+					url = new URL(updateScriptRaw);
+					sparqlreader = new InputStreamReader(url.openStream());
+					LOG.debug("URL Stream ok");
+					sb.append("u");
+				} catch (MalformedURLException e) {
+					LOG.debug("Update is not a valid URL " + updateScriptRaw); // this occurs if the update is verbatim
+					LOG.trace("Trace:", e);
+				} catch (IOException e) {
+					LOG.error("Failed to open input stream from URL " + updateScriptRaw, e); // this is probably bad
+					System.exit(1);
+				}
 			}
-			
-			updatesTemp.set(i,new Triple<String, String, String>(updateName, "", updatesTemp.get(i).third)); // TODO: Needed? just removes the second string, but second is overwritten later anyway....
-			BufferedReader in = new BufferedReader(sparqlreader);
-			String updateBuff = "";
-			for(String line = in.readLine(); line!=null; line=in.readLine())
-				updateBuff = updateBuff + line + "\n";
-			isValidUTF8(updateBuff, "SPARQL update String is not UTF-8 encoded for " + updatesTemp.get(i).first);
+
+			// check for String as Update and set update name to default
+			if (sparqlreader != null) {
+				updateName = DEFAULTUPDATENAME;
+			} else {
+				sparqlreader = new StringReader(updateScriptRaw);
+				LOG.debug("StringReader ok");
+			}
+
+			final BufferedReader in = new BufferedReader(sparqlreader);
+			final StringBuilder updateBuff = new StringBuilder();
+			for(String line = in.readLine(); line!=null; line=in.readLine()) {
+				updateBuff.append(line + "\n");
+			}
+
+			updateScript = updateBuff.toString();
+			isValidUTF8(updateScript, "SPARQL update String is not UTF-8 encoded for " + updateName);
+
 			try {
 				@SuppressWarnings("unused")
-				UpdateRequest qexec = UpdateFactory.create(updateBuff);
-				updatesTemp.set(i,new Triple<String, String, String>(updatesTemp.get(i).first, updateBuff, updatesTemp.get(i).third));
+				UpdateRequest qexec = UpdateFactory.create(updateScript);
 			} catch (QueryParseException e) {
-				LOG.error("SPARQL parse exception for Update No. "+i+": "+updateName+"\n" + e + "\n" + updateBuff); // this is SPARQL code with broken SPARQL syntax
+				LOG.error("Failed to parse argument as sparql");
+				// if update looks like a file, but can't be found
+				if(updateScriptRaw.toLowerCase().endsWith(".sparql") && !(file.exists()) && (url == null)) {
+					LOG.error("The passed update No. "+updateNo+" looks like a file-path, however the file " + updateScriptRaw + " could not be found.");
+					LOG.debug("SPARQL parse exception for Update No. "+updateNo+": "+updateName+"\n" + e + "\n" + updateScript);
+				} else {
+					LOG.error("SPARQL parse exception for Update No. "+updateNo+": "+updateName+"\n" + e + "\n" + updateScript); // this is SPARQL code with broken SPARQL syntax
+				}
 				System.exit(1);
-//				try {
-//					@SuppressWarnings("unused")
-//					Path ha = Paths.get(updateBuff.trim());
-//				} catch (InvalidPathException d) {
-//					LOG.error("SPARQL parse exception for:\n" + updateBuff); // this is SPARQL code with broken SPARQL syntax
-//					System.exit(1);
-//				}
-//				LOG.error("File not found exception for (Please note - if update is passed on as a String is has to be in `-quotes!): " + updatesTemp.get(i).first); // this is a faulty SPARQL script file path - if you have written a valid path into your SPARQL script file, it is your own fault
-//				System.exit(1);
-			}				
-			updatesTemp.set(i,new Triple<String, String, String>(updatesTemp.get(i).first, updateBuff, updatesTemp.get(i).third));
+			}
+			updatesOut.add(new Triple<String, String, String> (updateName, updateScript, updateIterations));
+			LOG.debug("Update parsed ok");
 			sb.append(".");
 		}
-		
-		this.updates.addAll(Collections.synchronizedList(updatesTemp));
+		this.updates.addAll(Collections.synchronizedList(updatesOut));
 		LOG.debug(sb.toString());
-
 	}
-	
+
 	/**
 	 * Tries to read from a specific URI.
 	 * Tries to read content directly or from GZIP
