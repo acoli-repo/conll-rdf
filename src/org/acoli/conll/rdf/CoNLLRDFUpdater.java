@@ -282,7 +282,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 		 * 			- total no. of iterations
 		 * 			- total time
 		 */
-		private List<Pair<Integer, Long>> executeUpdates(List<Triple<String, String, String>> updates) { //TODO: NOW:check consistency and check graphsout stepping
+		private List<Pair<Integer, Long>> executeUpdates(List<Triple<String, String, String>> updates) { 
 
 			String sent = new String();
 			boolean graphsout = false;
@@ -481,6 +481,11 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 	
 	private final Dataset dataset;
 	
+	//for segmented data with single prefix header
+	private String prefixCache;
+	private String prefixCacheOut;
+	private boolean removePrefixDuplicates;
+	
 	//for updates
 	private final List<Triple<String, String, String>> updates;
 	
@@ -548,6 +553,11 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 			dataset = DatasetFactory.createTxnMem();
 		}
 //		memAccessor = DatasetAccessorFactory.create(memDataset);
+		
+		//for segmented data with single prefix header
+		prefixCache = new String();
+		prefixCacheOut = new String();
+		removePrefixDuplicates = true; //TODO:@Leo: make this a proper CLI param.
 		
 		//updates
 		updates = Collections.synchronizedList(new ArrayList<Triple<String, String, String>>());
@@ -851,6 +861,19 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 
 			if(!buffer.trim().equals(""))
 				if((line.startsWith("@") || line.startsWith("#")) && !lastLine.startsWith("@") && !lastLine.startsWith("#")) { //!buffer.matches("@[^\n]*\n?$")) {
+					
+					//TODO:@Leo: check
+					if (buffer.contains("@prefix"))  {
+						prefixCache = new String();
+						for (String buffLine:buffer.split("\n")) {
+							if (buffLine.trim().startsWith("@prefix")) {
+								prefixCache += buffLine+"\n";
+							}
+						}
+					} else {
+					    buffer = prefixCache+buffer;
+					}
+					
 					if ((graphOutputDir != null) && (graphOutputSentences.isEmpty())) { // get first sentence id as default for graphsout output
 						Model m = ModelFactory.createDefaultModel();
 						String sentID = m.read(new StringReader(buffer),null, "TTL").listSubjectsWithProperty(
@@ -887,16 +910,20 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 					flushOutputBuffer(getOutputStream());
 					buffer="";
 				}
-			if(line.trim().startsWith("@") && !lastLine.trim().endsWith(".")) 
-				buffer=buffer+"\n";
+			//TODO:@Leo: check if this still works with all pipelines. 
+			//      I do not know why this complicated handling of linebreaks has originally been implemented 
+			//      and why the only uncommented line had a tabstopp (\t) .
+			//      It was probably accidentally copied from the CoNLLRDFFormatter.
+//			if(line.trim().startsWith("@") && !lastLine.trim().endsWith(".")) 
+//				buffer=buffer+"\n";
+//
+//			if(line.trim().startsWith("#") && (!lastLine.trim().startsWith("#"))) 
+//				buffer=buffer+"\n";
 
-			if(line.trim().startsWith("#") && (!lastLine.trim().startsWith("#"))) 
-				buffer=buffer+"\n";
+			buffer=buffer+line+"\n";//+"\t";
 
-			buffer=buffer+line+"\t";//+"\n";
-
-			if(line.trim().endsWith(".") || line.trim().matches("^(.*>)?[^<]*#")) 
-				buffer=buffer+"\n";
+//			if(line.trim().endsWith(".") || line.trim().matches("^(.*>)?[^<]*#")) 
+//				buffer=buffer+"\n";
 
 			lastLine=line;
 		}
@@ -906,8 +933,11 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 		// --> deprecated
 		
 		//lookahead 
-		//add final sentence
+		//add final sentence (with prefixes if necessary)
 		//work down remaining buffer
+		if (!buffer.contains("@prefix"))  {
+		    buffer = prefixCache+buffer;
+		}
 		sentBufferLookahead.add(buffer);
 		while (sentBufferLookahead.size()>0) {
 			executeThread(sentBufferLookahead.remove(0));
@@ -966,7 +996,28 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 		LOG.trace("OutBufferSIze: "+sentBufferOut.size());
 		while (!sentBufferOut.isEmpty()) {
 			if (sentBufferOut.get(0).matches("\\d+")) break;
-			out.print(sentBufferOut.remove(0));
+			
+			String outString = new String();
+			if (removePrefixDuplicates) {
+				//TODO:@Leo: check functionality, and make removePrefixDuplicates a proper CLI-parameter.
+				String prefixCacheTMP = new String();
+				for (String buffLine:sentBufferOut.remove(0).split("\n")) {
+					if (buffLine.trim().startsWith("@prefix")) {
+						prefixCacheTMP += buffLine+"\n";
+					} else {
+						if (!buffLine.trim().isEmpty())
+							outString += buffLine+"\n";
+					}
+				}
+				if (!prefixCacheTMP.equals(prefixCacheOut)) {
+					prefixCacheOut = prefixCacheTMP;
+					outString = prefixCacheTMP + outString + "\n";
+				}
+			} else {
+				outString = sentBufferOut.remove(0);
+			}
+			if (!outString.endsWith("\n\n")) outString += "\n";
+			out.print(outString);
 		}
 	}
 
