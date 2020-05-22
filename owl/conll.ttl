@@ -110,12 +110,26 @@ Other (non-TSV) CoNLL Shared Task formats (not covered by CoNLL-RDF):
                              owl:onProperty :dialect ;
                              owl:minCardinality "1"^^xsd:nonNegativeInteger
                            ] ,
+						   [ rdf:type owl:Restriction ;
+                             owl:onProperty :dialect ;
+                             owl:maxCardinality "1"^^xsd:nonNegativeInteger
+                           ] ,
                            [ rdf:type owl:Restriction ;
                              owl:onProperty :column ;
                              owl:cardinality "1"^^xsd:nonNegativeInteger
                            ] ;
-           rdfs:comment "n-ary annotation property that maps a CoNLL-RDF property to a column (integer value starting with 1) in a particular CoNLL or TSV dialect (identified as a string)."@en .
+           rdfs:comment """n-ary annotation property that maps a CoNLL-RDF property to a column (integer value starting with 1) in a particular CoNLL or TSV dialect (identified as a string). Optionally, the encoding strategy can be indicated. If these are not,
+		   we assume headEncoding for HEAD, columnEncoding for *ARGS (see :argument), and plainEncoding for everything else."""@en .
 
+:Encoding a owl:Class;
+	rdfs:label "CoNLL encoding"; 
+	rdfs:comment """Different CoNLL/TSV formats use different strategies to represent annotations that span multiple words. The subclasses of this concept represent frequently applied techniques. The 'default' encoding strategy is :plainEncoding, i.e., string labels attached to individual words."""@en.
+	
+:encoding rdf:type owl:ObjectProperty;
+	rdfs:comment "Mark the encoding style of a particular column. Can be used for converting between different representations. By default, we assume headEncoding for HEAD, columnEncoding for *ARGS (see :argument), and plainEncoding for everything else. These three should thus be left implicit."@en;
+	rdfs:domain :ColumnMapping;
+	rdfs:range :Encoding.
+	
 ###########################################
 # external classes, reused and/or refined #
 ###########################################
@@ -363,12 +377,12 @@ All CoNLL properties point from one word (row) to something else (sentence or ot
 																   :CoNLL-11,
 																   :CoNLL-12,
 																   :PropBank];
-	:hasMapping [ a :ColumMapping; :column "8"^^xsd:int; :dialect :TIAD-TSV] .
+	:hasMapping [ a :ColumnMapping; :column "8"^^xsd:int; :dialect :TIAD-TSV] .
 
 :POS_URI rdfs:subPropertyOf :ObjectProperty;
 	rdfs:label "POS_URI";
 	rdfs:comment """POS column in TIAD-TSV, must resolve to a URI, hence not to be confused with POS (with is a string)."""@en;
-	:hasMapping [ a :ColumMapping; :column "8"^^xsd:int; :dialect :TIAD-TSV].
+	:hasMapping [ a :ColumnMapping; :column "8"^^xsd:int; :dialect :TIAD-TSV].
 																		   
 :UPOS rdfs:subPropertyOf :POS;
 	rdfs:label "UPOSTAG";
@@ -595,6 +609,7 @@ rdfs:comment """Named entities are phrases that contain the names of persons, or
 
 	
 :arguments rdfs:subPropertyOf :ObjectProperty;
+	rdfs:subPropertyOf :ColumnEncoding;
 	rdfs:label "ARG","PROP", "APREDs" ,"PRED_ARGs", "ROLE";
 	rdfs:comment """
 	Columns with argument labels for each semantic predicate following textual order. (http://surdeanu.info/conll08/conll08.pdf)
@@ -670,3 +685,52 @@ rdfs:comment """Named entities are phrases that contain the names of persons, or
 	owl:versionInfo "The position is after PRED_ARGs, hence 13 is only the first possible column."@en;
 	:hasMapping [ a :ColumnMapping; :column "13"^^xsd:int; :dialect :CoNLL-11, :CoNLL-12 ].
 
+
+	
+#############
+# encodings #
+#############
+
+:plainEncoding rdfs:label "plain encoding";
+	a :Encoding;
+	rdfs:comment "A word (form) is assigned a string label without internal structure, e.g., for POS annotation: house/NN"@en.
+
+:iobesEncoding rdfs:label "IOBES encoding";
+	a :Encoding;
+	rdfs:comment """For an annotation that covers a span of tokens, e.g., in named entity annotation, the string label is prefixed with a marker for the position of the word in the span, i.e. B- (begin of span), I- (middle of span), E- (end of span), S- (single token, begin and end of span) or O (no annotation). Note that this is not to be used for recursive structures, see BracketEncoding, instead.
+	
+	Example: Peter/B-PERSON Jackson/E-PERSON is/O ..."""@en.
+
+:iobEncoding rdfs:label "IOB encoding";
+	a :Encoding;
+	rdfs:comment """Simplified IOBES encoding, using B- (begin of a single-token or multi-token sequence), I- (middle or end of a multi-token sequence), O (no annotation). From O and B-, we can infer that a preceding B- corresponds to an IOBES S- and that a preceding I- corresponds to an IOBES E- annotation. Note that this is not to be used for recursive structures, see BracketEncoding, instead.
+	
+	Example: Peter/B-PERSON Jackson/I-PERSON is/O ..."""@en.
+	
+:bracketEncoding rdfs:label "bracket encoding";
+	a :Encoding;
+	rdfs:comment """Encoding of recursive spans, e.g., for phrase structure syntax, based on conventions of the Penn Treebank. Begin of phrase is marked with an opening bracket, end of phrase with a closing bracket. The opening bracket is followed by an optional phrase label. The content word is replaced by *. 
+	
+	Example: 
+
+	Penn annotation: (S (NP (NN Peter) (NN Jackson)) (VP (VB is) ...))
+
+	one-word per line encoding:
+		Peter   (S (NP (NN *)
+		Jackson        (NN *))
+		is         (VP (VB *)
+		...	           * ))
+		
+	This is well-suited for encoding continuous phrases."""@en.
+
+:columnEncoding rdfs:label "column encoding";
+	a :Encoding;
+	rdfs:comment """This is a convention for encoding semantic role annotations: in a reference columns, say, PRED, all predicates are marked.
+	For each predicate in the sentence, then, a column is added that contains the arguments.
+	
+	Note that this is added for presentational reasons and the sake of completeness only. For the actual modelling, see the :arguments property."""@en.
+
+:headEncoding rdfs:label "head encoding";
+	a :Encoding;
+	rdfs:comment """In dependency syntax, the HEAD column contains a numerical reference to a word (by token offset within the sentence or ID).
+	Note that this is added for presentational reasons and the sake of completeness only. For the actual modelling, see the :HEAD property."""@en.
