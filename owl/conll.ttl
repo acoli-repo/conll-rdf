@@ -345,10 +345,10 @@ All CoNLL properties point from one word (row) to something else (sentence or ot
 	
 	POSTAG: Fine-grained part-of-speech tag, where the tagset depends on the language, or identical to the coarse-grained part-of-speech tag if not available. (https://depparse.uvt.nl/DataFormat.html)
 	"""@en;
-	owl:versionInfo "The abbreviation POSTAG was only used in CoNLL-07. CoNLL-08 provides two POS columns, one for gold annotation (GPOS), one for automated annotation (PPOS), we assume that GPOS and POS are identical. CoNLL-X uses POS, again. The SketchEngine documentation uses both POS and TAG.
+	owl:versionInfo """The abbreviation POSTAG was only used in CoNLL-07. CoNLL-08 provides two POS columns, one for gold annotation (GPOS), one for automated annotation (PPOS), we assume that GPOS and POS are identical. CoNLL-X uses POS, again. The SketchEngine documentation uses both POS and TAG.
 	
 	TIAD-TSV uses LexInfo URIs for POS annotation. If these are to be treated as :ObjectProperties, use POS_URI. In most cases, it will be sufficient/preferrable to treat them as as plain strings. Then, use POS as column label.
-	"@en;
+	"""@en;
 	:hasMapping [ a :ColumnMapping; :column "2"^^xsd:int; :dialect :TreeTagger,
 												 :CWB,
 												 :SketchEngine,
