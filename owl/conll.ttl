@@ -241,27 +241,56 @@ In CoNLL-RDF, a nif:Word corresponds to a row in a CoNLL TSV file that contains 
 ###########################################
 
 :CWB a :Dialect; rdfs:label "Corpus Workbench format", "CWB format"; rdfs:comment "Only the first column is fixed, all other columns can be configured. Cover column structure only, no SGML markup."; rdfs:isDefinedBy <http://txm.sourceforge.net/doc/cwb/technical-manual.pdf>.
+
 :TreeTagger a :Dialect; rdfs:label "TreeTagger format"; rdfs:comment "cover column structure only, no SGML markup."; rdfs:isDefinedBy <https://www.ims.uni-stuttgart.de/forschung/ressourcen/werkzeuge/treetagger.en.html>.
+
 :SketchEngine a :Dialect; rdfs:label "SketchEngine format", "NoSketchEngine format"; rdfs:comment "SketchEngine performs POS tagging and lemmatization, up to the first three columns are thus fixed. Cover column structure only, no XML markup."; rdfs:isDefinedBy <https://www.sketchengine.eu/documentation/preparing-corpus-text/>.
-:CoNLL-00 a :Dialect; rdfs:label "CoNLL-00 format"; rdfs:isDefinedBy <https://www.clips.uantwerpen.be/conll2000/chunking/>.
-:CoNLL-01 a :Dialect; rdfs:label "CoNLL-01 format"; rdfs:isDefinedBy <https://www.clips.uantwerpen.be/conll2001/clauses/>.
-:CoNLL-02 a :Dialect; rdfs:label "CoNLL-02 format"; rdfs:isDefinedBy <https://www.clips.uantwerpen.be/conll2002/ner/>.
-:CoNLL-03 a :Dialect; rdfs:label "CoNLL-03 format"; rdfs:isDefinedBy <https://www.clips.uantwerpen.be/conll2003/ner/>.
-:CoNLL-04 a :Dialect; rdfs:label "CoNLL-04 format"; rdfs:isDefinedBy <https://www.cs.upc.edu/~srlconll/st04/conll04st-release.tar.gz>; rdfs:comment "See https://www.cs.upc.edu/~srlconll/st04/conll04st-release.tar.gz, conll04st-release/README)".
-:CoNLL-05 a :Dialect; rdfs:label "CoNLL-05 format"; rdfs:isDefinedBy <https://www.cs.upc.edu/~srlconll/conll05st-release/README>.
+
+:CoNLL-00 a :Dialect; rdfs:label "CoNLL-00 format"; rdfs:isDefinedBy <https://www.clips.uantwerpen.be/conll2000/chunking/>;
+	:hasColSeparator " ".
+
+:CoNLL-01 a :Dialect; rdfs:label "CoNLL-01 format"; rdfs:isDefinedBy <https://www.clips.uantwerpen.be/conll2001/clauses/>;
+	:hasColSeparator " ".
+
+:CoNLL-02 a :Dialect; rdfs:label "CoNLL-02 format"; rdfs:isDefinedBy <https://www.clips.uantwerpen.be/conll2002/ner/>;
+	:hasColSeparator " ".
+
+:CoNLL-03 a :Dialect; rdfs:label "CoNLL-03 format"; rdfs:isDefinedBy <https://www.clips.uantwerpen.be/conll2003/ner/>;
+	:hasColSeparator " ".
+
+:CoNLL-04 a :Dialect; rdfs:label "CoNLL-04 format"; rdfs:isDefinedBy <https://www.cs.upc.edu/~srlconll/st04/conll04st-release.tar.gz>; rdfs:comment "See https://www.cs.upc.edu/~srlconll/st04/conll04st-release.tar.gz, conll04st-release/README)";
+	:hasColSeparator " ".
+
+:CoNLL-05 a :Dialect; rdfs:label "CoNLL-05 format"; rdfs:isDefinedBy <https://www.cs.upc.edu/~srlconll/conll05st-release/README>;
+	:hasColSeparator " ".
+
 :CoNLL-06 a :Dialect; rdfs:label "CoNLL-06 format"; rdfs:isDefinedBy <https://ilk.uvt.nl/conll/>; rdfs:comment "Source link provided under https://www.conll.org/previous-tasks is broken, no information available, probably identical to CoNLL-07 format".
+
 :CoNLL-07 a :Dialect; rdfs:label "CoNLL-07 format"; rdfs:isDefinedBy <https://depparse.uvt.nl/DataFormat.html>.
+
 :CoNLL-08 a :Dialect; rdfs:label "CoNLL-08 format"; rdfs:isDefinedBy <http://surdeanu.info/conll08/conll08.pdf>.
+
 :CoNLL-X a :Dialect; rdfs:label "CoNLL-X format"; rdfs:isDefinedBy <http://ufal.mff.cuni.cz/conll2009-st/task-description.html>.
+
 :CoNLL-11 a :Dialect; rdfs:label "CoNLL-11 format"; rdfs:isDefinedBy <http://conll.cemantix.org/2011/data.html>.
+
 :CoNLL-12 a :Dialect; rdfs:label "CoNLL-12 format"; rdfs:isDefinedBy <http://conll.cemantix.org/2012/data.html>.
+
 :UniMorph a :Dialect; rdfs:label "UniMorph format"; rdfs:comment "Used in CoNLL–SIGMORPHON 2017/2018 shared tasks, https://sigmorphon.github.io/sharedtasks/2017/"; rdfs:isDefinedBy <http://unimorph.github.io/>.
+
 :CoNLL-U a :Dialect; rdfs:label "CoNLL-U"; rdfs:comment "Used in CoNLL 2017/2018 shared tasks on Multilingual Parsing from Raw Text to Universal Dependencies, cf. http://universaldependencies.org/"; 
 	rdfs:isDefinedBy <https://universaldependencies.org/format.html>, <https://universaldependencies.org/docsv1/format.html>.
+
 :CoNLL-U-Plus a :Dialect; rdfs:label "CoNLL-U Plus"; rdfs:isDefinedBy <https://universaldependencies.org/ext-format.html>.
-:PropBank a :Dialect; rdfs:label "PropBank CoNLL format", "PropBank Skel format"; rdfs:isDefinedBy <https://github.com/propbank/propbank-release/blob/master/docs/conll-conversion-notes.md>.
+
+:PropBank a :Dialect; rdfs:label "PropBank CoNLL format", "PropBank Skel format"; rdfs:isDefinedBy <https://github.com/propbank/propbank-release/blob/master/docs/conll-conversion-notes.md>;
+	:hasColSeparator " ".
+
+# check column separator
 :UniversalPropositions a :Dialect; rdfs:label "UniversalPropositions CoNLL format", "UniversalPropositions Skel format"; rdfs:isDefinedBy <https://github.com/System-T/UniversalPropositions>.
+
 :OMW a :Dialect; rdfs:label "Open Multilingual WordNet tab format"; rdfs:isDefinedBy <http://compling.hss.ntu.edu.sg/omw/>.
+
 :TIAD-TSV a :Dialect; rdfs:label "Translation Inference Across Dictionaries TSV format", "TIAD-2017 TSV format", "TIAD-2019 TSV format", "TIAD-2020 TSV format"; rdfs:isDefinedBy <http://tiad2020.unizar.es/task.html>.
 
 #######################################
