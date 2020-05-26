@@ -18,6 +18,7 @@ Column structure for various one-word-per-line TSV formats as used, e.g., by Cor
 The input format is “vertical” or “word-per-line (WPL)” text, as defined at the University of Stuttgart in the 1990s. Words are written one word per line, so each line contains one word, number or punctuation mark. (https://www.sketchengine.eu/documentation/preparing-corpus-text/)
 															 
 history
+2020-05-26 added encodings, reserved characters and CoNLL-99 (CC)
 2020-01-08 added lexical formats (CC)
 2019-09-07 added CWB and SketchEngine formats (CC)
 2019-09-04 :dialect recast as ObjectProperty (CC)
@@ -32,6 +33,7 @@ In chronological order, these are:
 - CWB (Corpus WorkBench) format (1994) [column structure only]: http://txm.sourceforge.net/doc/cwb/technical-manual.pdf
 - TreeTagger format (1994) [column structure only]: https://www.ims.uni-stuttgart.de/forschung/ressourcen/werkzeuge/treetagger.en.html
 - SketchEngine format [column structure only]: https://www.sketchengine.eu/documentation/preparing-corpus-text/
+- CoNLL-99 format: https://www.clips.uantwerpen.be/conll99/npb/, data under ftp://ftp.cis.upenn.edu/pub/chunker/
 - CoNLL-00 format: https://www.clips.uantwerpen.be/conll2000/chunking/
 - CoNLL-01 format: https://www.clips.uantwerpen.be/conll2001/clauses/
 - CoNLL-02 format: https://www.clips.uantwerpen.be/conll2002/ner/
@@ -59,7 +61,6 @@ Related standards for lexical resources include:
 - TIAD-TSV: used in a series of Shared Tasks on Translation Inference Across Dictionaries (http://tiad2020.unizar.es/task.html)
   
 Other (non-TSV) CoNLL Shared Task formats (not covered by CoNLL-RDF):
-- CoNLL-99 bracketing format (https://nlp.cs.nyu.edu/evalb/EVALB.tgz, sample files)
 - CoNLL-10 XML format (http://rgai.inf.u-szeged.hu/conll2010st/index.html#)
 - CoNLL-13/14 SGML format (https://www.comp.nus.edu.sg/~nlp/conll13st/CoNLLST01.pdf, https://www.comp.nus.edu.sg/~nlp/conll14st/conll14st-test-data.tar.gz)
 - CoNLL-15/16 JSON format (https://www.cs.brandeis.edu/~clp/conll15st/dataset.html, https://www.cs.brandeis.edu/~clp/conll16st/; a CoNLL TSV version was provided, but not used by any of the participants)
@@ -142,10 +143,9 @@ Other (non-TSV) CoNLL Shared Task formats (not covered by CoNLL-RDF):
            rdfs:comment """n-ary annotation property that maps a CoNLL-RDF property to a column (integer value starting with 1) in a particular CoNLL or TSV dialect (identified as a string). Optionally, the encoding strategy can be indicated. If these are not,
 		   we assume headEncoding for HEAD, columnEncoding for *ARGS (see :argument), and plainEncoding for everything else."""@en .
 
-# TODO: rename to :PhraseEncoding
 :Encoding a owl:Class;
 	rdfs:label "CoNLL encoding"; 
-	rdfs:comment """Different CoNLL/TSV formats use different strategies to represent annotations that span multiple words. The subclasses of this concept represent frequently applied techniques. The 'default' encoding strategy is :plainEncoding, i.e., string labels attached to individual words."""@en.
+	rdfs:comment """Different CoNLL/TSV formats use different strategies to represent annotations, e.g., those that span multiple words. The subclasses of this concept represent frequently applied techniques. The 'default' encoding strategy is :plainEncoding, i.e., string labels attached to individual words, not surrounded by special characters such as double quotes."""@en.
 	
 :encoding rdf:type owl:ObjectProperty;
 	rdfs:comment "Mark the encoding style of a particular column. Can be used for converting between different representations. By default, we assume headEncoding for HEAD, columnEncoding for *ARGS (see :argument), and plainEncoding for everything else. These three should thus be left implicit."@en;
@@ -245,6 +245,10 @@ In CoNLL-RDF, a nif:Word corresponds to a row in a CoNLL TSV file that contains 
 :TreeTagger a :Dialect; rdfs:label "TreeTagger format"; rdfs:comment "cover column structure only, no SGML markup."; rdfs:isDefinedBy <https://www.ims.uni-stuttgart.de/forschung/ressourcen/werkzeuge/treetagger.en.html>.
 
 :SketchEngine a :Dialect; rdfs:label "SketchEngine format", "NoSketchEngine format"; rdfs:comment "SketchEngine performs POS tagging and lemmatization, up to the first three columns are thus fixed. Cover column structure only, no XML markup."; rdfs:isDefinedBy <https://www.sketchengine.eu/documentation/preparing-corpus-text/>.
+
+:CoNLL-99 a :Dialect; rdfs:label "CoNLL-99 format"; rdfs:isDefinedBy <https://www.clips.uantwerpen.be/conll99/npb/>;
+	rdfs:comment """For a more detailed explanation of the format see Ramshaw and Marcus (1995), also cf. https://www.aclweb.org/anthology/E99-1023.pdf ("IOB1" format)"""@en;
+	:hasColSeparator " ".
 
 :CoNLL-00 a :Dialect; rdfs:label "CoNLL-00 format"; rdfs:isDefinedBy <https://www.clips.uantwerpen.be/conll2000/chunking/>;
 	:hasColSeparator " ".
@@ -431,7 +435,8 @@ All CoNLL properties point from one word (row) to something else (sentence or ot
 													:TreeTagger, 
 													:CWB,
 													:SketchEngine,
-	                                                :CoNLL-00, 
+	                                                :CoNLL-99,
+													:CoNLL-00, 
 													:CoNLL-01, 
 													:CoNLL-02, 
 													:CoNLL-03,
@@ -510,6 +515,7 @@ All CoNLL properties point from one word (row) to something else (sentence or ot
 	:hasMapping [ a :ColumnMapping; :column "2"^^xsd:int; :dialect :TreeTagger,
 												 :CWB,
 												 :SketchEngine,
+												 :CoNLL-99,
 	                                             :CoNLL-00, 
 												 :CoNLL-01, 
 												 :CoNLL-03,
@@ -592,26 +598,52 @@ All CoNLL properties point from one word (row) to something else (sentence or ot
 	 The chunk tags contain the name of the chunk type, for example I-NP for noun phrase words and I-VP for verb phrase words.
 	(https://www.clips.uantwerpen.be/conll2000/chunking/)
 	"""@en;
-	:hasMapping [ a :ColumnMapping; :column "3"^^xsd:int; :dialect :CoNLL-00, 
+	:hasMapping [ a :ColumnMapping; :column "3"^^xsd:int; 
+				  :encoding :iobEncoding; :dialect :CoNLL-00, 
 												 :CoNLL-01, 
 												 :CoNLL-03,
-												 :CoNLL-04];
-	:hasMapping [ a :ColumnMapping; :column "4"^^xsd:int; :dialect :CoNLL-05 ]. 
+												 :CoNLL-04 ];
+	:hasMapping [ a :ColumnMapping; :column "4"^^xsd:int; :dialect :CoNLL-05;
+				:encoding :bracketEncoding ]. 
+
+:NCHUNK rdfs:subPropertyOf :CHUNK;
+	rdfs:label "CHUNK", "NOMINAL CHUNK";
+	rdfs:comment """Annotation of nominal chunks, with verbal chunks excluded, e.g., 
+	[NP He ] reckons [NP the current account deficit ] will narrow  to [NP only # 1.8 billion ] [PP in ] [NP September ] ."""@en;
+	:hasMapping [ a :ColumnMapping; :column "3"^^xsd:int; 
+				  :encoding :iobEncoding; :dialect :CoNLL-99 ]. 
+				
+:NCHUNK2 rdfs:subPropertyOf :CHUNK;
+	rdfs:label "CHUNK", "NOMINAL CHUNK";
+	rdfs:comment "Note that CoNLL-99 has two levels of NCHUNK annotation, apparently by different annotators."@en;
+	:hasMapping [ a :ColumnMapping; :column "4"^^xsd:int; 
+				  :encoding :iobEncoding; :dialect :CoNLL-99 ].
+
+:VCHUNK rdfs:subPropertyOf :CHUNK;
+	rdfs:label "CHUNK", "VERBAL CHUNK";
+	rdfs:comment """Annotation of verbal chunks, with nominal chunks excluded, e.g., 
+	He [VP reckons ] the current account deficit [VP will narrow ] to only # 1.8 billion PP in NP September ."""@en;
+	:hasMapping [ a :ColumnMapping; :column "5"^^xsd:int; 
+				  :encoding :iobEncoding; :dialect :CoNLL-99 ]. 				
 
 :CLAUSE rdfs:subPropertyOf :DatatypeProperty;
 	rdfs:label "CLAUSE";
 	rdfs:comment """Clauses are word sequences which contain a subject and a predicate. (https://www.clips.uantwerpen.be/conll2001/clauses/)
 	In the CoNLL-01 format (shared task part 3), a bracket notation based on the Penn Treebank syntax was used, using S as its only label.
 	"""@en;
-	:hasMapping [ a :ColumnMapping; :column "4"^^xsd:int; :dialect :CoNLL-01,
+	:hasMapping [ a :ColumnMapping; :column "4"^^xsd:int;
+				  :encoding :iobEncoding; :dialect :CoNLL-01,
+												 :CoNLL-99,
 												 :CoNLL-04];
-	:hasMapping [ a :ColumnMapping; :column "5"^^xsd:int; :dialect :CoNLL-05 ]. 
+	:hasMapping [ a :ColumnMapping; :column "5"^^xsd:int; 
+				  :encoding :bracketEncoding; :dialect :CoNLL-05 ]. 
 	
 :PARSE rdfs:subPropertyOf :DatatypeProperty;
 	rdfs:label "FULL_SYNT", "PARSE_BIT";
 	rdfs:comment """Parse bit: This is the bracketed structure broken before the first open parenthesis in the parse, and the word/part-of-speech leaf replaced with a *. The full parse can be created by substituting the asterix with the "([pos] [word])" string (or leaf) and concatenating the items in the rows of that column. (http://conll.cemantix.org/2011/data.html)		
 		Introduced in CoNLL-05 as FULL_SYNT, but we follow CoNLL-11/PropBank for readability."""@en;
-	:hasMapping [ a :ColumnMapping; :column "6"^^xsd:int; :dialect :CoNLL-05,
+	:hasMapping [ a :ColumnMapping; :column "6"^^xsd:int; 
+				  :encoding :bracketEncoding; :dialect :CoNLL-05,
 																   :CoNLL-11,
 																   :CoNLL-12]; 
 	:hasMapping [ a :ColumnMapping; :column "5"^^xsd:int; :dialect :PropBank]. 
