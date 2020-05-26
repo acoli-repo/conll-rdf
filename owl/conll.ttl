@@ -76,8 +76,9 @@ Other (non-TSV) CoNLL Shared Task formats (not covered by CoNLL-RDF):
 	rdfs:comment """A CoNLL dialect is a one-word-per-line TSV format with a specific configuration of columns. Note that selected TSV dialects may contain additional markup in SGML (Corpus WorkBench), XML (SketchEngine) or comments (CoNLL-U Plus) which are not covered by this ontology.
 	
 	A dialect representation requires at least one name (rdfs:label) and at least one pointer to documentation or sample data (rdfs:isDefinedBy).
-	It can contain several column mappings, but as some formats support user-defined columns, this is optional.
-	"""@en; 
+	It can contain several column mappings, but as some formats support user-defined columns, this is optional. 
+	
+	Also, a dialect may use non-standard symbols for separating blocks (sentences, normally "\n\n"), rows (words, normally "\n"), columns (annotations, normally "\t"), for marking comments (normally "#") or for representing the absence of an annotation (normally "_"). Again, this is optional. If no reserved symbols are declared, the defaults are assumed."""@en; 
 	rdfs:subClassOf [ rdf:type owl:Restriction ;
                              owl:onProperty rdfs:label ;
                              owl:minCardinality "1"^^xsd:nonNegativeInteger
@@ -85,6 +86,26 @@ Other (non-TSV) CoNLL Shared Task formats (not covered by CoNLL-RDF):
 	rdfs:subClassOf [ rdf:type owl:Restriction ;
                              owl:onProperty rdfs:isDefinedBy ;
                              owl:minCardinality "1"^^xsd:nonNegativeInteger
+                           ];
+	rdfs:subClassOf [ rdf:type owl:Restriction ;
+                             owl:onProperty :hasBlockSeparator ;
+                             owl:maxCardinality "1"^^xsd:nonNegativeInteger
+                           ];
+	rdfs:subClassOf [ rdf:type owl:Restriction ;
+                             owl:onProperty :hasColSeparator ;
+                             owl:maxCardinality "1"^^xsd:nonNegativeInteger
+                           ];
+	rdfs:subClassOf [ rdf:type owl:Restriction ;
+                             owl:onProperty :hasRowSeparator ;
+                             owl:maxCardinality "1"^^xsd:nonNegativeInteger
+                           ];
+	rdfs:subClassOf [ rdf:type owl:Restriction ;
+                             owl:onProperty :hasEmptyAnnotationMarker ;
+                             owl:maxCardinality "1"^^xsd:nonNegativeInteger
+                           ];
+	rdfs:subClassOf [ rdf:type owl:Restriction ;
+                             owl:onProperty :hasCommentMarker ;
+                             owl:maxCardinality "1"^^xsd:nonNegativeInteger
                            ].
 
 :hasMapping rdf:type owl:AnnotationProperty;
@@ -104,7 +125,7 @@ Other (non-TSV) CoNLL Shared Task formats (not covered by CoNLL-RDF):
 :dialect rdf:type owl:ObjectProperty ;
      rdfs:comment "format identifier, identifies the CoNLL dialect"@en ;
      rdfs:domain :ColumnMapping ;
-     rdfs:range :Dialect .
+     rdfs:range :Dialect . 
 
 :ColumnMapping rdfs:subClassOf [ rdf:type owl:Restriction ;
                              owl:onProperty :dialect ;
@@ -121,6 +142,7 @@ Other (non-TSV) CoNLL Shared Task formats (not covered by CoNLL-RDF):
            rdfs:comment """n-ary annotation property that maps a CoNLL-RDF property to a column (integer value starting with 1) in a particular CoNLL or TSV dialect (identified as a string). Optionally, the encoding strategy can be indicated. If these are not,
 		   we assume headEncoding for HEAD, columnEncoding for *ARGS (see :argument), and plainEncoding for everything else."""@en .
 
+# TODO: rename to :PhraseEncoding
 :Encoding a owl:Class;
 	rdfs:label "CoNLL encoding"; 
 	rdfs:comment """Different CoNLL/TSV formats use different strategies to represent annotations that span multiple words. The subclasses of this concept represent frequently applied techniques. The 'default' encoding strategy is :plainEncoding, i.e., string labels attached to individual words."""@en.
@@ -129,6 +151,34 @@ Other (non-TSV) CoNLL Shared Task formats (not covered by CoNLL-RDF):
 	rdfs:comment "Mark the encoding style of a particular column. Can be used for converting between different representations. By default, we assume headEncoding for HEAD, columnEncoding for *ARGS (see :argument), and plainEncoding for everything else. These three should thus be left implicit."@en;
 	rdfs:domain :ColumnMapping;
 	rdfs:range :Encoding.
+
+:hasReservedSymbol a owl:DatatypeProperty;
+	rdfs:comment """For a given format, characters or substrings may serve a special function, e.g., as comment marker or column separator.
+		Subproperties of this property should implement those symbols.
+		If no explicit value is provided, we assume that a default holds as defined for individual properties.
+		Do not use this property directly.""";
+	rdfs:range xsd:string;
+	rdfs:domain :Dialect.
+	
+:hasBlockSeparator a owl:DatatypeProperty;
+	rdfs:subPropertyOf :hasReservedSymbol;
+	rdfs:comment """A block separator indicates breaks between sequences of rows that should be loaded into a single RDF graph by CoNLLStreamExtractor, e.g., a sentence. The default is "\\\\n\\\\n" (NEWLINE NEWLINE)."""@en.
+	
+:hasRowSeparator a owl:DatatypeProperty;
+	rdfs:subPropertyOf :hasReservedSymbol;
+	rdfs:comment """A row separator indicates breaks between rows, i.e., normally a word with its annotations. The default is "\\\\n" (NEWLINE)."""@en.
+
+:hasColSeparator a owl:DatatypeProperty;
+	rdfs:subPropertyOf :hasReservedSymbol;
+	rdfs:comment """A column separator indicates breaks between columns, i.e., normally between different annotations of the same word. The default is "\\\\t" (TAB)."""@en.
+	
+:hasCommentMarker a owl:DatatypeProperty;
+	rdfs:subPropertyOf :hasReservedSymbol;
+	rdfs:comment """A comment marker marks the beginning of a comment. We assume that the comment extends until the end of the line. The default is "#" (HASH)."""@en.
+
+:hasEmptyAnnotationMarker a owl:DatatypeProperty;
+	rdfs:subPropertyOf :hasReservedSymbol;
+	rdfs:comment """In classical CoNLL formats, the absence of an annotation is marked by "_" (in some variants also "-"), in IOBES and related encodings, the absence of an annotation is marked by "O". Note that it is technically possible to specify this to be an empty string. The default is "_" (UNDERSCORE)."""@en.
 	
 ###########################################
 # external classes, reused and/or refined #
