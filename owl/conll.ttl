@@ -89,23 +89,23 @@ Other (non-TSV) CoNLL Shared Task formats (not covered by CoNLL-RDF):
                              owl:minCardinality "1"^^xsd:nonNegativeInteger
                            ];
 	rdfs:subClassOf [ rdf:type owl:Restriction ;
-                             owl:onProperty :hasBlockSeparator ;
+                             owl:onProperty :blockSeparator ;
                              owl:maxCardinality "1"^^xsd:nonNegativeInteger
                            ];
 	rdfs:subClassOf [ rdf:type owl:Restriction ;
-                             owl:onProperty :hasColSeparator ;
+                             owl:onProperty :colSeparator ;
                              owl:maxCardinality "1"^^xsd:nonNegativeInteger
                            ];
 	rdfs:subClassOf [ rdf:type owl:Restriction ;
-                             owl:onProperty :hasRowSeparator ;
+                             owl:onProperty :rowSeparator ;
                              owl:maxCardinality "1"^^xsd:nonNegativeInteger
                            ];
 	rdfs:subClassOf [ rdf:type owl:Restriction ;
-                             owl:onProperty :hasEmptyAnnotationMarker ;
+                             owl:onProperty :emptyAnnotationMarker ;
                              owl:maxCardinality "1"^^xsd:nonNegativeInteger
                            ];
 	rdfs:subClassOf [ rdf:type owl:Restriction ;
-                             owl:onProperty :hasCommentMarker ;
+                             owl:onProperty :commentMarker ;
                              owl:maxCardinality "1"^^xsd:nonNegativeInteger
                            ].
 
@@ -160,23 +160,23 @@ Other (non-TSV) CoNLL Shared Task formats (not covered by CoNLL-RDF):
 	rdfs:range xsd:string;
 	rdfs:domain :Dialect.
 	
-:hasBlockSeparator a owl:DatatypeProperty;
+:blockSeparator a owl:DatatypeProperty;
 	rdfs:subPropertyOf :hasReservedSymbol;
 	rdfs:comment """A block separator indicates breaks between sequences of rows that should be loaded into a single RDF graph by CoNLLStreamExtractor, e.g., a sentence. The default is "\\\\n\\\\n" (NEWLINE NEWLINE)."""@en.
 	
-:hasRowSeparator a owl:DatatypeProperty;
+:rowSeparator a owl:DatatypeProperty;
 	rdfs:subPropertyOf :hasReservedSymbol;
 	rdfs:comment """A row separator indicates breaks between rows, i.e., normally a word with its annotations. The default is "\\\\n" (NEWLINE)."""@en.
 
-:hasColSeparator a owl:DatatypeProperty;
+:colSeparator a owl:DatatypeProperty;
 	rdfs:subPropertyOf :hasReservedSymbol;
 	rdfs:comment """A column separator indicates breaks between columns, i.e., normally between different annotations of the same word. The default is "\\\\t" (TAB)."""@en.
 	
-:hasCommentMarker a owl:DatatypeProperty;
+:commentMarker a owl:DatatypeProperty;
 	rdfs:subPropertyOf :hasReservedSymbol;
 	rdfs:comment """A comment marker marks the beginning of a comment. We assume that the comment extends until the end of the line. The default is "#" (HASH)."""@en.
 
-:hasEmptyAnnotationMarker a owl:DatatypeProperty;
+:emptyAnnotationMarker a owl:DatatypeProperty;
 	rdfs:subPropertyOf :hasReservedSymbol;
 	rdfs:comment """In classical CoNLL formats, the absence of an annotation is marked by "_" (in some variants also "-"), in IOBES and related encodings, the absence of an annotation is marked by "O". Note that it is technically possible to specify this to be an empty string. The default is "_" (UNDERSCORE)."""@en.
 	
@@ -248,25 +248,25 @@ In CoNLL-RDF, a nif:Word corresponds to a row in a CoNLL TSV file that contains 
 
 :CoNLL-99 a :Dialect; rdfs:label "CoNLL-99 format"; rdfs:isDefinedBy <https://www.clips.uantwerpen.be/conll99/npb/>;
 	rdfs:comment """For a more detailed explanation of the format see Ramshaw and Marcus (1995), also cf. https://www.aclweb.org/anthology/E99-1023.pdf ("IOB1" format)"""@en;
-	:hasColSeparator " ".
+	:colSeparator " ".
 
 :CoNLL-00 a :Dialect; rdfs:label "CoNLL-00 format"; rdfs:isDefinedBy <https://www.clips.uantwerpen.be/conll2000/chunking/>;
-	:hasColSeparator " ".
+	:colSeparator " ".
 
 :CoNLL-01 a :Dialect; rdfs:label "CoNLL-01 format"; rdfs:isDefinedBy <https://www.clips.uantwerpen.be/conll2001/clauses/>;
-	:hasColSeparator " ".
+	:colSeparator " ".
 
 :CoNLL-02 a :Dialect; rdfs:label "CoNLL-02 format"; rdfs:isDefinedBy <https://www.clips.uantwerpen.be/conll2002/ner/>;
-	:hasColSeparator " ".
+	:colSeparator " ".
 
 :CoNLL-03 a :Dialect; rdfs:label "CoNLL-03 format"; rdfs:isDefinedBy <https://www.clips.uantwerpen.be/conll2003/ner/>;
-	:hasColSeparator " ".
+	:colSeparator " ".
 
 :CoNLL-04 a :Dialect; rdfs:label "CoNLL-04 format"; rdfs:isDefinedBy <https://www.cs.upc.edu/~srlconll/st04/conll04st-release.tar.gz>; rdfs:comment "See https://www.cs.upc.edu/~srlconll/st04/conll04st-release.tar.gz, conll04st-release/README)";
-	:hasColSeparator " ".
+	:colSeparator " ".
 
 :CoNLL-05 a :Dialect; rdfs:label "CoNLL-05 format"; rdfs:isDefinedBy <https://www.cs.upc.edu/~srlconll/conll05st-release/README>;
-	:hasColSeparator " ".
+	:colSeparator " ".
 
 :CoNLL-06 a :Dialect; rdfs:label "CoNLL-06 format"; rdfs:isDefinedBy <https://ilk.uvt.nl/conll/>; rdfs:comment "Source link provided under https://www.conll.org/previous-tasks is broken, no information available, probably identical to CoNLL-07 format".
 
@@ -286,7 +286,7 @@ In CoNLL-RDF, a nif:Word corresponds to a row in a CoNLL TSV file that contains 
 :CoNLL-U-Plus a :Dialect; rdfs:label "CoNLL-U Plus"; rdfs:isDefinedBy <https://universaldependencies.org/ext-format.html>.
 
 :PropBank a :Dialect; rdfs:label "PropBank CoNLL format", "PropBank Skel format"; rdfs:isDefinedBy <https://github.com/propbank/propbank-release/blob/master/docs/conll-conversion-notes.md>;
-	:hasColSeparator " ".
+	:colSeparator " ".
 
 # check column separator
 :UniversalPropositions a :Dialect; rdfs:label "UniversalPropositions CoNLL format", "UniversalPropositions Skel format"; rdfs:isDefinedBy <https://github.com/System-T/UniversalPropositions>.
@@ -295,23 +295,23 @@ In CoNLL-RDF, a nif:Word corresponds to a row in a CoNLL TSV file that contains 
 	rdfs:comment """If we set the block separator to "\n" and row separator to "", this means that every line is processed individually.
 	This is useful for transformations and thus default within CoNLL-RDF.
 	If this is not specified, the entire file/stream is processed as a single RDF graph."""@en;
-	:hasRowSeparator "";
-	:hasBlockSeparator "\n".
+	:rowSeparator "";
+	:blockSeparator "\n".
 
 :UniMorph a :Dialect; rdfs:label "UniMorph format"; rdfs:comment "Used in CoNLL–SIGMORPHON 2017/2018 shared tasks, https://sigmorphon.github.io/sharedtasks/2017/"; rdfs:isDefinedBy <http://unimorph.github.io/>;
 	rdfs:comment """If we set the block separator to "\n" and row separator to "", this means that every line is processed individually.
 	This is useful for transformations and thus default within CoNLL-RDF.
 	If this is not specified, the entire file/stream is processed as a single RDF graph."""@en;
-	:hasRowSeparator "";
-	:hasBlockSeparator "\n".
+	:rowSeparator "";
+	:blockSeparator "\n".
 
 
 :TIAD-TSV a :Dialect; rdfs:label "Translation Inference Across Dictionaries TSV format", "TIAD-2017 TSV format", "TIAD-2019 TSV format", "TIAD-2020 TSV format"; rdfs:isDefinedBy <http://tiad2020.unizar.es/task.html>;
 	rdfs:comment """If we set the block separator to "\n" and row separator to "", this means that every line is processed individually.
 	This is useful for transformations and thus default within CoNLL-RDF.
 	If this is not specified, the entire file/stream is processed as a single RDF graph."""@en;
-	:hasRowSeparator "";
-	:hasBlockSeparator "\n".
+	:rowSeparator "";
+	:blockSeparator "\n".
 
 #############
 # encodings #
