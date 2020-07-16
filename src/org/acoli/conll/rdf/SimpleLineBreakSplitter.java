@@ -23,7 +23,7 @@ public class SimpleLineBreakSplitter extends CoNLLRDFComponent {
 		}
 		getOutputStream().close();
 	}
-	
+
 	@Override
 	public void run() {
 		try {
@@ -38,17 +38,17 @@ public class SimpleLineBreakSplitter extends CoNLLRDFComponent {
 	public void start() {
 		run();
 	}
-	
+
 	public static void main(String[] args) throws IOException {
 		System.err.println("synopsis: SimpleLineBreakSplitter");
 		SimpleLineBreakSplitter splitter = new SimpleLineBreakSplitter();
-		
+
 		long start = System.currentTimeMillis();
-		
+
 		splitter.setInputStream(new BufferedReader(new InputStreamReader(System.in)));
 		splitter.setOutputStream(System.out);
-		
-		//READ SENTENCES from System.in  
+
+		//READ SENTENCES from System.in
 		splitter.processSentenceStream();
 		System.err.println(((System.currentTimeMillis()-start)/1000 + " seconds"));
 	}
