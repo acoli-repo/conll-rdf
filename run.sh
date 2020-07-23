@@ -40,5 +40,10 @@ if
 		cd - >&/dev/null;
 	fi 2>&1;
 then 
-	java -Dfile.encoding=UTF8 -classpath $CLASSPATH org.acoli.conll.rdf.$*; #could also add  -Dlog4j.configuration=file:'src/log4j.properties' for another log4j config
+	#could also add  -Dlog4j.configuration=file:'src/log4j.properties' for another log4j config
+	java -Dfile.encoding=UTF8 -classpath $CLASSPATH org.acoli.conll.rdf.$* | \
+	# the following is a hack to allow CoNLLRDFUpdater to process output of CoNLLBrackets2RDF
+	# currently, CoNLLRDFUpdater supportes the historical Turtle 1.0 prefix only
+	# TODO: fix this in CoNLLRDFUpdater, this is a hack, only
+	sed -e s/'^[\t ]*PREFIX \(.*\)$'/'@prefix \1 .'/g;
 fi;
