@@ -856,10 +856,6 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 	 * Streams data from a buffered reader to a buffered writer. Distributes the processing 
 	 * across available threads. Each thread handles one sentence at a time.
 	 * Caches and outputs the resulting sentences in-order.
-	 * @param in
-	 * 			the input stream wrapped in a BufferedReader
-	 * @param out
-	 * 			the output stream wrapped in a PrintStream
 	 * @throws IOException
 	 */
 	public void processSentenceStream() throws IOException {
@@ -871,76 +867,60 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 		while((line = getInputStream().readLine())!=null) {
 			line=line.replaceAll("[\t ]+"," ").trim();
 
-			if(!buffer.trim().equals(""))
-				if((line.startsWith("@") || line.startsWith("#")) && !lastLine.startsWith("@") && !lastLine.startsWith("#")) { //!buffer.matches("@[^\n]*\n?$")) {
-					
-					//TODO:@Leo: check
-					if (buffer.contains("@prefix"))  {
-						prefixCache = new String();
-						for (String buffLine:buffer.split("\n")) {
-							if (buffLine.trim().startsWith("@prefix")) {
-								prefixCache += buffLine+"\n";
-							}
+			if(!buffer.trim().equals("") && (line.startsWith("@") || line.startsWith("#")) && !lastLine.startsWith("@") && !lastLine.startsWith("#")) { //!buffer.matches("@[^\n]*\n?$")) {
+				// If the buffer is not empty and the current line starts with @ or #
+				// and the previous line did not start with @ or #
+				// check if the buffer contains a ttl prefix
+				if (buffer.contains("@prefix"))  {
+					prefixCache = new String();
+					for (String buffLine:buffer.split("\n")) {
+						if (buffLine.trim().startsWith("@prefix")) {
+							prefixCache += buffLine+"\n";
 						}
-					} else {
-					    buffer = prefixCache+buffer;
 					}
-					
-					if ((graphOutputDir != null) && (graphOutputSentences.isEmpty())) { // get first sentence id as default for graphsout output
-						Model m = ModelFactory.createDefaultModel();
-						String sentID = m.read(new StringReader(buffer),null, "TTL").listSubjectsWithProperty(
-								m.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), 
-								m.getProperty("http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Sentence")
-							).next().getLocalName();
-						graphOutputSentences.add(sentID);
-						LOG.debug("Graph Output: default to first sentence: " + sentID);
-					}
-					// --> deprecated
-					//parsedSentences++;
-					//execute updates using thread handler  --> now in lookahead handling
-					//executeThread(buffer);
-					// <-- deprecated 
-
-					
-					//lookahead
-					//add ALL sentences to sentBufferLookahead
-					sentBufferLookahead.add(buffer);
-					if (sentBufferLookahead.size() > lookahead_snts) {
-						//READY TO PROCESS 
-						// remove first sentence from buffer and process it.
-						// !!if lookahead = 0 then only current buffer is in sentBufferLookahead!!
-						executeThread(sentBufferLookahead.remove(0));
-					}		
-					
-					//lookback
-					//needs to consider lookahead buffer. The full buffer size needs to be lookahead + lookback.
-					if (lookback_snts > 0) {
-						while (sentBufferLookback.size() >= lookback_snts + sentBufferLookahead.size()) sentBufferLookback.remove(0);
-						sentBufferLookback.add(buffer);
-					}
-					
-					
-					flushOutputBuffer(getOutputStream());
-					buffer="";
+				} else {
+					buffer = prefixCache+buffer;
 				}
-			//TODO:@Leo: check if this still works with all pipelines. 
-			//      I do not know why this complicated handling of linebreaks has originally been implemented 
-			//      and why the only uncommented line had a tabstopp (\t) .
-			//      It was probably accidentally copied from the CoNLLRDFFormatter.
-//			if(line.trim().startsWith("@") && !lastLine.trim().endsWith(".")) 
-//				buffer=buffer+"\n";
-//
-//			if(line.trim().startsWith("#") && (!lastLine.trim().startsWith("#"))) 
-//				buffer=buffer+"\n";
 
-			buffer=buffer+line+"\n";//+"\t";
+				// GRAPHSOUT determine first sentence's id, if none were specified
+				if ((graphOutputDir != null) && (graphOutputSentences.isEmpty())) {
+					Model m = ModelFactory.createDefaultModel();
+					String sentID = m.read(new StringReader(buffer),null, "TTL").listSubjectsWithProperty(
+							m.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), 
+							m.getProperty("http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Sentence")
+						).next().getLocalName();
+					graphOutputSentences.add(sentID);
+					LOG.debug("Graph Output defaults to first sentence: " + sentID);
+				}
+				// --> deprecated
+				//parsedSentences++;
+				//execute updates using thread handler  --> now in lookahead handling
+				//executeThread(buffer);
+				// <-- deprecated 
 
-//			if(line.trim().endsWith(".") || line.trim().matches("^(.*>)?[^<]*#")) 
-//				buffer=buffer+"\n";
+				//lookahead
+				//add ALL sentences to sentBufferLookahead
+				sentBufferLookahead.add(buffer);
+				if (sentBufferLookahead.size() > lookahead_snts) {
+					//READY TO PROCESS 
+					// remove first sentence from buffer and process it.
+					// !!if lookahead = 0 then only current buffer is in sentBufferLookahead!!
+					executeThread(sentBufferLookahead.remove(0));
+				}		
+				
+				//lookback
+				//needs to consider lookahead buffer. The full buffer size needs to be lookahead + lookback.
+				if (lookback_snts > 0) {
+					while (sentBufferLookback.size() >= lookback_snts + sentBufferLookahead.size()) sentBufferLookback.remove(0);
+					sentBufferLookback.add(buffer);
+				}
 
+				flushOutputBuffer(getOutputStream());
+				buffer="";
+			}
+			buffer=buffer+line+"\n";
 			lastLine=line;
 		}
-		getInputStream().close();
 		// --> deprecated
 		//parsedSentences++;
 		//executeThread(buffer);
@@ -1013,7 +993,6 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 			
 			String outString = new String();
 			if (removePrefixDuplicates) {
-				//TODO:@Leo: check functionality, and make removePrefixDuplicates a proper CLI-parameter.
 				String prefixCacheTMP = new String();
 				for (String buffLine:sentBufferOut.remove(0).split("\n")) {
 					if (buffLine.trim().startsWith("@prefix")) {
@@ -1110,7 +1089,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 			.addOption("threads", true, "use T threads max\ndefault: half of available logical processor cores")
 			.addOption("lookahead", true, "cache N further sentences in lookahead graph")
 			.addOption("lookback", true, "cache N preceeding sentences in lookback graph")
-			.addOption("removePrefixDuplicates", false, null) //TODO @Leo
+			.addOption("prefixDeduplication", false, "Remove duplicates of TTL-Prefixes")
 			.addOption(Option.builder("custom").hasArg(false).desc("use custom update scripts")/*.required()*/.build())
 			.addOption("model", true, "to load additional Models into local graph")
 			.addOption("graphsout", true, "output directory for the .dot graph files\nfollowed by the IDs of the sentences to be visualized\ndefault: first sentence only")
@@ -1189,8 +1168,8 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 			}
 		}
 		// PREFIX DUPLICATES
-		if (cmd.hasOption("removePrefixDuplicates")) {
-			LOG.debug("Activated removePrefixDuplicates");
+		if (cmd.hasOption("prefixDeduplication")) {
+			LOG.debug("Activated Prefix Deduplication");
 			updater.activateRemovePrefixDuplicates();
 		}
 		// READ MODE (currently only CUSTOM)

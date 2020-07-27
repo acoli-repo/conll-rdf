@@ -224,6 +224,13 @@ public class CoNLLRDFManager {
 				updater.activateLookback(lookback_snts);
 		}
 
+		// READ PREFIX DEDUPLICATION
+		if (conf.get("prefixDeduplication") != null) {
+			Boolean prefixDeduplication = conf.get("prefixDeduplication").asBoolean();
+			if (prefixDeduplication)
+				updater.activateRemovePrefixDuplicates();
+		}
+
 		// READ ALL UPDATES
 		// should be <#UPDATEFILENAMEORSTRING, #UPDATESTRING, #UPDATEITER>
 		List<Triple<String, String, String>> updates = new ArrayList<Triple<String, String, String>>();
