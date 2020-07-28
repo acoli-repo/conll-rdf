@@ -6,19 +6,20 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.PrintStream;
-import java.io.Reader;
-import java.io.StringReader;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
+
+import com.fasterxml.jackson.core.JsonParser.Feature;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeType;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.acoli.conll.rdf.CoNLLRDFFormatter.Mode;
 import org.acoli.conll.rdf.CoNLLRDFFormatter.Module;
@@ -29,35 +30,22 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import com.fasterxml.jackson.core.JsonParser.Feature;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeType;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 public class CoNLLRDFManager {
-	
 	private ObjectNode config;
-	
 	private ArrayList<CoNLLRDFComponent> componentStack;
-	
+
 	PrintStream output;
 	BufferedReader input;
-	
-	
-	
+
 	public static void main(String[] args) throws Exception {
 		Options options = new Options();
 		options.addRequiredOption("c", "config", true, "Specify JSON config file");
-		
-		
+
 		CommandLineParser parser = new DefaultParser();
 		CommandLine cmd = parser.parse(options, args);
-		
+
 		CoNLLRDFManager man = new CoNLLRDFManager();
-		
+
 		if(cmd.hasOption("c")) {
 			try {
 				man.readConfig(cmd.getOptionValue("c"));
@@ -68,7 +56,7 @@ public class CoNLLRDFManager {
 		else {
 		    throw new ParseException("No config file specified.");
 		}
-		
+
 		man.buildComponentStack();
 		man.start();
 	}
@@ -96,16 +84,17 @@ public class CoNLLRDFManager {
 		if (confEntry.equals("System.in")) {
 			input = new BufferedReader(new InputStreamReader(System.in));
 		} else if (new File(confEntry).canRead()) {
-			if (confEntry.endsWith(".gz")) 
+			if (confEntry.endsWith(".gz")) {
 				input = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(confEntry))));
-			else
+			} else {
 				input = new BufferedReader(new FileReader(confEntry));
+			}
 		} else {
 			throw new IOException("Could not read from " + confEntry);
 		}
 		return input;
 	}
-	
+
 	private PrintStream parseConfAsOutputStream(String confEntry) throws IOException {
 		PrintStream output;
 		if (confEntry.equals("System.out")) {
@@ -123,31 +112,29 @@ public class CoNLLRDFManager {
 	public void buildComponentStack() throws IOException {
 		//READ INPUT PARAMETER
 		input = parseConfAsInputStream(config.get("input").asText());
-		
+
 		//READ OUTPUT PARAMETER
 		output = parseConfAsOutputStream(config.get("output").asText());
-		
+
 		//READ PIPELINE PARAMETER
 		if (!config.get("pipeline").isArray()) {
 			throw new IOException("File is no valid JSON config.");
 		}
-		
-		
-		
+
 		//BUILD COMPONENT STACK
-		if (componentStack == null) 
+		if (componentStack == null)
 			componentStack = new ArrayList<CoNLLRDFComponent>();
 		else
 			componentStack.clear();
-		
+
 		// First inputStream is always main input
 		BufferedReader nextInput = input;
-		// Traverse pipeline array	
+		// Traverse pipeline array
 		for (JsonNode pipelineElement:config.withArray("pipeline")) {
 			if (!pipelineElement.getNodeType().equals(JsonNodeType.OBJECT)) {
 				throw new IOException("File is no valid JSON config.");
-			} 
-			
+			}
+
 			// Create CoNLLRDFComponents (StreamExtractor, Updater, Formatter ...)
 			CoNLLRDFComponent component;
 			if (pipelineElement.get("class").asText().equals(CoNLLStreamExtractor.class.getSimpleName())) {
@@ -156,11 +143,13 @@ public class CoNLLRDFManager {
 				component = buildUpdater((ObjectNode) pipelineElement);
 			} else if (pipelineElement.get("class").asText().equals(CoNLLRDFFormatter.class.getSimpleName())) {
 				component = buildFormatter((ObjectNode) pipelineElement);
+			} else if (pipelineElement.get("class").asText().equals(SimpleLineBreakSplitter.class.getSimpleName())) {
+				component = buildSimpleLineBreakSplitter((ObjectNode) pipelineElement);
 			} else {
 				throw new IOException("File is no valid JSON config.");
 			}
 			componentStack.add(component);
-			
+
 			// Define Pipeline I/O
 			// always use previously defined input... first main input, later piped input
 			component.setInputStream(nextInput);
@@ -173,7 +162,6 @@ public class CoNLLRDFManager {
 				componentStack.get(componentStack.size()-1).setOutputStream(new PrintStream(compOutput));
 				nextInput = new BufferedReader(new InputStreamReader(new PipedInputStream(compOutput)));
 			}
-			
 		}
 	}
 
@@ -189,7 +177,7 @@ public class CoNLLRDFManager {
 
 		return ex;
 	}
-	
+
 	private CoNLLRDFComponent buildUpdater(ObjectNode conf) throws IOException {
 
 		// READ THREAD PARAMETERS
@@ -198,7 +186,6 @@ public class CoNLLRDFManager {
 			threads = conf.get("threads").asInt(0);
 		CoNLLRDFUpdater updater = new CoNLLRDFUpdater("","",threads);
 
-		
 		// READ GRAPHSOUT PARAMETERS
 		if (conf.get("graphsoutDIR") != null) {
 			String graphOutputDir = conf.get("graphsoutDIR").asText("");
@@ -210,7 +197,7 @@ public class CoNLLRDFManager {
 				updater.activateGraphsOut(graphOutputDir, graphOutputSentences);
 			}
 		}
-		
+
 		// READ TRIPLESOUT PARAMETERS
 		if (conf.get("triplesoutDIR") != null) {
 			String triplesOutputDir = conf.get("triplesoutDIR").asText("");
@@ -235,6 +222,13 @@ public class CoNLLRDFManager {
 			int lookback_snts = conf.get("lookback").asInt(0);
 			if (lookback_snts > 0)
 				updater.activateLookback(lookback_snts);
+		}
+
+		// READ PREFIX DEDUPLICATION
+		if (conf.get("prefixDeduplication") != null) {
+			Boolean prefixDeduplication = conf.get("prefixDeduplication").asBoolean();
+			if (prefixDeduplication)
+				updater.activateRemovePrefixDuplicates();
 		}
 
 		// READ ALL UPDATES
@@ -279,13 +273,13 @@ public class CoNLLRDFManager {
 			}
 			models.removeAll(models);
 		}
-			
+
 		return updater;
 	}
-	
+
 	private CoNLLRDFComponent buildFormatter(ObjectNode conf) throws IOException {
 		CoNLLRDFFormatter f = new CoNLLRDFFormatter();
-		
+
 		if (conf.withArray("modules").size() <= 0) {
 			Module m = new Module();
 			m.setMode(Mode.CONLLRDF);
@@ -351,6 +345,9 @@ public class CoNLLRDFManager {
 		return f;
 	}
 
+	private CoNLLRDFComponent buildSimpleLineBreakSplitter(ObjectNode conf) {
+		return new SimpleLineBreakSplitter();
+	}
 
 	public void start() {
 		for (CoNLLRDFComponent component:componentStack) {
@@ -358,6 +355,4 @@ public class CoNLLRDFManager {
 	        t.start();
 		}
 	}
-
-
 }

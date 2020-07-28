@@ -1,12 +1,12 @@
 /*
  * Copyright [2017] [ACoLi Lab, Prof. Dr. Chiarcos, Goethe University Frankfurt]
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -34,7 +35,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -43,6 +43,12 @@ import java.util.List;
 import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.jena.query.Dataset;
 import org.apache.jena.query.DatasetFactory;
 import org.apache.jena.query.QueryParseException;
@@ -282,7 +288,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 		 * 			- total no. of iterations
 		 * 			- total time
 		 */
-		private List<Pair<Integer, Long>> executeUpdates(List<Triple<String, String, String>> updates) { //TODO: NOW:check consistency and check graphsout stepping
+		private List<Pair<Integer, Long>> executeUpdates(List<Triple<String, String, String>> updates) { 
 
 			String sent = new String();
 			boolean graphsout = false;
@@ -481,6 +487,11 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 	
 	private final Dataset dataset;
 	
+	//for segmented data with single prefix header
+	private String prefixCache;
+	private String prefixCacheOut;
+	private boolean removePrefixDuplicates;
+	
 	//for updates
 	private final List<Triple<String, String, String>> updates;
 	
@@ -512,7 +523,6 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 	private final List<List<Pair<Integer,Long>>> dRTs; // iterations and execution time of each update in seconds
 	//private int parsedSentences = 0; // no longer used since graphsout default is set at sentence readin
 	private boolean running = false;
-	
 
 	/**
 	 * Default Constructor providing empty data to the standard constructor.
@@ -548,10 +558,15 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 			dataset = DatasetFactory.createTxnMem();
 		}
 //		memAccessor = DatasetAccessorFactory.create(memDataset);
-		
+
+		//for segmented data with single prefix header
+		prefixCache = new String();
+		prefixCacheOut = new String();
+		removePrefixDuplicates = false;
+
 		//updates
 		updates = Collections.synchronizedList(new ArrayList<Triple<String, String, String>>());
-		
+
 		//threads
 		// Use the processor cores available to runtime (but at least 1) as thread count, if an invalid thread count is provided.
 		if (threads <= 0) {
@@ -630,7 +645,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 		}
 		graphOutputSentences.addAll(sentences);
 	}
-	
+
 	/**
 	 * Activates the triplesout mode for single ntriples-files per execution step.
 	 * @param dir
@@ -652,6 +667,13 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 			throw new IOException("Error: Failed to create given -triplesout DIRECTORY: " + dir.toLowerCase());
 		}
 		triplesOutputSentences.addAll(sentences);
+	}
+
+	/**
+	 * Instruct the Updater to remove duplicates of RDF prefixes, to avoid issues with segmented data using a single prefix header.
+	 */
+	public void activateRemovePrefixDuplicates() {
+		this.removePrefixDuplicates = true;
 	}
 
 	/**
@@ -685,7 +707,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 		}
 		LOG.info("done...");
 	}
-	
+
 	/**
 	 * Define a set of updates to be executed for each sentence processed by this CoNLLRDFUpdater.
 	 * Existing updates will be overwritten by calling this function.
@@ -834,10 +856,6 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 	 * Streams data from a buffered reader to a buffered writer. Distributes the processing 
 	 * across available threads. Each thread handles one sentence at a time.
 	 * Caches and outputs the resulting sentences in-order.
-	 * @param in
-	 * 			the input stream wrapped in a BufferedReader
-	 * @param out
-	 * 			the output stream wrapped in a PrintStream
 	 * @throws IOException
 	 */
 	public void processSentenceStream() throws IOException {
@@ -849,55 +867,58 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 		while((line = getInputStream().readLine())!=null) {
 			line=line.replaceAll("[\t ]+"," ").trim();
 
-			if(!buffer.trim().equals(""))
-				if((line.startsWith("@") || line.startsWith("#")) && !lastLine.startsWith("@") && !lastLine.startsWith("#")) { //!buffer.matches("@[^\n]*\n?$")) {
-					if ((graphOutputDir != null) && (graphOutputSentences.isEmpty())) { // get first sentence id as default for graphsout output
-						Model m = ModelFactory.createDefaultModel();
-						String sentID = m.read(new StringReader(buffer),null, "TTL").listSubjectsWithProperty(
-								m.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), 
-								m.getProperty("http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Sentence")
-							).next().getLocalName();
-						graphOutputSentences.add(sentID);
+			if(!buffer.trim().equals("") && (line.startsWith("@") || line.startsWith("#")) && !lastLine.startsWith("@") && !lastLine.startsWith("#")) { //!buffer.matches("@[^\n]*\n?$")) {
+				// If the buffer is not empty and the current line starts with @ or #
+				// and the previous line did not start with @ or #
+				// check if the buffer contains a ttl prefix
+				if (buffer.contains("@prefix"))  {
+					prefixCache = new String();
+					for (String buffLine:buffer.split("\n")) {
+						if (buffLine.trim().startsWith("@prefix")) {
+							prefixCache += buffLine+"\n";
+						}
 					}
-					// --> deprecated
-					//parsedSentences++;
-					//execute updates using thread handler  --> now in lookahead handling
-					//executeThread(buffer);
-					// <-- deprecated 
-
-					
-					//lookahead
-					//add ALL sentences to sentBufferLookahead
-					sentBufferLookahead.add(buffer);
-					if (sentBufferLookahead.size() > lookahead_snts) {
-						//READY TO PROCESS 
-						// remove first sentence from buffer and process it.
-						// !!if lookahead = 0 then only current buffer is in sentBufferLookahead!!
-						executeThread(sentBufferLookahead.remove(0));
-					}		
-					
-					//lookback
-					//needs to consider lookahead buffer. The full buffer size needs to be lookahead + lookback.
-					if (lookback_snts > 0) {
-						while (sentBufferLookback.size() >= lookback_snts + sentBufferLookahead.size()) sentBufferLookback.remove(0);
-						sentBufferLookback.add(buffer);
-					}
-					
-					
-					flushOutputBuffer(getOutputStream());
-					buffer="";
+				} else {
+					buffer = prefixCache+buffer;
 				}
-			if(line.trim().startsWith("@") && !lastLine.trim().endsWith(".")) 
-				buffer=buffer+"\n";
 
-			if(line.trim().startsWith("#") && (!lastLine.trim().startsWith("#"))) 
-				buffer=buffer+"\n";
+				// GRAPHSOUT determine first sentence's id, if none were specified
+				if ((graphOutputDir != null) && (graphOutputSentences.isEmpty())) {
+					Model m = ModelFactory.createDefaultModel();
+					String sentID = m.read(new StringReader(buffer),null, "TTL").listSubjectsWithProperty(
+							m.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), 
+							m.getProperty("http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Sentence")
+						).next().getLocalName();
+					graphOutputSentences.add(sentID);
+					LOG.debug("Graph Output defaults to first sentence: " + sentID);
+				}
+				// --> deprecated
+				//parsedSentences++;
+				//execute updates using thread handler  --> now in lookahead handling
+				//executeThread(buffer);
+				// <-- deprecated 
 
-			buffer=buffer+line+"\t";//+"\n";
+				//lookahead
+				//add ALL sentences to sentBufferLookahead
+				sentBufferLookahead.add(buffer);
+				if (sentBufferLookahead.size() > lookahead_snts) {
+					//READY TO PROCESS 
+					// remove first sentence from buffer and process it.
+					// !!if lookahead = 0 then only current buffer is in sentBufferLookahead!!
+					executeThread(sentBufferLookahead.remove(0));
+				}		
+				
+				//lookback
+				//needs to consider lookahead buffer. The full buffer size needs to be lookahead + lookback.
+				if (lookback_snts > 0) {
+					while (sentBufferLookback.size() >= lookback_snts + sentBufferLookahead.size()) sentBufferLookback.remove(0);
+					sentBufferLookback.add(buffer);
+				}
 
-			if(line.trim().endsWith(".") || line.trim().matches("^(.*>)?[^<]*#")) 
-				buffer=buffer+"\n";
-
+				flushOutputBuffer(getOutputStream());
+				buffer="";
+			}
+			buffer=buffer+line+"\n";
 			lastLine=line;
 		}
 		// --> deprecated
@@ -906,8 +927,11 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 		// --> deprecated
 		
 		//lookahead 
-		//add final sentence
+		//add final sentence (with prefixes if necessary)
 		//work down remaining buffer
+		if (!buffer.contains("@prefix"))  {
+		    buffer = prefixCache+buffer;
+		}
 		sentBufferLookahead.add(buffer);
 		while (sentBufferLookahead.size()>0) {
 			executeThread(sentBufferLookahead.remove(0));
@@ -963,10 +987,29 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 	}
 
 	private synchronized void flushOutputBuffer(PrintStream out) {
-		LOG.trace("OutBufferSIze: "+sentBufferOut.size());
+		LOG.trace("OutBufferSize: "+sentBufferOut.size());
 		while (!sentBufferOut.isEmpty()) {
 			if (sentBufferOut.get(0).matches("\\d+")) break;
-			out.print(sentBufferOut.remove(0));
+			
+			String outString = new String();
+			if (removePrefixDuplicates) {
+				String prefixCacheTMP = new String();
+				for (String buffLine:sentBufferOut.remove(0).split("\n")) {
+					if (buffLine.trim().startsWith("@prefix")) {
+						prefixCacheTMP += buffLine+"\n";
+					} else if (!buffLine.trim().isEmpty()) {
+							outString += buffLine+"\n";
+					}
+				}
+				if (!prefixCacheTMP.equals(prefixCacheOut)) {
+					prefixCacheOut = prefixCacheTMP;
+					outString = prefixCacheTMP + outString + "\n";
+				}
+			} else {
+				outString = sentBufferOut.remove(0);
+			}
+			if (!outString.endsWith("\n\n")) outString += "\n";
+			out.print(outString);
 		}
 	}
 
@@ -983,6 +1026,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 		sentBufferThread.second = buffer;
 		sentBufferThread.third.addAll(sentBufferLookahead);
 		int i = 0;
+
 		while(i < updateThreads.size()) {
 			LOG.trace("ThreadState " + i + ": "+((updateThreads.get(i)!=null)?updateThreads.get(i).getState():"null"));
 			if (updateThreads.get(i) == null) {
@@ -1037,147 +1081,143 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 		}
 	}
 
-	public static void main(String[] argv) throws URISyntaxException, IOException {
-		LOG.info("synopsis: CoNLLRDFUpdater [-loglevel LEVEL] [-threads T] [-lookahead N] [-lookback N]\n"
-				+ "\t[-custom [-model URI [GRAPH]]* [-graphsout DIR [SENT_ID]] [-triplesout DIR [SENT_ID]] -updates [UPDATE]]\n"
-				+ "\t\t-loglevel: set log level to LEVEL\n"
-				+ "\t\t-threads: use T threads max\n"
-				+ "\t\t-lookahead: cache N further sentences in lookahead graph\n"
-				+ "\t\t-lookback: cache N preceeding sentences in lookback graph\n"
-				+ "\t\t\t default: half of available logical processor cores\n"
-				+ "\t\t-custom: use custom update scripts\n"
-				+ "\t\t-model: to load additional Models into local graph\n"
-				+ "\t\t-graphsout: output directory for the .dot graph files\n"
-				+ "\t\t\t followed by the IDs of the sentences to be visualized\n"
-				+ "\t\t\t default: first sentence only\n"
-				+ "\t\t-triplesout: same as graphsout but write N-TRIPLES for text debug instead.\n"
-				+ "\t\t\t followed by the IDs of the sentences\n"
-				+ "\t\t\t default: first sentence only\n"
-				+ "\t\t-updates: followed by SPARQL scripts paired with {iterations/u}\n"
-				+ "\t\tread TTL from stdin => update CoNLL-RDF");
-		
-		String args = Arrays.asList(argv).toString().replaceAll("[\\[\\], ]+"," ").trim().toLowerCase();
-		int i = 0;
-		
-		// READ LOGLEVEL
-		if (args.contains("-loglevel ")) {
-			i = 0;
-			while(i<argv.length && !argv[i].toLowerCase().matches("^-+loglevel$")) i++;
-			i++;
-			try {
-				LOG.setLevel(Level.toLevel(argv[i]));
-			} catch (Exception e) {
-				LOG.error("Wrong usage of threads parameter. NaN.");
-				System.exit(0);
-			}
+	private static Options getOptions() {
+		final Options options = new Options();
+		// Define cli options in the correct order for the help-message
+		options
+			.addOption(Option.builder("loglevel").hasArg(true).desc("set log level to LEVEL").argName("level").build())
+			.addOption("threads", true, "use T threads max\ndefault: half of available logical processor cores")
+			.addOption("lookahead", true, "cache N further sentences in lookahead graph")
+			.addOption("lookback", true, "cache N preceeding sentences in lookback graph")
+			.addOption("prefixDeduplication", false, "Remove duplicates of TTL-Prefixes")
+			.addOption(Option.builder("custom").hasArg(false).desc("use custom update scripts")/*.required()*/.build())
+			.addOption("model", true, "to load additional Models into local graph")
+			.addOption("graphsout", true, "output directory for the .dot graph files\nfollowed by the IDs of the sentences to be visualized\ndefault: first sentence only")
+			.addOption("triplesout", true, "same as graphsout but write N-TRIPLES for text debug instead.")
+			.addOption("updates", true, "followed by SPARQL scripts paired with {iterations/u}");
+		return options;
+	}
+
+	public static void main(String[] args) throws URISyntaxException, IOException {
+		final CoNLLRDFUpdater updater;
+		final Options options = getOptions();
+		final HelpFormatter formatter = new HelpFormatter();
+		final CommandLine cmd;
+		// PRINT USAGE HELP MESSAGE
+		final StringWriter info = new StringWriter();
+		final PrintWriter pw = new PrintWriter(info);
+		formatter.setOptionComparator(null); // don't sort cli-options in help message
+		formatter.setSyntaxPrefix("synopsis: ");
+		formatter.printHelp(pw, 80, "CoNLLRDFUpdater", "read TTL from stdin => update CoNLL-RDF", options,
+			formatter.getLeftPadding(), formatter.getDescPadding(), null);
+		//formatter.printHelp("CoNLLRDFUpdater", "read TTL from stdin => update CoNLL-RDF", options, null, true);
+		pw.flush();
+		LOG.info(info);
+		/** LOG.info("synopsis: CoNLLRDFUpdater [-loglevel LEVEL] [-threads T] [-lookahead N] [-lookback N]\n"
+		* + "\t[-custom [-model URI [GRAPH]]* [-graphsout DIR [SENT_ID]] [-triplesout DIR [SENT_ID]] -updates [UPDATE]]\n");
+		*/
+		// PARSE the CommandLine Options
+		try {
+			cmd = new DefaultParser().parse(options, args);
+		} catch (ParseException e) {
+			LOG.error(e);
+			System.exit(1);
+			return;
 		}
-		
+		int i;
+		// READ LOGLEVEL
+		if (cmd.hasOption("loglevel")) {
+			final Level level = Level.toLevel(cmd.getOptionValue("loglevel"));
+			LOG.setLevel(level);
+			LOG.info("loglevel set to " + level.toString());
+		}
+		// debug cli parsing (after setting the loglevel)
+		LOG.debug(Arrays.asList(args).toString());
+		LOG.debug(Arrays.asList(cmd.getOptions()).toString());
+		LOG.debug(cmd.getArgList().toString());
 		// READ THREAD PARAMETERS
 		int threads = 0;
-		if (args.contains("-threads ")) {
-			i = 0;
-			while(i<argv.length && !argv[i].toLowerCase().matches("^-+threads$")) i++;
-			i++;
+		if (cmd.hasOption("threads")) {
 			try {
-				threads = Integer.parseInt(argv[i]);
+				threads = Integer.parseInt(cmd.getOptionValue("threads"));
 			} catch (Exception e) {
 				LOG.error("Wrong usage of threads parameter. NaN.");
-				System.exit(0);
+				System.exit(1);
+				return;
 			}
 		}
-		
-		//READ MODE (currently only CUSTOM)
-		boolean CUSTOM = args.contains("-custom ");
+		updater = new CoNLLRDFUpdater("","",threads);
+		// READ LOOKAHEAD PARAMETERS
+		if (cmd.hasOption("lookahead")) {
+			try {
+				updater.activateLookahead(Integer.parseInt(cmd.getOptionValue("lookahead")));
+			} catch (Exception e) {
+				LOG.error("Wrong usage of lookahead parameter. NaN.");
+				System.exit(1);
+				return;
+			}
+		}
+		// READ LOOKBACK PARAMETERS
+		if (cmd.hasOption("lookback")) {
+			try {
+				updater.activateLookback(Integer.parseInt(cmd.getOptionValue("lookback")));
+			} catch (Exception e) {
+				LOG.error("Wrong usage of lookback parameter. NaN.");
+				System.exit(1);
+				return;
+			}
+		}
+		// PREFIX DUPLICATES
+		if (cmd.hasOption("prefixDeduplication")) {
+			LOG.debug("Activated Prefix Deduplication");
+			updater.activateRemovePrefixDuplicates();
+		}
+		// READ MODE (currently only CUSTOM)
+		boolean CUSTOM = cmd.hasOption("custom");
 		if(!CUSTOM ) { // no default possible here
 			LOG.error("Please specify update script.");
 		}
-
-		
-		CoNLLRDFUpdater updater = new CoNLLRDFUpdater("","",threads);
-
-		// should be <#UPDATEFILENAMEORSTRING, #UPDATESTRING, #UPDATEITER>
-		List<Triple<String, String, String>> updates = new ArrayList<Triple<String, String, String>>();
-		List<String> models = new ArrayList<String>();
-		
-		
-
 		// READ GRAPHSOUT PARAMETERS
-		String graphOutputDir = null;
-		List<String> graphOutputSentences = new ArrayList<String>();
-
-		if (args.contains("-graphsout ")) {
+		if (cmd.hasOption("graphsout")) {
+			List<String> graphOutputSentences = new ArrayList<String>();
 			i = 0;
-			while(i<argv.length && !argv[i].toLowerCase().matches("^-+graphsout$")) i++;
+			while(i<args.length && !args[i].toLowerCase().matches("^-+graphsout$")) i++;
 			i++;
-			graphOutputDir = argv[i];
+			String graphOutputDir = args[i];
 			i++;
-			while(i<argv.length && !argv[i].toLowerCase().matches("^-+.*$")) {
-				graphOutputSentences.add(argv[i++]);
+			while(i<args.length && !args[i].toLowerCase().matches("^-+.*$")) {
+				graphOutputSentences.add(args[i++]);
 			}
 			updater.activateGraphsOut(graphOutputDir, graphOutputSentences);
 		}
-		
 		// READ TRIPLESOUT PARAMETERS
-		String triplesOutputDir = null;
-		List<String> triplesOutputSentences = new ArrayList<String>();
-
-		if (args.contains("-triplesout ")) {
+		if (cmd.hasOption("triplesout")) {
+			List<String> triplesOutputSentences = new ArrayList<String>();
 			i = 0;
-			while(i<argv.length && !argv[i].toLowerCase().matches("^-+triplesout$")) i++;
+			while(i<args.length && !args[i].toLowerCase().matches("^-+triplesout$")) i++;
 			i++;
-			triplesOutputDir = argv[i];
+			String triplesOutputDir = args[i];
 			i++;
-			while(i<argv.length && !argv[i].toLowerCase().matches("^-+.*$")) {
-				triplesOutputSentences.add(argv[i++]);
+			while(i<args.length && !args[i].toLowerCase().matches("^-+.*$")) {
+				triplesOutputSentences.add(args[i++]);
 			}
 			updater.activateTriplesOut(triplesOutputDir, triplesOutputSentences);
 		}
-		
-		
-		// READ LOOKAHEAD PARAMETERS
-		int lookahead_snts = 0;
-		if (args.contains("-lookahead ")) {
-			i = 0;
-			while(i<argv.length && !argv[i].toLowerCase().matches("^-+lookahead$")) i++;
-			i++;
-			try {
-				lookahead_snts = Integer.parseInt(argv[i]);
-			} catch (Exception e) {
-				LOG.error("Wrong usage of lookahead parameter. NaN.");
-				System.exit(0);
-			}
-			updater.activateLookahead(lookahead_snts);
-		}
-		
-		// READ LOOKBACK PARAMETERS
-		int lookback_snts = 0;
-		if (args.contains("-lookback ")) {
-			i = 0;
-			while(i<argv.length && !argv[i].toLowerCase().matches("^-+lookback$")) i++;
-			i++;
-			try {
-				lookback_snts = Integer.parseInt(argv[i]);
-			} catch (Exception e) {
-				LOG.error("Wrong usage of lookback parameter. NaN.");
-				System.exit(0);
-			}
-			updater.activateLookback(lookback_snts);
-		}
-		
-		
 		//CUSTOM UPDATE SCRIPT MODE
 		if(CUSTOM) {
-			
-			
 			// READ ALL MODELS from System.in
 			i = 0;
-			while(i<argv.length && !argv[i].toLowerCase().matches("^-+custom$")) i++;
+			// should be <#UPDATEFILENAMEORSTRING, #UPDATESTRING, #UPDATEITER>
+			List<Triple<String, String, String>> updates = new ArrayList<Triple<String, String, String>>();
+			List<String> models = new ArrayList<String>();
+
+			while(i<args.length && !args[i].toLowerCase().matches("^-+custom$")) i++;
 			i++;
-			while(i<argv.length) {
-				while(i<argv.length && !argv[i].toLowerCase().matches("^-+model$")) i++;
+			while(i<args.length) {
+				while(i<args.length && !args[i].toLowerCase().matches("^-+model$")) i++;
 				i++;
-				while(i<argv.length && !argv[i].toLowerCase().matches("^-+.*$"))
-					models.add(argv[i++]);
+				while(i<args.length && !args[i].toLowerCase().matches("^-+.*$"))
+					models.add(args[i++]);
 				if (models.size()==1) {
 					updater.loadGraph(new URI(models.get(0)), new URI(models.get(0)));
 				} else if (models.size()==2){
@@ -1187,33 +1227,29 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 				}
 				models.removeAll(models);
 			}
-			
-			
 
 			// READ ALL UPDATES from System.in
 			i=0;
-			while(i<argv.length && !argv[i].toLowerCase().matches("^-+custom$")) i++;
+			while(i<args.length && !args[i].toLowerCase().matches("^-+custom$")) i++;
 			i++;
-			while(i<argv.length && !argv[i].toLowerCase().matches("^-+updates$")) i++;
+			while(i<args.length && !args[i].toLowerCase().matches("^-+updates$")) i++;
 			i++;
-			while(i<argv.length && !argv[i].toLowerCase().matches("^-+.*$")) {
+			while(i<args.length && !args[i].toLowerCase().matches("^-+.*$")) {
 				String freq;
-				freq = argv[i].replaceFirst(".*\\{([0-9u*]+)\\}$", "$1");
-				if (argv[i].equals(freq)) // update script without iterations in curly brackets defaults to 1
+				freq = args[i].replaceFirst(".*\\{([0-9u*]+)\\}$", "$1");
+				if (args[i].equals(freq)) // update script without iterations in curly brackets defaults to 1
 					freq = "1";
 				else if (freq.equals("u"))
 					freq = "*";
-				String update =argv[i++].replaceFirst("\\{[0-9u*]+\\}$", "");
+				String update = args[i++].replaceFirst("\\{[0-9u*]+\\}$", "");
 				updates.add(new Triple<String, String, String>(update, update, freq));
 			}
 			updater.parseUpdates(updates);
-			
 
 			long start = System.currentTimeMillis();
-			
+
 			updater.setInputStream(new BufferedReader(new InputStreamReader(System.in)));
 			updater.setOutputStream(System.out);
-			
 			//READ SENTENCES from System.in  
 			updater.processSentenceStream();
 			LOG.debug((System.currentTimeMillis()-start)/1000 + " seconds");
