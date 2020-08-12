@@ -57,7 +57,7 @@ abstract class CoNLLBrackets2RDF extends Format2RDF {
 					line=line.replaceFirst("^([^<*][^<\\\\])#.*", "$1");
 					String[] fields = line.split("\t");
 					if(fields.length>=col2field.size()) { // then, we're pretty sure to be in a CoNLL row ;)
-						for(int i = 0; i<fields.length; i++)
+						for(int i = 0; i<fields.length && i<col2bracket.length; i++)
 							if(col2bracket[i]==null) {
 								if(fields[i].matches(".*[()].*") && myCol2bracket[i]==null) myCol2bracket[i]=true;
 								if(!empty.matcher(fields[i].trim()).matches() && !fields[i].trim().equals("*") && !fields[i].matches(".*[()].*"))
@@ -93,7 +93,7 @@ abstract class CoNLLBrackets2RDF extends Format2RDF {
 				String URI = ":s"+sent+"_"+id_string; 
 
 				for(int i = 0; i<fields.length; i++) {
-					if(i<this.col2bracket.length && this.col2bracket[i]) { // if in bracketing format (note: no SRL arguments supported)
+					if(i<this.col2bracket.length && this.col2bracket[i]!=null && this.col2bracket[i]) { // if in bracketing format (note: no SRL arguments supported)
 						
 						if(col2trees.get(i)==null) col2trees.put(i, new StringBuffer());
 						
