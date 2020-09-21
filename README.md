@@ -22,17 +22,21 @@ Of course you can also use the provided classes within java as any other library
 ## Installing
 Download the repository from GitHub: `git clone https://github.com/acoli-repo/CoNLL-RDF.git`.
 
-You need java and javac to run and compile the source.
-* use `java -version` to check if you have java installed. (Java version 8 or 9 is required for logging with log4j)
-* check with `javac -version` if the JDK compiler is installed.
+The source is compiled automatically once you run the tool via the `run.sh` bash script.
 
-The source is compiled automatically once you run the tool.
+### Requirements
+* JDK (now part of Java SE) or OpenJDK, version 8 or higher.
+  * run `java -version` to check if java is installed.
+  * run `javac -version` to check if your version of the compiler is sufficient.
+* Maven 3.3+ (Optional but recommended).
+  * run `mvn -version` to check if Maven is installed.
 
 Note: If you prefer using OpenJDK instead of Oracle Java, it might be necessary to install openjfx. `sudo apt-get install openjfx` (Thanks to Francesco Mambrini for finding out!)  
 
 All required java libraries are contained in [lib/](./lib).
 
 ## Common Issues
+* **if your pipelines broke with an update** in 2020-09 or soon after, you're likely calling the classes directly with `java`and not via `./run.sh`. You can change your scripts to call `./run.sh` (or copy the changes we made to `run.sh` into your scripts).
 * you might get an error like `bash: ./../test.sh: Permission denied` when trying to run a script. Use this command to change the filemode: `chmod +x <SCRIPT>`
 * an error starting like `ERROR CoNLLRDFUpdater :: SPARQL parse exception for Update No. 0: DIRECTUPDATE [...]` when running the RDFUpdater can be raised if the path to a sparql query is wrong. Check for extra or missing `../`.
 
@@ -57,7 +61,7 @@ This will create a new file `example.ttl` in conll-rdf by simply providing
 * the names of the CoNLL columns from left to right.
 
 ### run.sh
-`run.sh` is used to make things feel more bash-like. It determines the classpath, updates class files if necessary and runs the specified java class with the provided arguments. 
+`run.sh` is used to make things feel more bash-like. It determines the classpath, updates class files if necessary and runs the specified java class with the provided arguments.
 * eg. `cat foo.ttl | ./run.sh CoNLLRDFFormatter > foo_formatted.ttl` would pipe `foo.ttl` through `CoNLLRDFFormatter` into `foo_formatted.ttl`.
 * In case the respective `.class` files cannot be found, `run.sh` calls `compile.sh` to compile the java classes from source. Of course, you may also run `compile.sh` independently.
 
@@ -96,7 +100,7 @@ It can write:
 * `semantics` seperate visualization of object properties of `conll:WORD` using `terms:` namespace, useful for visualizing knowledge graphs. **`EXPERIMENTAL`**
 
 ### CoNLLRDFAnnotator
-* can be used to manually annotate / change annotations in .ttl files. 
+* can be used to manually annotate / change annotations in .ttl files.
 * will visualize input just like `CoNLLRDFFormatter -grammar`. Will not make in-place changes but write the changed file to `stdout` (e.g. `./run.sh CoNLLRDFAnnotator file_old.ttl > file_new.ttl`)
 	* **Note**: Piping output into old file is **not** supported! Will result in data loss.
 
@@ -116,14 +120,14 @@ See also the list of [contributors](https://github.com/acoli-repo/conll-rdf/grap
 * Chiarcos C., Fäth C. (2017), CoNLL-RDF: Linked Corpora Done in an NLP-Friendly Way. In: Gracia J., Bond F., McCrae J., Buitelaar P., Chiarcos C., Hellmann S. (eds) Language, Data, and Knowledge. LDK 2017. pp 74-88.
 
 ## Acknowledgments
-This repository has been created in context of 
+This repository has been created in context of
 * Applied Computational Linguistics ([ACoLi](http://acoli.cs.uni-frankfurt.de))
 * Specialised Information Service Linguistics ([FID](https://www.ub.uni-frankfurt.de/projekte/fid-linguistik_en.html))
-  * funded by the German Research Foundation (DFG, funding code CH1413/2-1) 
+  * funded by the German Research Foundation (DFG, funding code CH1413/2-1)
 * Linked Open Dictionaries ([LiODi](http://www.acoli.informatik.uni-frankfurt.de/liodi/))
   * funded by the German Federal Ministry of Education and Research (BMBF, funding code 01UG1631)
-* QuantQual@CEDIFOR ([QuantQual](http://acoli.cs.uni-frankfurt.de/projects.html#quantqual)) 
-  * funded by the Centre for the Digital Foundation of Research in the Humanities, Social and Educational Science (CEDIFOR, funding code 01UG1416A) 
+* QuantQual@CEDIFOR ([QuantQual](http://acoli.cs.uni-frankfurt.de/projects.html#quantqual))
+  * funded by the Centre for the Digital Foundation of Research in the Humanities, Social and Educational Science (CEDIFOR, funding code 01UG1416A)
 
 ## Licenses
 This repository is being published under two licenses. Apache 2.0 is used for code, see [LICENSE.main](LICENSE.main.txt). CC-BY 4.0 for all data from universal dependencies and SPARQL scripts, see [LICENSE.data](LICENSE.data.txt).
