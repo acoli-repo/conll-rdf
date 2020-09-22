@@ -9,10 +9,9 @@ CLASSPATH="$TARGET:$HOME/lib/*";
 
 if (
 		if ( mvn -version &> /dev/null ); then
-			( cd $HOME && mvn compile; );
+			( cd $HOME && mvn compile &> /dev/null; );
 		else
-			echo "warning: found no maven-installation";
-			source $HOME/compile.sh;
+			source $HOME/compile.sh &> /dev/null;
 		fi;
 	); then
 	if [ $OSTYPE = "cygwin" ]; then
