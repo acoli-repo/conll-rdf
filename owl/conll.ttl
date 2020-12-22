@@ -1,4 +1,4 @@
-@prefix : <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#> .
+@prefix : <http://purl.org/acoli/conll#> .
 @prefix owl2xml: <http://www.w3.org/2006/12/owl2-xml#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix conll: <http://ufal.mff.cuni.cz/conll2009-st/task-description.html#> .
@@ -7,9 +7,9 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
-@base <http://ufal.mff.cuni.cz/conll2009-st/task-description.html> .
+@base <http://purl.org/acoli/conll#> .
 
-<http://ufal.mff.cuni.cz/conll2009-st/task-description.html> rdf:type owl:Ontology ;
+<http://purl.org/acoli/conll#> rdf:type owl:Ontology ;
                                                          
                                                          rdfs:comment """CoNLL-RDF ontology
 
