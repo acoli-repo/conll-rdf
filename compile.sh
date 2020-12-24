@@ -6,6 +6,7 @@
 mkdir -p "$TARGET";
 
 JAVAS="";
+# Find all java classes that need to be compiled
 for java in $(find $HOME/src/main/java -name "*.java"); do
 	class=$TARGET${java#$HOME/src/main/java}
 	class=${class%.java}.class
@@ -14,17 +15,26 @@ for java in $(find $HOME/src/main/java -name "*.java"); do
 	fi;
 done;
 
+# Copy properties files to target
 for propertiesFile in $(find $HOME/src/main/resources -name '*.properties'); do
 	cp -f -- "$propertiesFile" "$TARGET${propertiesFile#src/main/resources}" &> /dev/null;
 done;
 
+# Check if compiling is necessary
 if [ -n "$JAVAS" ]; then
-	if [ $OSTYPE = "cygwin" ]; then
-		TARGET=$(cygpath -wa -- "$TARGET");
-		CLASSPATH=$(cygpath -pwa -- "$CLASSPATH");
-		JAVAS=$(for java in $JAVAS; do cygpath -wa -- "$java"; done);
+	# compile with maven whenever possible
+	if ( mvn -version &> /dev/null ); then
+		( cd $HOME && mvn compile &> /dev/null; );
+	else
+		# Change the paths to Windows-style paths if the script is running in cygwin
+		if [ $OSTYPE = "cygwin" ]; then
+			TARGET=$(cygpath -wa -- "$TARGET");
+			CLASSPATH=$(cygpath -pwa -- "$CLASSPATH");
+			JAVAS=$(for java in $JAVAS; do cygpath -wa -- "$java"; done);
+		fi;
+		# Compile only the outdated classes
+		javac -d $TARGET -classpath $CLASSPATH $JAVAS;
 	fi;
-	javac -d $TARGET -classpath $CLASSPATH $JAVAS;
 fi;
 
 # debug

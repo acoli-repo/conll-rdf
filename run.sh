@@ -7,13 +7,7 @@ HOME=$( dirname -- "$(realpath -- "$0")");
 TARGET="$HOME/target/classes";
 CLASSPATH="$TARGET:$HOME/lib/*";
 
-if (
-		if ( mvn -version &> /dev/null ); then
-			( cd $HOME && mvn compile &> /dev/null; );
-		else
-			source $HOME/compile.sh &> /dev/null;
-		fi;
-	); then
+if (source $HOME/compile.sh &> /dev/null;); then
 	if [ $OSTYPE = "cygwin" ]; then
 		TARGET=$(cygpath -wa -- "$TARGET");
 		CLASSPATH=$(cygpath -pwa -- "$CLASSPATH");
