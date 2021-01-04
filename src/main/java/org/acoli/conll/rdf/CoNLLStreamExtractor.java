@@ -23,6 +23,8 @@ import org.apache.jena.rdf.listeners.ChangedListener;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.update.*;
 import org.apache.log4j.Logger;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.jena.query.*;
 
 /** extracts RDF data from CoNLL files, transforms the result using SPARQL UPDATE queries,
@@ -33,27 +35,6 @@ import org.apache.jena.query.*;
  *  @author Christian Faeth {@literal faeth@em.uni-frankfurt.de}
  */
 public class CoNLLStreamExtractor extends CoNLLRDFComponent {
-	public static class Pair<F, S> {
-		public F key;
-		public S value;
-		public Pair (F key, S value) {
-			this.key = key;
-			this.value = value;
-		}
-		public F getKey() {
-			return key;
-		}
-		public void setKey(F key) {
-			this.key = key;
-		}
-		public S getValue() {
-			return value;
-		}
-		public void setValue(S value) {
-			this.value = value;
-		}
-	}
-	
 	private static Logger LOG = Logger.getLogger(CoNLLStreamExtractor.class.getName());
 	
 	@SuppressWarnings("serial")
@@ -124,7 +105,7 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 							dRTs = ret;
 						else
 							for (int x = 0; x < ret.size(); ++x)
-								dRTs.set(x, new Pair<Integer, Long>(dRTs.get(x).getKey() + ret.get(x).getKey(), dRTs.get(x).getValue() + ret.get(x).getValue()));
+								dRTs.set(x, new ImmutablePair<Integer, Long>(dRTs.get(x).getKey() + ret.get(x).getKey(), dRTs.get(x).getValue() + ret.get(x).getValue()));
 						if (comments.size() > 0) {
 							m = injectSentenceComments(m, comments);
 							comments.clear();
@@ -142,7 +123,7 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 				dRTs = ret;
 			else
 				for (int x = 0; x < ret.size(); ++x)
-					dRTs.set(x, new Pair<Integer, Long>(dRTs.get(x).getKey() + ret.get(x).getKey(), dRTs.get(x).getValue() + ret.get(x).getValue()));
+					dRTs.set(x, new ImmutablePair<Integer, Long>(dRTs.get(x).getKey() + ret.get(x).getKey(), dRTs.get(x).getValue() + ret.get(x).getValue()));
 			if (comments.size() > 0) {
 				m = injectSentenceComments(m, comments);
 				comments.clear();
@@ -256,7 +237,7 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 			}
 			if (v == MAXITERATE)
 				LOG.warn("Warning: MAXITERATE reached.");
-			result.add(new Pair<Integer, Long>(v, System.currentTimeMillis() - startTime));
+			result.add(new ImmutablePair<Integer, Long>(v, System.currentTimeMillis() - startTime));
 			m.unregister(cL);
 		}
 		return result;
@@ -320,7 +301,7 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 			else if (freq.equals("u"))
 				freq = "*";
 			String update =argv[i++].replaceFirst("\\{[0-9*]+\\}$", "");
-			updates.add(new Pair<String, String>(update, freq));
+			updates.add(new ImmutablePair<String, String>(update, freq));
 		}
 		while(i<argv.length && argv[i].toLowerCase().matches("^-+s$")) i++;
 		if(i<argv.length)
@@ -359,10 +340,10 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 				} catch (Exception e) {}
 			}
 
-			updates.set(i,new Pair<String, String>("", updates.get(i).getValue()));
+			updates.set(i,new ImmutablePair<String, String>("", updates.get(i).getValue()));
 			BufferedReader in = new BufferedReader(sparqlreader);
 			for(String line = in.readLine(); line!=null; line=in.readLine())
-				updates.set(i,new Pair<String, String>(updates.get(i).getKey()+line+"\n",updates.get(i).getValue()));
+				updates.set(i,new ImmutablePair<String, String>(updates.get(i).getKey()+line+"\n",updates.get(i).getValue()));
 			sb.append(".");
 		}
 		sb.append(".");

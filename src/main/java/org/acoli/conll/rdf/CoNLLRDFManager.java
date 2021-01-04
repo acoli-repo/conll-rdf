@@ -23,12 +23,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.acoli.conll.rdf.CoNLLRDFFormatter.Mode;
 import org.acoli.conll.rdf.CoNLLRDFFormatter.Module;
-import org.acoli.conll.rdf.CoNLLRDFUpdater.Triple;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang3.tuple.ImmutableTriple;
+import org.apache.commons.lang3.tuple.Triple;
 
 public class CoNLLRDFManager {
 	private ObjectNode config;
@@ -245,7 +246,7 @@ public class CoNLLRDFManager {
 					throw e;
 			}
 			String path = update.get("path").asText();
-			updates.add(new Triple<String, String, String>(path, path, freq));
+			updates.add(new ImmutableTriple<String, String, String>(path, path, freq));
 		}
 		updater.parseUpdates(updates);
 
