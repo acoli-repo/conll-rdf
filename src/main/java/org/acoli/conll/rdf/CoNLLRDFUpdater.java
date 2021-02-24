@@ -882,16 +882,19 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 					buffer = prefixCache+buffer;
 				}
 
-				// GRAPHSOUT determine first sentence's id, if none were specified
+				// GRAPH OUTPUT determine first sentence's id, if none were specified
 				if ((graphOutputDir != null) && (graphOutputSentences.isEmpty())) {
-					Model m = ModelFactory.createDefaultModel();
-					String sentID = m.read(new StringReader(buffer),null, "TTL").listSubjectsWithProperty(
-							m.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), 
-							m.getProperty("http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Sentence")
-						).next().getLocalName();
+					String sentID = readFirstSentenceID(buffer);
 					graphOutputSentences.add(sentID);
 					LOG.debug("Graph Output defaults to first sentence: " + sentID);
 				}
+				// TRIPLES OUTPUT determine first sentence's id, if none were specified
+				if ((triplesOutputDir != null) && (triplesOutputSentences.isEmpty())) {
+					String sentID = readFirstSentenceID(buffer);
+					triplesOutputSentences.add(sentID);
+					LOG.debug("Triples Output defaults to first sentence: " + sentID);
+				}
+
 				// --> deprecated
 				//parsedSentences++;
 				//execute updates using thread handler  --> now in lookahead handling
@@ -925,13 +928,27 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 		//parsedSentences++;
 		//executeThread(buffer);
 		// --> deprecated
-		
-		//lookahead 
-		//add final sentence (with prefixes if necessary)
-		//work down remaining buffer
+
+		// FINAL SENTENCE (with prefixes if necessary)
 		if (!buffer.contains("@prefix"))  {
 		    buffer = prefixCache+buffer;
 		}
+
+		// To address the edge case of no comments or prefixes occuring after the first sentence of a stream
+		// GRAPH OUTPUT determine first sentence's id, if none were specified
+		if ((graphOutputDir != null) && (graphOutputSentences.isEmpty())) {
+			String sentID = readFirstSentenceID(buffer);
+			graphOutputSentences.add(sentID);
+			LOG.debug("Graph Output defaults to first sentence: " + sentID);
+		}
+		// TRIPLES OUTPUT determine first sentence's id, if none were specified
+		if ((triplesOutputDir != null) && (triplesOutputSentences.isEmpty())) {
+			String sentID = readFirstSentenceID(buffer);
+			triplesOutputSentences.add(sentID);
+			LOG.debug("Triples Output defaults to first sentence: " + sentID);
+		}
+
+		// LOOKAHEAD work down remaining buffer
 		sentBufferLookahead.add(buffer);
 		while (sentBufferLookahead.size()>0) {
 			executeThread(sentBufferLookahead.remove(0));
@@ -984,6 +1001,18 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 		flushOutputBuffer(getOutputStream());
 		getOutputStream().close();
 		
+	}
+
+	/**
+	 * Retrieve the first "Sentence ID" (nif-core#Sentence -property) from the buffer and return it
+	 */
+	private String readFirstSentenceID(String buffer) {
+		Model m = ModelFactory.createDefaultModel();
+		String sentID = m.read(new StringReader(buffer),null, "TTL").listSubjectsWithProperty(
+				m.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), 
+				m.getProperty("http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Sentence")
+			).next().getLocalName();
+		return sentID;
 	}
 
 	private synchronized void flushOutputBuffer(PrintStream out) {
