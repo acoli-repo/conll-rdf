@@ -501,10 +501,10 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 	 * 				default: threads = number of logical cores available to runtime
 	 */
 	public CoNLLRDFUpdater(String type, String path, int threads) {
-		if (type == "TDB2") {
+		if (type.equals("TDB2")) {
 			//TODO
 			dataset = DatasetFactory.create();//TDB
-		} else if (type == "TXN") {
+		} else if (type.equals("TXN")) {
 			dataset = DatasetFactory.createTxnMem();
 		} else {
 			dataset = DatasetFactory.createTxnMem();
