@@ -1,0 +1,28 @@
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+
+# Eclipse
+# .classpath and .project should be excluded but are still required for non-maven compilation
+# TODO remove build artifacts from committed .classpath and .project, then uncomment these lines
+# .classpath
+# .project
+.settings/
+.recommenders
+.metadata
+maven-eclipse.xml
+.externalToolBuilders/
+
+# VisualStudioCode
+.vscode/
+*.code-workspace
+
+# Binaries
+*.jar
+!lib/*.jar
