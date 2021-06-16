@@ -10,9 +10,8 @@ buildNumber.properties
 
 # Eclipse
 # .classpath and .project should be excluded but are still required for non-maven compilation
-# TODO remove build artifacts from committed .classpath and .project, then uncomment these lines
-# .classpath
-# .project
+.classpath
+.project
 .settings/
 .recommenders
 .metadata
