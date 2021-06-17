@@ -25,13 +25,11 @@ Download the repository from GitHub: `git clone https://github.com/acoli-repo/Co
 The source is compiled automatically once you run the tool via the `run.sh` bash script.
 
 ### Requirements
-* JDK (now part of Java SE) or OpenJDK, version 8 or higher.
+* JDK (OpenJDK or Java SE) or , version 1.8 or higher.
   * run `java -version` to check if java is installed.
   * run `javac -version` to check if your version of the compiler is sufficient.
-* Maven 3.3+ (Optional but recommended).
+* Maven 3.3+ (Optional but highly recommended).
   * run `mvn -version` to check if Maven is installed.
-
-Note: If you prefer using OpenJDK instead of Oracle Java, it might be necessary to install openjfx. `sudo apt-get install openjfx` (Thanks to Francesco Mambrini for finding out!)  
 
 All required java libraries are contained in [lib/](./lib).
 
