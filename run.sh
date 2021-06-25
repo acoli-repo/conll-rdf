@@ -13,11 +13,7 @@ if (source $HOME/compile.sh &> /dev/null;); then
 		CLASSPATH=$(cygpath -pwa -- "$CLASSPATH");
 	fi;
 	#could also add -Dlog4j.configuration=file:'src/main/resources/log4j.properties' for another log4j config
-	java -Dfile.encoding=UTF8 -classpath $CLASSPATH org.acoli.conll.rdf.$* | \
-	# the following is a hack to allow CoNLLRDFUpdater to process output of CoNLLBrackets2RDF
-	# currently, CoNLLRDFUpdater supportes the historical Turtle 1.0 prefix only
-	# TODO: fix this in CoNLLRDFUpdater, this is a hack, only
-	sed -e s/'^[\t ]*PREFIX \(.*\)$'/'@prefix \1 .'/g;
+	java -Dfile.encoding=UTF8 -classpath $CLASSPATH org.acoli.conll.rdf.$*
 else
 	echo "error: compile unsuccessful"
 fi;

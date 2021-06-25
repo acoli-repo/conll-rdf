@@ -864,17 +864,18 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 		String lastLine ="";
 		String buffer="";
 //		List<Pair<Integer,Long> > dRTs = new ArrayList<Pair<Integer,Long> >(); // iterations and execution time of each update in seconds
+// TODO Refactor @Leo
 		while((line = getInputStream().readLine())!=null) {
-			line=line.replaceAll("[\t ]+"," ").trim();
+			line=line.replaceAll("[\t ]+"," ").trim(); // TODO this will mess-up multiline strings with lines ending in whitespace
 
-			if(!buffer.trim().equals("") && (line.startsWith("@") || line.startsWith("#")) && !lastLine.startsWith("@") && !lastLine.startsWith("#")) { //!buffer.matches("@[^\n]*\n?$")) {
-				// If the buffer is not empty and the current line starts with @ or #
-				// and the previous line did not start with @ or #
+			if(!buffer.trim().equals("") && (line.startsWith("@") || line.startsWith("#")) || (line.startsWith("PREFIX")) && !lastLine.startsWith("@") && !lastLine.startsWith("#") && !(line.startsWith("PREFIX"))) { //!buffer.matches("@[^\n]*\n?$")) {
+				// If the buffer is not empty and the current line starts with @ or # or PREFIX
+				// and the previous line did not start with @ or # or PREFIX
 				// check if the buffer contains a ttl prefix
-				if (buffer.contains("@prefix"))  {
+				if (buffer.contains("@prefix") || buffer.contains("PREFIX"))  {
 					prefixCache = new String();
 					for (String buffLine:buffer.split("\n")) {
-						if (buffLine.trim().startsWith("@prefix")) {
+						if (buffLine.trim().startsWith("@prefix") || buffLine.trim().startsWith("PREFIX")) {
 							prefixCache += buffLine+"\n";
 						}
 					}
