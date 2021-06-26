@@ -756,7 +756,8 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 			return columnNames;
 		}
 
-		public void processSentenceStream() throws IOException {
+	@Override
+		protected void processSentenceStream() throws IOException {
 			String line;
 			String lastLine ="";
 			String buffer="";
@@ -851,20 +852,5 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 					m.getOutputStream().println(extractTermGraph(buffer,false));
 				}
 			}
-		}
-
-		@Override
-		public void run() {
-			try {
-				processSentenceStream();
-			} catch (Exception e) {
-				e.printStackTrace();
-				System.exit(0);
-			}
-		}
-
-		@Override
-		public void start() {
-			run();
 		}
 }

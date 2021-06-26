@@ -73,10 +73,6 @@ import org.apache.log4j.Logger;
  *  @author Christian Faeth {@literal faeth@em.uni-frankfurt.de}
  */
 public class CoNLLRDFUpdater extends CoNLLRDFComponent {
-	
-	@SuppressWarnings("serial")
-	private static final List<Integer> CHECKINTERVAL = new ArrayList<Integer>() {{add(3); add(10); add(25); add(50); add(100); add(200); add(500);}};
-	static final int MAXITERATE = 999; // maximum update iterations allowed until the update loop is cancelled and an error message is thrown - to prevent faulty update scripts running in an endless loop
 	private static final Logger LOG = Logger.getLogger(CoNLLRDFUpdater.class.getName());
 	private static final String DEFAULTUPDATENAME = "DIRECTUPDATE";
 	private class UpdateThread extends Thread {
@@ -829,7 +825,8 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 	 * Caches and outputs the resulting sentences in-order.
 	 * @throws IOException
 	 */
-	public void processSentenceStream() throws IOException {
+	@Override
+	protected void processSentenceStream() throws IOException {
 		running = true;
 		String line;
 		String lastLine ="";
@@ -1253,21 +1250,6 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 			//READ SENTENCES from System.in  
 			updater.processSentenceStream();
 			LOG.debug((System.currentTimeMillis()-start)/1000 + " seconds");
-		}
-	}
-
-	@Override
-	public void start() {
-		run();
-	}
-
-	@Override
-	public void run() {
-		try {
-			processSentenceStream();
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.exit(0);
 		}
 	}
 }

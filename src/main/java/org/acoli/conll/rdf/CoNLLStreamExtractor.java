@@ -36,13 +36,6 @@ import org.apache.jena.query.*;
  */
 public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 	private static Logger LOG = Logger.getLogger(CoNLLStreamExtractor.class.getName());
-	
-	@SuppressWarnings("serial")
-	private static List<Integer> CHECKINTERVAL = new ArrayList<Integer>() {{add(3); add(10); add(25); add(50); add(100); add(200); add(500);}};
-
-	static final int MAXITERATE = 999; // maximal update iterations allowed until the update loop is canceled and an error msg is thrown - to prevent faulty update scripts running in an endless loop
-	
-	
 	private String baseURI;
 	public String getBaseURI() {
 		return baseURI;
@@ -80,8 +73,9 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 	private List<String> columns = new ArrayList<String>(); 
 	private String select = null;
 	List<Pair<String, String>> updates = new ArrayList<Pair<String, String>>();
-	
-	protected void processSentenceStream() throws Exception {
+
+	@Override
+	protected void processSentenceStream() throws IOException {
 		int current_sentence = 1; // keeps track of sentence id from CoNLL2RDF
 		CoNLL2RDF conll2rdf = new CoNLL2RDF(baseURI, columns.toArray(new String[columns.size()]));
 		List<Pair<Integer,Long> > dRTs = new ArrayList<Pair<Integer,Long> >(); // iterations and execution time of each update in seconds
@@ -370,10 +364,9 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 			select="";
 			for(String line = in.readLine(); line!=null; line=in.readLine())
 				select=select+line+"\n";
-		}		
+		}
 		sb.append(". ok");
 		LOG.info(sb.toString());
-		
 
 		CoNLLStreamExtractor ex = new CoNLLStreamExtractor();
 		ex.setBaseURI(baseURI);
@@ -382,24 +375,7 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 		ex.setSelect(select);
 		ex.setInputStream(inputStream);
 		ex.setOutputStream(System.out);
-		
-		ex.processSentenceStream();
-		
-	}
-	
-	
-	@Override
-	public void run() {
-		try {
-			processSentenceStream();
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.exit(0);
-		}
-	}
 
-	@Override
-	public void start() {
-		run();
+		ex.processSentenceStream();
 	}
 }

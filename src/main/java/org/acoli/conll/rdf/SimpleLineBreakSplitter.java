@@ -6,8 +6,7 @@ import java.io.InputStreamReader;
 
 public class SimpleLineBreakSplitter extends CoNLLRDFComponent {
 
-
-	private void processSentenceStream() throws IOException {
+	protected void processSentenceStream() throws IOException {
 		String line;
 		int empty = 0;
 		while((line = getInputStream().readLine())!=null) {
@@ -24,21 +23,6 @@ public class SimpleLineBreakSplitter extends CoNLLRDFComponent {
 		getOutputStream().close();
 	}
 
-	@Override
-	public void run() {
-		try {
-			processSentenceStream();
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.exit(0);
-		}
-	}
-
-	@Override
-	public void start() {
-		run();
-	}
-
 	public static void main(String[] args) throws IOException {
 		System.err.println("synopsis: SimpleLineBreakSplitter");
 		SimpleLineBreakSplitter splitter = new SimpleLineBreakSplitter();
@@ -52,5 +36,4 @@ public class SimpleLineBreakSplitter extends CoNLLRDFComponent {
 		splitter.processSentenceStream();
 		System.err.println(((System.currentTimeMillis()-start)/1000 + " seconds"));
 	}
-
 }
