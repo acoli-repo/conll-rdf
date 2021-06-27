@@ -621,11 +621,6 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 			String args = Arrays.asList(argv).toString().replaceAll("[\\[\\], ]+"," ").trim().toLowerCase();
 			
 			CoNLLRDFFormatter f = new CoNLLRDFFormatter();
-			
-			f.setInputStream(new BufferedReader(new InputStreamReader(System.in)));
-			f.setOutputStream(System.out);
-			
-			
 			boolean CONLLRDF = args.contains("-rdf");
 			boolean CONLL = args.contains("-conll");
 			boolean DEBUG = args.contains("-debug");

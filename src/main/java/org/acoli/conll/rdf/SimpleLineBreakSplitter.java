@@ -1,11 +1,9 @@
 package org.acoli.conll.rdf;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 
 public class SimpleLineBreakSplitter extends CoNLLRDFComponent {
-
+	@Override
 	protected void processSentenceStream() throws IOException {
 		String line;
 		int empty = 0;
@@ -28,9 +26,6 @@ public class SimpleLineBreakSplitter extends CoNLLRDFComponent {
 		SimpleLineBreakSplitter splitter = new SimpleLineBreakSplitter();
 
 		long start = System.currentTimeMillis();
-
-		splitter.setInputStream(new BufferedReader(new InputStreamReader(System.in)));
-		splitter.setOutputStream(System.out);
 
 		//READ SENTENCES from System.in
 		splitter.processSentenceStream();

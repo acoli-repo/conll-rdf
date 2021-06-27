@@ -76,7 +76,6 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 
 	@Override
 	protected void processSentenceStream() throws IOException {
-		int current_sentence = 1; // keeps track of sentence id from CoNLL2RDF
 		CoNLL2RDF conll2rdf = new CoNLL2RDF(baseURI, columns.toArray(new String[columns.size()]));
 		List<Pair<Integer,Long> > dRTs = new ArrayList<Pair<Integer,Long> >(); // iterations and execution time of each update in seconds
 		LOG.info("process input ..");
@@ -281,8 +280,8 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 		List<String> fields = new ArrayList<String>();
 		List<Pair<String, String>> updates = new ArrayList<Pair<String, String>>();
 		String select = null;
-		BufferedReader inputStream = new BufferedReader(new InputStreamReader(System.in));
-		
+		final BufferedReader inputStream = new BufferedReader(new InputStreamReader(System.in));
+
 		int i = 1;
 		while(i<argv.length && !argv[i].toLowerCase().matches("^-+u$"))
 			fields.add(argv[i++]);
@@ -373,8 +372,6 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 		ex.setColumns(fields);
 		ex.setUpdates(updates);
 		ex.setSelect(select);
-		ex.setInputStream(inputStream);
-		ex.setOutputStream(System.out);
 
 		ex.processSentenceStream();
 	}
