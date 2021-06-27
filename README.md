@@ -25,7 +25,7 @@ Download the repository from GitHub: `git clone https://github.com/acoli-repo/Co
 The source is compiled automatically once you run the tool via the `run.sh` bash script.
 
 ### Requirements
-* JDK (OpenJDK or Java SE) or , version 1.8 or higher.
+* JDK (OpenJDK or Java SE), version 1.8 or higher.
   * run `java -version` to check if java is installed.
   * run `javac -version` to check if your version of the compiler is sufficient.
 * Maven 3.3+ (Optional but highly recommended).
@@ -83,7 +83,7 @@ Synopsis: `CoNLLRDFUpdater -custom [-model URI [GRAPH]] [-updates [UPDATE]]`
 
 ### CoNLLRDFFormatter
 `CoNLLRDFFormatter` expects conll-rdf in `.ttl` and writes to different formats. Can also visualize your data.  
-Synopsis: ```CoNLLRDFFormatter [-rdf [COLS]] [-debug] [-grammar] [-semantics] [-conll COLS] [-sparqltsv SPARQL]```
+Synopsis: ```CoNLLRDFFormatter [-rdf [COLS]] [-debug] [-grammar] [-semantics] [-conll COLS] [-query SPARQL]```
 
 It can write:
 * canonical conll-rdf as `.ttl`.

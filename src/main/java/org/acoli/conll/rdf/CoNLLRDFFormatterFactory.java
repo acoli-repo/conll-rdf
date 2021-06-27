@@ -23,7 +23,7 @@ public class CoNLLRDFFormatterFactory {
 	public CoNLLRDFFormatter buildFromCLI(String[] args) throws IOException, ParseException {
 		final CoNLLRDFFormatter formatter = new CoNLLRDFFormatter();
 		final CoNLLRDFCommandLine conllCli = new CoNLLRDFCommandLine(
-				"CoNLLRDFFormatter [-rdf [COLS]] [-conll COLS] [-debug] [-grammar] [-semantics] [-sparqltsv SPARQL]",
+				"CoNLLRDFFormatter [-rdf [COLS]] [-conll COLS] [-debug] [-grammar] [-semantics] [-query SPARQL]",
 				"read TTL from stdin => format CoNLL-RDF or extract and highlight CoNLL (namespace conll:) and semantic (namespace terms:) subgraphs\ndefaults to -rdf if no options are selected",
 				new Option[] {
 						// Define cli options in the correct order for the help-message
@@ -87,7 +87,7 @@ public class CoNLLRDFFormatterFactory {
 			formatter.addModule(module);
 		}
 		if (cmd.hasOption("query") && cmd.hasOption("sparqltsv")) {
-			throw new ParseException("Tried to use deprecated -sparqltsv and -query");
+			throw new ParseException("Tried to combine deprecated -sparqltsv and -query");
 		}
 
 		if (cmd.hasOption("grammar") && !cmd.hasOption("semantics")) {

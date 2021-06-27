@@ -24,5 +24,5 @@ $ROOT/run.sh CoNLLStreamExtractor \
         sparql/analyze/UPOS-to-POSsynt.sparql \
         sparql/analyze/EDGE-to-POSsynt.sparql \
         sparql/analyze/consolidate-POSsynt.sparql \
-    | ../run.sh CoNLLRDFFormatter -sparqltsv sparql/analyze/eval-POSsynt.sparql \
+    | ../run.sh CoNLLRDFFormatter -query sparql/analyze/eval-POSsynt.sparql \
 	| grep -v '#';

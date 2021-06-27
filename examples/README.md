@@ -236,7 +236,7 @@ cat en-ud-dev.conllu \
 [...]
 ```
 ```shell
-	| ../run.sh CoNLLRDFFormatter -sparqltsv sparql/analyze/eval-POSsynt.sparql
+	| ../run.sh CoNLLRDFFormatter -query sparql/analyze/eval-POSsynt.sparql
 ```
 ```Turtle
 # global.columns = word upos udep POSsynt_UPOS POSsynt_UDEP match
@@ -264,7 +264,7 @@ cat en-ud-dev.conllu \
         sparql/analyze/UPOS-to-POSsynt.sparql \
         sparql/analyze/EDGE-to-POSsynt.sparql \
         sparql/analyze/consolidate-POSsynt.sparql \
-    | ../run.sh CoNLLRDFFormatter -sparqltsv sparql/analyze/eval-POSsynt.sparql \
+    | ../run.sh CoNLLRDFFormatter -query sparql/analyze/eval-POSsynt.sparql \
     | grep -v '#';
 ```
 
