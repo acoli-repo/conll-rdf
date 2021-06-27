@@ -75,6 +75,41 @@ import org.apache.log4j.Logger;
 public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 	private static final Logger LOG = Logger.getLogger(CoNLLRDFUpdater.class.getName());
 	private static final String DEFAULTUPDATENAME = "DIRECTUPDATE";
+	
+	private final Dataset dataset;
+
+	// Configuration Variables with defaults set
+	private boolean removePrefixDuplicates = false;
+	private int threads = 0;
+	private int lookahead_snts = 0;
+	private int lookback_snts = 0;
+	private File graphOutputDir = null;
+	private File triplesOutputDir = null;
+
+	//for updates
+	private final List<Triple<String, String, String>> updates = Collections.synchronizedList(new ArrayList<Triple<String, String, String>>());
+	//For graphsout and triplesout
+	private final List<String> graphOutputSentences = Collections.synchronizedList(new ArrayList<String>());
+	private final List<String> triplesOutputSentences = Collections.synchronizedList(new ArrayList<String>());
+
+	// for thread handling
+	private boolean running = false;
+	private final List<UpdateThread> updateThreads = Collections.synchronizedList(new ArrayList<UpdateThread>());
+	// Buffer providing each thread with its respective sentence(s) to process
+	// <List:lookbackBuffer>, <String:currentSentence>, <List:lookaheadBuffer>
+	private final List<Triple<List<String>, String, List<String>>> sentBufferThreads = Collections.synchronizedList(new ArrayList<Triple<List<String>, String, List<String>>>());
+
+	private final List<String> sentBufferLookahead = Collections.synchronizedList(new ArrayList<String>());
+	private final List<String> sentBufferLookback = Collections.synchronizedList(new ArrayList<String>());
+	// Buffer for outputting sentences in original order
+	private final List<String> sentBufferOut = Collections.synchronizedList(new ArrayList<String>()); 
+
+	//for statistics
+	private final List<List<Pair<Integer,Long>>> dRTs = Collections.synchronizedList(new ArrayList<List<Pair<Integer,Long>>>());
+	// iterations and execution time of each update in seconds
+	//private int parsedSentences = 0; // no longer used since graphsout default is set at sentence readin
+
+
 	private class UpdateThread extends Thread {
 		
 		private CoNLLRDFUpdater updater;
@@ -450,53 +485,6 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 			}		
 		}
 	}
-	
-	
-	private final Dataset dataset;
-
-	// number of threads to use
-	private int threads;
-
-	//for segmented data with single prefix header
-	private String prefixCache;
-	private String prefixCacheOut;
-	private boolean removePrefixDuplicates;
-	
-	//for updates
-	private final List<Triple<String, String, String>> updates;
-	
-	//for thread handling
-	private final List<UpdateThread> updateThreads;
-	private final List<String> sentBufferOut; //Buffer for outputting sentences in original order
-	// Buffer providing each thread with its respective sentence(s) to process
-	// <List:lookbackBuffer>, <String:currentSentence>, <List:lookaheadBuffer>
-	private final List<Triple<List<String>, String, List<String>>> sentBufferThreads; 
-
-
-	//For lookahead
-	private final List<String> sentBufferLookahead; 
-	private int lookahead_snts = 0;
-	
-	//For lookback
-	private final List<String> sentBufferLookback; 
-	private int lookback_snts = 0;
-	
-	//For graphsout
-	private final List<String> graphOutputSentences; 
-	private File graphOutputDir;
-	
-	//For triplesout
-	private final List<String> triplesOutputSentences; 
-	private File triplesOutputDir;
-	
-	//for statistics
-	private final List<List<Pair<Integer,Long>>> dRTs; // iterations and execution time of each update in seconds
-	//private int parsedSentences = 0; // no longer used since graphsout default is set at sentence readin
-	private boolean running = false;
-
-	private void setThreads(int threads) {
-		this.threads = threads;
-	}
 
 	/**
 	 * Default Constructor providing empty data to the standard constructor.
@@ -533,38 +521,15 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 		}
 //		memAccessor = DatasetAccessorFactory.create(memDataset);
 
-		this.threads = threads;
+		setThreads(threads);
 
-		//for segmented data with single prefix header
-		prefixCache = new String();
-		prefixCacheOut = new String();
-		removePrefixDuplicates = false;
-
-		//updates
-		updates = Collections.synchronizedList(new ArrayList<Triple<String, String, String>>());
-
-		
-		updateThreads = Collections.synchronizedList(new ArrayList<UpdateThread>());
-		sentBufferThreads = Collections.synchronizedList(new ArrayList<Triple<List<String>, String, List<String>>>());
-		dRTs = Collections.synchronizedList(new ArrayList<List<Pair<Integer,Long>>>());
-		
-		sentBufferOut = Collections.synchronizedList(new ArrayList<String>());
-		
-		//lookahead+lookback
-		sentBufferLookahead = Collections.synchronizedList(new ArrayList<String>());
-		sentBufferLookback = Collections.synchronizedList(new ArrayList<String>());
-		
-		//graphsout
-		graphOutputSentences = Collections.synchronizedList(new ArrayList<String>());
-		graphOutputDir = null;
-		
-		//triplesout
-		triplesOutputSentences = Collections.synchronizedList(new ArrayList<String>());
-		triplesOutputDir = null;
-		
 		//runtime
 		//parsedSentences = 0;
 		running = false;
+	}
+
+	private void setThreads(int threads) {
+		this.threads = threads;
 	}
 
 	/**
@@ -825,8 +790,10 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 	@Override
 	protected void processSentenceStream() throws IOException {
 		initThreads();
-
 		running = true;
+
+		
+		String prefixCache = new String();
 		String line;
 		String lastLine ="";
 		String buffer="";
@@ -1000,6 +967,9 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 
 	private synchronized void flushOutputBuffer(PrintStream out) {
 		LOG.trace("OutBufferSize: "+sentBufferOut.size());
+
+		String prefixCacheOut = new String();
+
 		while (!sentBufferOut.isEmpty()) {
 			if (sentBufferOut.get(0).matches("\\d+")) break;
 			
