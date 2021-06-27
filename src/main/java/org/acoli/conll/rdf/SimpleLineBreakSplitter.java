@@ -3,8 +3,11 @@ package org.acoli.conll.rdf;
 import java.io.IOException;
 
 import org.apache.commons.cli.ParseException;
+import org.apache.log4j.Logger;
 
 public class SimpleLineBreakSplitter extends CoNLLRDFComponent {
+	static final Logger LOG = Logger.getLogger(SimpleLineBreakSplitter.class);
+
 	@Override
 	protected void processSentenceStream() throws IOException {
 		String line;
@@ -28,13 +31,18 @@ public class SimpleLineBreakSplitter extends CoNLLRDFComponent {
 	}
 
 	public static void main(String[] args) throws IOException {
-		System.err.println("synopsis: SimpleLineBreakSplitter");
 		SimpleLineBreakSplitter splitter = new SimpleLineBreakSplitter();
 
-		long start = System.currentTimeMillis();
+		try {
+			splitter.configureFromCommandLine(args);
+		} catch (ParseException e) {
+			LOG.error(e);
+			System.exit(1);
+		}
 
-		//READ SENTENCES from System.in
+		long start = System.currentTimeMillis();
+		// READ SENTENCES from System.in
 		splitter.processSentenceStream();
-		System.err.println(((System.currentTimeMillis()-start)/1000 + " seconds"));
+		LOG.info((System.currentTimeMillis() - start) / 1000 + " seconds");
 	}
 }

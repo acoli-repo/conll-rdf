@@ -7,10 +7,9 @@ import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.commons.cli.ParseException;
-
 public abstract class CoNLLRDFComponent implements Runnable {
 	static final List<Integer> CHECKINTERVAL = Arrays.asList(3, 10, 25, 50, 100, 200, 500);
+	static final String DEFAULTUPDATENAME = "DIRECTUPDATE";
 	// maximal update iterations allowed until the update loop is canceled and an error msg is thrown
 	// (to prevent faulty update scripts running in an endless loop)
 	static final int MAXITERATE = 999;
@@ -46,4 +45,7 @@ public abstract class CoNLLRDFComponent implements Runnable {
 	public final void start() {
 		run();
 	}
+
+	// TODO Address Code duplication of main methods
+	// TODO Unify Logging of process durations
 }
