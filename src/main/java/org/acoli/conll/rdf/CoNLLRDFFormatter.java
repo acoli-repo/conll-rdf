@@ -20,6 +20,7 @@ import java.net.*;
 import java.util.*;
 import org.apache.jena.rdf.model.*;		// Jena 2.x
 import org.apache.log4j.Logger;
+import org.apache.commons.cli.ParseException;
 import org.apache.jena.query.*;
 
 
@@ -62,24 +63,31 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 		public Mode getMode() {
 			return mode;
 		}
+
 		public void setMode(Mode mode) {
 			this.mode = mode;
 		}
+
 		public List<String> getCols() {
 			return cols;
 		}
+
 		public void setCols(List<String> cols) {
 			this.cols = cols;
 		}
+
 		public String getSelect() {
 			return select;
 		}
+
 		public void setSelect(String select) {
 			this.select = select;
 		}
+
 		public PrintStream getOutputStream() {
 			return outputStream;
 		}
+
 		public void setOutputStream(PrintStream outputStream) {
 			this.outputStream = outputStream;
 		}
@@ -607,119 +615,6 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 			out.flush();
 		}
 		
-		public static void main(String[] argv) throws IOException {
-			LOG.info("synopsis: CoNLLRDFFormatter [-rdf [COLS]] [-debug] [-grammar] [-semantics] [-conll COLS] [-sparqltsv SPARQL]\n"
-					+ "\t-rdf  write formatted CoNLL-RDF to stdout (sorted by list of CoNLL COLS, if provided)\n"
-					+ "\t-conll  write formatted CoNLL to stdout (only specified COLS)\n"
-					+ "\t-debug     write formatted, color-highlighted full turtle to stderr\n"
-					+ "\t-grammar   write CoNLL data structures to stdout\n"
-					+ "\t-semantics write semantic graph to stdout\n"
-					+ "\t-sparqltsv write TSV generated from SPARQL statement to stdout.\n"
-					+ "\t           if with -grammar, then skip type assignments\n"
-					+ "read TTL from stdin => format CoNLL-RDF or extract and highlight CoNLL (namespace conll:) and semantic (namespace terms:) subgraphs\n"
-					+ "if no parameters are supplied, -conllrdf is inferred");
-			String args = Arrays.asList(argv).toString().replaceAll("[\\[\\], ]+"," ").trim().toLowerCase();
-			
-			CoNLLRDFFormatter f = new CoNLLRDFFormatter();
-			boolean CONLLRDF = args.contains("-rdf");
-			boolean CONLL = args.contains("-conll");
-			boolean DEBUG = args.contains("-debug");
-			boolean SPARQLTSV = args.contains("-sparqltsv");
-			boolean GRAMMAR = args.contains("-grammar");
-			boolean SEMANTICS = args.contains("-semantics");
-			// if(!GRAMMAR && !SEMANTICS) { // default
-				// GRAMMAR=true;
-				// SEMANTICS=true;
-			// }
-			if(!CONLLRDF && !CONLL && !SPARQLTSV && !GRAMMAR && !SEMANTICS && !DEBUG) { // default
-				CONLLRDF = true;
-			}
-			
-			if(GRAMMAR) {
-				Module m = new Module();
-				m.setMode(Mode.GRAMMAR);
-				m.setOutputStream(f.getOutputStream());
-				f.getModules().add(m);
-			}
-			
-			if(SEMANTICS) {
-				Module m = new Module();
-				m.setMode(Mode.SEMANTICS);
-				m.setOutputStream(f.getOutputStream());
-				f.getModules().add(m);
-			}
-			
-			if(DEBUG) {
-				Module m = new Module();
-				m.setMode(Mode.DEBUG);
-				m.setOutputStream(System.err);
-				f.getModules().add(m);
-			}
-			
-			if(CONLL) {
-				Module m = new Module();
-				m.setMode(Mode.CONLL);
-				m.setOutputStream(f.getOutputStream());
-				m.getCols().clear();
-				int i = 0;
-				while(i<argv.length && argv[i].toLowerCase().matches("^-+conll$")) i++;
-				while(i<argv.length && !argv[i].toLowerCase().matches("^-+.*$"))
-					m.getCols().add(argv[i++]);
-				f.getModules().add(m);
-			}
-			
-			if(CONLLRDF) {
-				Module m = new Module();
-				m.setMode(Mode.CONLLRDF);
-				m.setOutputStream(f.getOutputStream());
-				m.getCols().clear();
-				int i = 0;
-				while(i<argv.length && argv[i].toLowerCase().matches("^-+rdf$")) i++;
-				while(i<argv.length && !argv[i].toLowerCase().matches("^-+.*$"))
-					m.getCols().add(argv[i++]);
-				f.getModules().add(m);
-			}
-			
-			if(SPARQLTSV) {
-				Module m = new Module();
-				m.setMode(Mode.SPARQLTSV);
-				m.setOutputStream(f.getOutputStream());
-				String select = "";
-				int i = 1;
-				while(i<argv.length && argv[i].toLowerCase().matches("^-+sparqltsv$")) i++;
-				if(i<argv.length)
-					select=argv[i++];
-				while(i<argv.length)
-					select=select+" "+argv[i++]; // because queries may be parsed by the shell (Cygwin)
-				
-				Reader sparqlreader = new StringReader(select);
-				File file = new File(select);
-				URL u = null;
-				try {
-					u = new URL(select);
-				} catch (MalformedURLException e) {}
-				
-				if(file.exists()) {			// can be read from a file
-					sparqlreader = new FileReader(file);
-					LOG.debug("f");
-				} else if(u!=null) {
-					try {
-						sparqlreader = new InputStreamReader(u.openStream());
-						LOG.debug("u");
-					} catch (Exception e) {}
-				}
-
-				BufferedReader in = new BufferedReader(sparqlreader);
-				select="";
-				for(String line = in.readLine(); line!=null; line=in.readLine())
-					select=select+line+"\n";
-				m.setSelect(select);
-				f.getModules().add(m);
-			}
-			
-			f.processSentenceStream();
-			
-		}
 
 	/**
 	 * Searches a string buffer that is expected to represent a sentence for any
@@ -847,5 +742,126 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 				m.getOutputStream().println(extractTermGraph(buffer,false));
 			}
 		}
+	}
+
+	public void configureFromCommandLine(String[] argv) throws IOException, ParseException {
+		LOG.info(
+			"synopsis: CoNLLRDFFormatter [-rdf [COLS]] [-debug] [-grammar] [-semantics] [-conll COLS] [-sparqltsv SPARQL]\n"
+					+ "\t-rdf  write formatted CoNLL-RDF to stdout (sorted by list of CoNLL COLS, if provided)\n"
+					+ "\t-conll  write formatted CoNLL to stdout (only specified COLS)\n"
+					+ "\t-debug     write formatted, color-highlighted full turtle to stderr\n"
+					+ "\t-grammar   write CoNLL data structures to stdout\n"
+					+ "\t-semantics write semantic graph to stdout\n"
+					+ "\t-sparqltsv write TSV generated from SPARQL statement to stdout.\n"
+					+ "\t           if with -grammar, then skip type assignments\n"
+					+ "read TTL from stdin => format CoNLL-RDF or extract and highlight CoNLL (namespace conll:) and semantic (namespace terms:) subgraphs\n"
+					+ "if no parameters are supplied, -conllrdf is inferred");
+		final String args = Arrays.asList(argv).toString().replaceAll("[\\[\\], ]+", " ").trim().toLowerCase();
+
+		boolean CONLLRDF = args.contains("-rdf");
+		final boolean CONLL = args.contains("-conll");
+		final boolean DEBUG = args.contains("-debug");
+		final boolean SPARQLTSV = args.contains("-sparqltsv");
+		final boolean GRAMMAR = args.contains("-grammar");
+		final boolean SEMANTICS = args.contains("-semantics");
+
+		Module module;
+
+		if (!CONLLRDF && !CONLL && !SPARQLTSV && !GRAMMAR && !SEMANTICS && !DEBUG) { // default
+			CONLLRDF = true;
+		}
+
+		if (GRAMMAR) {
+			module = new Module();
+			module.setMode(Mode.GRAMMAR);
+			module.setOutputStream(getOutputStream());
+			getModules().add(module);
+		}
+		if (SEMANTICS) {
+			module = new Module();
+			module.setMode(Mode.SEMANTICS);
+			module.setOutputStream(getOutputStream());
+			getModules().add(module);
+		}
+		if (DEBUG) {
+			module = new Module();
+			module.setMode(Mode.DEBUG);
+			module.setOutputStream(System.err);
+			getModules().add(module);
+		}
+		if (CONLL) {
+			module = new Module();
+			module.setMode(Mode.CONLL);
+			module.setOutputStream(getOutputStream());
+			module.getCols().clear();
+			int i = 0;
+			while (i < argv.length && argv[i].toLowerCase().matches("^-+conll$"))
+				i++;
+			while (i < argv.length && !argv[i].toLowerCase().matches("^-+.*$"))
+				module.getCols().add(argv[i++]);
+			getModules().add(module);
+		}
+		if (CONLLRDF) {
+			module = new Module();
+			module.setMode(Mode.CONLLRDF);
+			module.setOutputStream(getOutputStream());
+			module.getCols().clear();
+			int i = 0;
+			while (i < argv.length && argv[i].toLowerCase().matches("^-+rdf$"))
+				i++;
+			while (i < argv.length && !argv[i].toLowerCase().matches("^-+.*$"))
+				module.getCols().add(argv[i++]);
+			getModules().add(module);
+		}
+		if (SPARQLTSV) {
+			module = new Module();
+			module.setMode(Mode.SPARQLTSV);
+			module.setOutputStream(getOutputStream());
+			String select = "";
+			int i = 1;
+			while (i < argv.length && argv[i].toLowerCase().matches("^-+sparqltsv$"))
+				i++;
+			if (i < argv.length)
+				select = argv[i++];
+			while (i < argv.length)
+				select = select + " " + argv[i++]; // because queries may be parsed by the shell (Cygwin)
+
+			Reader sparqlreader = new StringReader(select);
+			File file = new File(select);
+			URL u = null;
+			try {
+				u = new URL(select);
+			} catch (MalformedURLException e) {
+			}
+
+			if (file.exists()) { // can be read from a file
+				sparqlreader = new FileReader(file);
+				LOG.debug("f");
+			} else if (u != null) {
+				try {
+					sparqlreader = new InputStreamReader(u.openStream());
+					LOG.debug("u");
+				} catch (Exception e) {
+				}
+			}
+
+			BufferedReader in = new BufferedReader(sparqlreader);
+			select = "";
+			for (String line = in.readLine(); line != null; line = in.readLine())
+				select = select + line + "\n";
+			module.setSelect(select);
+			getModules().add(module);
+		}
+	}
+
+	public static void main(String[] args) throws IOException {
+		final CoNLLRDFFormatter formatter = new CoNLLRDFFormatter();
+		try {
+			formatter.configureFromCommandLine(args);
+		} catch (ParseException e) {
+			LOG.error(e);
+			System.exit(1);
+		}
+		formatter.processSentenceStream();
 	}
 }

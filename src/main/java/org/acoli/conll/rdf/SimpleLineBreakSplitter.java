@@ -2,6 +2,8 @@ package org.acoli.conll.rdf;
 
 import java.io.IOException;
 
+import org.apache.commons.cli.ParseException;
+
 public class SimpleLineBreakSplitter extends CoNLLRDFComponent {
 	@Override
 	protected void processSentenceStream() throws IOException {
@@ -19,6 +21,10 @@ public class SimpleLineBreakSplitter extends CoNLLRDFComponent {
 			}
 		}
 		getOutputStream().close();
+	}
+
+	public void configureFromCommandLine(String[] args) throws IOException, ParseException {
+		// Nothing to do
 	}
 
 	public static void main(String[] args) throws IOException {
