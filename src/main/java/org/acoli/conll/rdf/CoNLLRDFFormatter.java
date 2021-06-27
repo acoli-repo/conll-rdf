@@ -757,49 +757,49 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 		}
 
 	@Override
-		protected void processSentenceStream() throws IOException {
-			String line;
-			String lastLine ="";
-			String buffer="";
-			while((line = getInputStream().readLine())!=null) {
-				line=line.replaceAll("[\t ]+"," ").trim();
+	protected void processSentenceStream() throws IOException {
+		String line;
+		String lastLine ="";
+		String buffer="";
+		while((line = getInputStream().readLine())!=null) {
+			line=line.replaceAll("[\t ]+"," ").trim();
 
-				if(!buffer.trim().equals(""))
-					if((line.startsWith("@") || line.startsWith("#")) && !lastLine.startsWith("@") && !lastLine.startsWith("#")) { //!buffer.matches("@[^\n]*\n?$")) {
-						for (Module m:modules) {
-							if(m.getMode()==Mode.CONLLRDF) m.getOutputStream().println(reorderTTLBuffer(buffer, m.getCols()));
-							if(m.getMode()==Mode.DEBUG) System.err.println(colorTTL(reorderTTLBuffer(buffer, m.getCols())));
-							if(m.getMode()==Mode.CONLL) {
-								if (m.getCols().size() < 1) {// no column args supplied
-									LOG.info("No column names in cmd args, searching rdf comments..");
-									List<String> conllColumns = findColumnNamesInRDFBuffer(buffer);
+			if(!buffer.trim().equals(""))
+				if((line.startsWith("@") || line.startsWith("#")) && !lastLine.startsWith("@") && !lastLine.startsWith("#")) { //!buffer.matches("@[^\n]*\n?$")) {
+					for (Module m:modules) {
+						if(m.getMode()==Mode.CONLLRDF) m.getOutputStream().println(reorderTTLBuffer(buffer, m.getCols()));
+						if(m.getMode()==Mode.DEBUG) System.err.println(colorTTL(reorderTTLBuffer(buffer, m.getCols())));
+						if(m.getMode()==Mode.CONLL) {
+							if (m.getCols().size() < 1) {// no column args supplied
+								LOG.info("No column names in cmd args, searching rdf comments..");
+								List<String> conllColumns = findColumnNamesInRDFBuffer(buffer);
+								if (conllColumns.size()>0) {
+									LOG.info("Using #global.comments from rdf");
+									m.setCols(conllColumns);
+								} else {
+									LOG.info("Trying conll columns now..");
+									conllColumns = CoNLLStreamExtractor.findFieldsFromComments(new BufferedReader(new StringReader(buffer.trim())), 1);
 									if (conllColumns.size()>0) {
-										LOG.info("Using #global.comments from rdf");
 										m.setCols(conllColumns);
-									} else {
-										LOG.info("Trying conll columns now..");
-										conllColumns = CoNLLStreamExtractor.findFieldsFromComments(new BufferedReader(new StringReader(buffer.trim())), 1);
-										if (conllColumns.size()>0) {
-											m.setCols(conllColumns);
-										}
 									}
 								}
-								if (m.getCols().size() < 1) {
-									LOG.info("Supply column names some way! (-conll arg, global.columns or rdf comments");
-								}
-								else
-									printSparql(buffer, columnsAsSelect(m.getCols()), new OutputStreamWriter(m.getOutputStream()));
 							}
-							if(m.getMode()==Mode.SPARQLTSV) printSparql(buffer, m.getSelect(), new OutputStreamWriter(m.getOutputStream()));
-							if(m.getMode()==Mode.GRAMMAR) m.getOutputStream().println(extractCoNLLGraph(buffer,true));
-							if(m.getMode()==Mode.SEMANTICS) m.getOutputStream().println(extractTermGraph(buffer,true));
-							if(m.getMode()==Mode.GRAMMAR_SEMANTICS) {
-								m.getOutputStream().println(extractCoNLLGraph(buffer,true));
-								m.getOutputStream().println(extractTermGraph(buffer,false));
+							if (m.getCols().size() < 1) {
+								LOG.info("Supply column names some way! (-conll arg, global.columns or rdf comments");
 							}
+							else
+								printSparql(buffer, columnsAsSelect(m.getCols()), new OutputStreamWriter(m.getOutputStream()));
 						}
-						buffer="";
+						if(m.getMode()==Mode.SPARQLTSV) printSparql(buffer, m.getSelect(), new OutputStreamWriter(m.getOutputStream()));
+						if(m.getMode()==Mode.GRAMMAR) m.getOutputStream().println(extractCoNLLGraph(buffer,true));
+						if(m.getMode()==Mode.SEMANTICS) m.getOutputStream().println(extractTermGraph(buffer,true));
+						if(m.getMode()==Mode.GRAMMAR_SEMANTICS) {
+							m.getOutputStream().println(extractCoNLLGraph(buffer,true));
+							m.getOutputStream().println(extractTermGraph(buffer,false));
+						}
 					}
+					buffer="";
+				}
 				//System.err.println(ANSI_RED+"> "+line+ANSI_RESET);
 				if(line.trim().startsWith("@") && !lastLine.trim().endsWith(".")) 
 					//System.out.print("\n");
@@ -821,36 +821,36 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 				lastLine=line;
 			}
 			
-			for (Module m:modules) {
-				if(m.getMode()==Mode.CONLLRDF) m.getOutputStream().println(reorderTTLBuffer(buffer, m.getCols()));
-				if(m.getMode()==Mode.DEBUG) System.err.println(colorTTL(reorderTTLBuffer(buffer, m.getCols())));
-				if(m.getMode()==Mode.CONLL) {
-					if (m.getCols().size() < 1) {
-						LOG.info("No column names in cmd args, searching rdf comments..");
-						List<String> conllColumns = findColumnNamesInRDFBuffer(buffer);
+		for (Module m:modules) {
+			if(m.getMode()==Mode.CONLLRDF) m.getOutputStream().println(reorderTTLBuffer(buffer, m.getCols()));
+			if(m.getMode()==Mode.DEBUG) System.err.println(colorTTL(reorderTTLBuffer(buffer, m.getCols())));
+			if(m.getMode()==Mode.CONLL) {
+				if (m.getCols().size() < 1) {
+					LOG.info("No column names in cmd args, searching rdf comments..");
+					List<String> conllColumns = findColumnNamesInRDFBuffer(buffer);
+					if (conllColumns.size()>0) {
+						LOG.info("Using #global.comments from rdf");
+						m.setCols(conllColumns);
+					} else {
+						LOG.info("Trying conll columns now..");
+						conllColumns = CoNLLStreamExtractor.findFieldsFromComments(new BufferedReader(new StringReader(buffer.trim())), 1);
 						if (conllColumns.size()>0) {
-							LOG.info("Using #global.comments from rdf");
 							m.setCols(conllColumns);
-						} else {
-							LOG.info("Trying conll columns now..");
-							conllColumns = CoNLLStreamExtractor.findFieldsFromComments(new BufferedReader(new StringReader(buffer.trim())), 1);
-							if (conllColumns.size()>0) {
-								m.setCols(conllColumns);
-							}
 						}
 					}
-					if (m.getCols().size() < 1)
-						throw new IOException("-conll argument needs at least one COL to export!");
-					else
-						printSparql(buffer, columnsAsSelect(m.getCols()), new OutputStreamWriter(m.getOutputStream()));
 				}
-				if(m.getMode()==Mode.SPARQLTSV) printSparql(buffer, m.getSelect(), new OutputStreamWriter(m.getOutputStream()));
-				if(m.getMode()==Mode.GRAMMAR) m.getOutputStream().println(extractCoNLLGraph(buffer,true));
-				if(m.getMode()==Mode.SEMANTICS) m.getOutputStream().println(extractTermGraph(buffer,true));
-				if(m.getMode()==Mode.GRAMMAR_SEMANTICS) {
-					m.getOutputStream().println(extractCoNLLGraph(buffer,true));
-					m.getOutputStream().println(extractTermGraph(buffer,false));
-				}
+				if (m.getCols().size() < 1)
+					throw new IOException("-conll argument needs at least one COL to export!");
+				else
+					printSparql(buffer, columnsAsSelect(m.getCols()), new OutputStreamWriter(m.getOutputStream()));
+			}
+			if(m.getMode()==Mode.SPARQLTSV) printSparql(buffer, m.getSelect(), new OutputStreamWriter(m.getOutputStream()));
+			if(m.getMode()==Mode.GRAMMAR) m.getOutputStream().println(extractCoNLLGraph(buffer,true));
+			if(m.getMode()==Mode.SEMANTICS) m.getOutputStream().println(extractTermGraph(buffer,true));
+			if(m.getMode()==Mode.GRAMMAR_SEMANTICS) {
+				m.getOutputStream().println(extractCoNLLGraph(buffer,true));
+				m.getOutputStream().println(extractTermGraph(buffer,false));
 			}
 		}
+	}
 }
