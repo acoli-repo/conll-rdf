@@ -15,6 +15,12 @@ All relevant classes are in [src/](../src/org/acoli/conll/rdf). Sample scripts i
 
 IMPORTANT USAGE HINT: All given data is parsed sentence-wise (if applicable). Meaning that for CoNLL data as input a newline is considered as a sentence boundary marker (in regard to the CoNLL data model). The ID column (if present) must contain sentence internal IDs (if this is not the case this column must be renamed before conversion/parsing) - if no such column is provided sentence internal IDs will be generated. Please refer to the paper mentioned below under Reference.
 
+### Universal Flags
+All conll-rdf pipeline components accept the following flags:
+
+* `help` Display usage help and exit.
+* `silent` Do not show info messages. Only messages of level warn and above will be logged to console.
+
 ### CoNLLRDFManager
 `CoNLLRDFManager` processes a pipeline provided as JSON.
 Synopsis: `CoNLLRDFManager -c [JSON-config]`
@@ -71,16 +77,19 @@ otherwise identical to `graphsout`.
 
 ### CoNLLRDFFormatter
 `CoNLLRDFFormatter` expects conll-rdf in `.ttl` and writes to different formats. Can also visualize your data.  
-Synopsis: ```CoNLLRDFFormatter [-rdf [COLS]] [-debug] [-grammar] [-semantics] [-conll COLS] [-sparqltsv SPARQL]```
+Synopsis: ```CoNLLRDFFormatter [-rdf [COLS]] [-debug] [-grammar] [-semantics] [-conll COLS] [-query SPARQL]```
 
 * `rdf` (default): writes canonical conll-rdf as .ttl.
 * `conll [COLS]`: writes .conll of specified columns in order of arguments. 
   * If no cols are provided, we assume the original conll was [CoNLL-U Plus](https://universaldependencies.org/ext-format.html).
     We first search for a `rdfs:comment` property with a `global.columns` comment, then the raw conll-like comments.
   * Note that we will overwrite any `global.columns` comments with the new column names, so you may read them with the `CoNLLStreamExtractor` again right away.
-* `sparqltsv [SPARQL-SELECT-FILE]`: writes TSV to `stdout` based on a given sparql select query.
+* `query [SPARQL-SELECT-FILE]`: writes TSV to `stdout` based on a given sparql select query.
   * column sequence is based on selector sequence within the sparql query.
   * writes the column names as a comment line before every sentence.
+* _DEPRECATED_ `sparqltsv` was deprecated in favor of `query`.
+  * functionally identical to `query`.
+  * has some undocumented behavior that can't be tested easily and was left untouched.
 * `debug`: writes highlighted .ttl to `stderr`, e.g. highlighting triples representing conll columns or sentence structure differently. 
   * does not work in combination with `-conll`.
   * to add custom highlighting you can add rules to `colorTTL(String buffer)` in `CoNLLRDFFormatter.java`. Don't forget to recompile!

@@ -23,6 +23,9 @@ import org.apache.jena.rdf.listeners.ChangedListener;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.update.*;
 import org.apache.log4j.Logger;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.jena.query.*;
 
 /** extracts RDF data from CoNLL files, transforms the result using SPARQL UPDATE queries,
@@ -33,36 +36,13 @@ import org.apache.jena.query.*;
  *  @author Christian Faeth {@literal faeth@em.uni-frankfurt.de}
  */
 public class CoNLLStreamExtractor extends CoNLLRDFComponent {
-	public static class Pair<F, S> {
-		public F key;
-		public S value;
-		public Pair (F key, S value) {
-			this.key = key;
-			this.value = value;
-		}
-		public F getKey() {
-			return key;
-		}
-		public void setKey(F key) {
-			this.key = key;
-		}
-		public S getValue() {
-			return value;
-		}
-		public void setValue(S value) {
-			this.value = value;
-		}
-	}
-	
 	private static Logger LOG = Logger.getLogger(CoNLLStreamExtractor.class.getName());
-	
-	@SuppressWarnings("serial")
-	private static List<Integer> CHECKINTERVAL = new ArrayList<Integer>() {{add(3); add(10); add(25); add(50); add(100); add(200); add(500);}};
-
-	static final int MAXITERATE = 999; // maximal update iterations allowed until the update loop is canceled and an error msg is thrown - to prevent faulty update scripts running in an endless loop
-	
-	
 	private String baseURI;
+	private List<String> columns = new ArrayList<String>();
+	private boolean readColumnComment = false;
+	private String select = null;
+	List<Pair<String, String>> updates = new ArrayList<Pair<String, String>>();
+
 	public String getBaseURI() {
 		return baseURI;
 	}
@@ -77,6 +57,10 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 
 	public void setColumns(List<String> columns) {
 		this.columns = columns;
+	}
+
+	public void setReadColumnComment(boolean read) {
+		readColumnComment = read;
 	}
 
 	public String getSelect() {
@@ -95,13 +79,16 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 		this.updates = updates;
 	}
 
-
-	private List<String> columns = new ArrayList<String>(); 
-	private String select = null;
-	List<Pair<String, String>> updates = new ArrayList<Pair<String, String>>();
-	
-	protected void processSentenceStream() throws Exception {
-		int current_sentence = 1; // keeps track of sentence id from CoNLL2RDF
+	@Override
+	protected void processSentenceStream() throws IOException {
+		if (readColumnComment) {
+			// look for a CoNLL-U Plus -style comment containing the Columns
+			this.findColumnsFromComment();
+			// TODO this check should happen earlier
+			if (this.getColumns().isEmpty()) {
+				throw new IOException("Missing required Argument Fields/Columns not found as global.columns either");
+			}
+		}
 		CoNLL2RDF conll2rdf = new CoNLL2RDF(baseURI, columns.toArray(new String[columns.size()]));
 		List<Pair<Integer,Long> > dRTs = new ArrayList<Pair<Integer,Long> >(); // iterations and execution time of each update in seconds
 		LOG.info("process input ..");
@@ -124,7 +111,7 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 							dRTs = ret;
 						else
 							for (int x = 0; x < ret.size(); ++x)
-								dRTs.set(x, new Pair<Integer, Long>(dRTs.get(x).getKey() + ret.get(x).getKey(), dRTs.get(x).getValue() + ret.get(x).getValue()));
+								dRTs.set(x, new ImmutablePair<Integer, Long>(dRTs.get(x).getKey() + ret.get(x).getKey(), dRTs.get(x).getValue() + ret.get(x).getValue()));
 						if (comments.size() > 0) {
 							m = injectSentenceComments(m, comments);
 							comments.clear();
@@ -142,7 +129,7 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 				dRTs = ret;
 			else
 				for (int x = 0; x < ret.size(); ++x)
-					dRTs.set(x, new Pair<Integer, Long>(dRTs.get(x).getKey() + ret.get(x).getKey(), dRTs.get(x).getValue() + ret.get(x).getValue()));
+					dRTs.set(x, new ImmutablePair<Integer, Long>(dRTs.get(x).getKey() + ret.get(x).getKey(), dRTs.get(x).getValue() + ret.get(x).getValue()));
 			if (comments.size() > 0) {
 				m = injectSentenceComments(m, comments);
 				comments.clear();
@@ -174,7 +161,7 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 
 		UpdateAction.execute(s.asUpdate(), model);
 		return model;
-	} 
+	}
 	/**
 	 * Searches a BufferedReader for a global.columns = field to extract the column names from (CoNLL-U Plus feature).
 	 * We allow for arbitrary lines to search, however as of September 2019, CoNLL-U Plus only allows first line.
@@ -183,17 +170,20 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 	 * @param inputStream an untouched BufferedReader
 	 * @param maxLinesToSearch how many lines to search. CoNLL-U Plus requires this to be 1.
 	 */
-	static List<String> findFieldsFromComments(BufferedReader inputStream, int maxLinesToSearch) {
+	static List<String> findFieldsFromComments(BufferedReader inputStream, int maxLinesToSearch) throws IOException {
 		List<String> fields = new ArrayList<>();
-		int readAheadLimit = 10000;
+		final int readAheadLimit = 10000;
 		float meanByteSizeOfLine = 0.0f;
 		int m = 0;
 		int peekedChars = 0;
+		LOG.debug("Peeking Stream for global.columns comment...");
+		if ( ! inputStream.ready()) {
+			LOG.debug("Stream is not ready. Waiting...");
+		}
 		if (!inputStream.markSupported()) {
-			LOG.warn("Marking is not supported, could lead to cutting off the beginning of the stream.");
+			LOG.warn("Marking is not supported for this inputStream, could lead to cutting off the beginning of the stream.");
 		}
 		try {
-			LOG.info("Testing for CoNLL-U Plus");
 			inputStream.mark(readAheadLimit);
 
 			String peekedLine;
@@ -202,7 +192,7 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 				meanByteSizeOfLine = ((meanByteSizeOfLine * (m - 1)) + peekedLine.length()) / m;
 				LOG.debug("Mean Byte size: " + meanByteSizeOfLine);
 				peekedChars += peekedLine.length();
-				System.err.println("Peeking line: "+peekedLine);
+				LOG.debug("Peeking line: " + peekedLine);
 				if ((peekedChars + meanByteSizeOfLine) > readAheadLimit) {
 					LOG.info("Couldn't find CoNLL-U Plus columns.");
 					inputStream.reset();
@@ -210,12 +200,10 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 				}
 				LOG.debug("Testing line: " + peekedLine);
 				if (peekedLine.matches("^#\\s?global\\.columns\\s?=.*")) {
-					fields.addAll(Arrays.asList(peekedLine.trim()
-							.replaceFirst("#\\s?global\\.columns\\s?=", "")
-							.split("#")[0]
-							.trim().split(" |\t")));
+					// TODO catch bad global.comment containing no columns
+					fields = Arrays.asList(peekedLine.trim().replaceFirst("#\\s?global\\.columns\\s?=", "").split("#")[0]
+									.trim().split(" |\t"));
 					inputStream.reset();
-					LOG.info("Success");
 					return fields;
 				}
 
@@ -227,9 +215,15 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 		}
 		return fields;
 	}
-	public List<Pair<Integer,Long> > update(Model m, List<Pair<String,String>> updates) {
-		List<Pair<Integer,Long> > result = new ArrayList<Pair<Integer,Long> >();
-		for(Pair<String,String> update : updates) {
+
+	public void findColumnsFromComment() throws IOException {
+		this.setColumns(findFieldsFromComments(this.getInputStream(), 1));
+		LOG.info("\tCoNLL columns: " + this.getColumns());
+	}
+
+	public List<Pair<Integer, Long>> update(Model m, List<Pair<String, String>> updates) {
+		List<Pair<Integer, Long>> result = new ArrayList<Pair<Integer, Long>>();
+		for (Pair<String, String> update : updates) {
 			Long startTime = System.currentTimeMillis();
 			ChangedListener cL = new ChangedListener();
 			m.register(cL);
@@ -256,7 +250,7 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 			}
 			if (v == MAXITERATE)
 				LOG.warn("Warning: MAXITERATE reached.");
-			result.add(new Pair<Integer, Long>(v, System.currentTimeMillis() - startTime));
+			result.add(new ImmutablePair<Integer, Long>(v, System.currentTimeMillis() - startTime));
 			m.unregister(cL);
 		}
 		return result;
@@ -291,134 +285,59 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 		}
 	}
 
-
-	public static void main(String[] argv) throws Exception {
-		LOG.info("synopsis: CoNLLStreamExtractor baseURI FIELD1[.. FIELDn] [-u SPARQL_UPDATE1..m] [-s SPARQL_SELECT]\n"+
-			"\tbaseURI       CoNLL base URI, cf. CoNLL2RDF\n"+
-			"\tFIELDi        CoNLL field label, cf. CoNLL2RDF\n"+
-			"\tSPARQL_UPDATE SPARQL UPDATE (DELETE/INSERT) query, either literally or its location (file/uri)\n"+
-			"\t              can be followed by an optional integer in {}-parentheses = number of repetitions\n"+
-			"\t              The SPARQL_UPDATE parameter is DEPRECATED - please use CoNLLRDFUpdater instead!\n"+
-			"\tSPARQL_SELECT SPARQL SELECT statement to produce TSV output\n"+
-			"\treads CoNLL from stdin, splits sentences, creates CoNLL RDF, applies SPARQL queries");
-		
-		String baseURI = argv[0];
-		List<String> fields = new ArrayList<String>();
-		List<Pair<String, String>> updates = new ArrayList<Pair<String, String>>();
-		String select = null;
-		BufferedReader inputStream = new BufferedReader(new InputStreamReader(System.in));
-		
-		int i = 1;
-		while(i<argv.length && !argv[i].toLowerCase().matches("^-+u$"))
-			fields.add(argv[i++]);
-		while(i<argv.length && argv[i].toLowerCase().matches("^-+u$")) i++;
-		while(i<argv.length && !argv[i].toLowerCase().matches("^-+s$")) {
-			String freq;
-			freq = argv[i].replaceFirst(".*\\{([0-9u*]+)\\}$", "$1");
-			if (argv[i].equals(freq))
-				freq = "1";
-			else if (freq.equals("u"))
-				freq = "*";
-			String update =argv[i++].replaceFirst("\\{[0-9*]+\\}$", "");
-			updates.add(new Pair<String, String>(update, freq));
+	public Pair<String, String> parseUpdate(String updateArg) throws IOException {
+		String freq;
+		// TODO Move this code for parsing Options to CoNLLRDFCommandLine
+		// TODO Unit Testing for this Method
+		freq = updateArg.replaceFirst(".*\\{([0-9u*]+)\\}$", "$1");
+		if (updateArg.equals(freq)) {
+			freq = "1";
+		} else if (freq.equals("u")) {
+			freq = "*";
 		}
-		while(i<argv.length && argv[i].toLowerCase().matches("^-+s$")) i++;
-		if(i<argv.length)
-			select=argv[i++];
-		while(i<argv.length)
-			select=select+" "+argv[i++]; // because queries may be parsed by the shell (Cygwin)
-		
-		if (fields.size() == 0) { // might be conllu plus, we check the first line for col names.
-			fields = findFieldsFromComments(inputStream, 1);
-		}
-
-		LOG.info("running CoNLLStreamExtractor");
-		LOG.info("\tbaseURI:       "+baseURI);
-		LOG.info("\tCoNLL columns: "+fields);
-		LOG.info("\tSPARQL update: "+updates);
-		LOG.info("\tSPARQL select: "+select);
-		
-		LOG.info("read SPARQL ..");
-		//UpdateRequest request = UpdateFactory.create();
-		StringBuilder sb = new StringBuilder();
-		for(i = 0; i<updates.size(); i++) {
-			Reader sparqlreader = new StringReader(updates.get(i).getKey());
-			File f = new File(updates.get(i).getKey());
-			URL u = null;
-			try {
-				u = new URL(updates.get(i).getKey());
-			} catch (MalformedURLException e) {}
-
-			if(f.exists()) {			// can be read from a file
-				sparqlreader = new FileReader(f);
-				sb.append("f");
-			} else if(u!=null) {
-				try {
-					sparqlreader = new InputStreamReader(u.openStream());
-					sb.append("u");
-				} catch (Exception e) {}
-			}
-
-			updates.set(i,new Pair<String, String>("", updates.get(i).getValue()));
-			BufferedReader in = new BufferedReader(sparqlreader);
-			for(String line = in.readLine(); line!=null; line=in.readLine())
-				updates.set(i,new Pair<String, String>(updates.get(i).getKey()+line+"\n",updates.get(i).getValue()));
-			sb.append(".");
-		}
-		sb.append(".");
-		
-		if(select!=null) {
-			Reader sparqlreader = new StringReader(select);
-			File f = new File(select);
-			URL u = null;
-			try {
-				u = new URL(select);
-			} catch (MalformedURLException e) {}
-			
-			if(f.exists()) {			// can be read from a file
-				sparqlreader = new FileReader(f);
-				sb.append("f");
-			} else if(u!=null) {
-				try {
-					sparqlreader = new InputStreamReader(u.openStream());
-					sb.append("u");
-				} catch (Exception e) {}
-			}
-
-			BufferedReader in = new BufferedReader(sparqlreader);
-			select="";
-			for(String line = in.readLine(); line!=null; line=in.readLine())
-				select=select+line+"\n";
-		}		
-		sb.append(". ok");
-		LOG.info(sb.toString());
-		
-
-		CoNLLStreamExtractor ex = new CoNLLStreamExtractor();
-		ex.setBaseURI(baseURI);
-		ex.setColumns(fields);
-		ex.setUpdates(updates);
-		ex.setSelect(select);
-		ex.setInputStream(inputStream);
-		ex.setOutputStream(System.out);
-		
-		ex.processSentenceStream();
-		
+		final String updateRaw = updateArg.replaceFirst("\\{[0-9*]+\\}$", "");
+		return new ImmutablePair<String, String>(updateRaw, freq);
+		// UpdateRequest request = UpdateFactory.create();
 	}
-	
-	
-	@Override
-	public void run() {
+
+	public String parseSparqlArg(String sparqlArg) throws IOException {
+		// TODO this code is duplicate and should be stored centrally in CoNLLRDFCommandLine
+		// TODO Unit Testing for this Method
+		String sparql = "";
+
+		Reader sparqlreader = new StringReader(sparqlArg);
+		File file = new File(sparqlArg);
+		URL url = null;
 		try {
-			processSentenceStream();
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.exit(0);
+			url = new URL(sparqlArg);
+		} catch (MalformedURLException e) {
 		}
+
+		if (file.exists()) { // can be read from a file
+			sparqlreader = new FileReader(file);
+		} else if (url != null) {
+			try {
+				sparqlreader = new InputStreamReader(url.openStream());
+			} catch (Exception e) {
+			}
+		}
+
+		BufferedReader in = new BufferedReader(sparqlreader);
+		for (String line = in.readLine(); line != null; line = in.readLine()) {
+			sparql = sparql + line + "\n";
+		}
+		return sparql;
 	}
 
-	@Override
-	public void start() {
-		run();
+	public static void main(String[] args) throws IOException {
+		final CoNLLStreamExtractor extractor;
+		try {
+			extractor = new CoNLLStreamExtractorFactory().buildFromCLI(args);
+		} catch (ParseException e) {
+			LOG.error(e);
+			System.exit(1);
+			return;
+		}
+		extractor.processSentenceStream();
 	}
 }

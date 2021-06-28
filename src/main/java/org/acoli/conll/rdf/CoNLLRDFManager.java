@@ -23,44 +23,33 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.acoli.conll.rdf.CoNLLRDFFormatter.Mode;
 import org.acoli.conll.rdf.CoNLLRDFFormatter.Module;
-import org.acoli.conll.rdf.CoNLLRDFUpdater.Triple;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang3.tuple.ImmutableTriple;
+import org.apache.commons.lang3.tuple.Triple;
+import org.apache.log4j.Logger;
 
 public class CoNLLRDFManager {
+	static Logger LOG = Logger.getLogger(CoNLLRDFManager.class);
+
 	private ObjectNode config;
 	private ArrayList<CoNLLRDFComponent> componentStack;
 
 	PrintStream output;
 	BufferedReader input;
 
-	public static void main(String[] args) throws Exception {
-		Options options = new Options();
-		options.addRequiredOption("c", "config", true, "Specify JSON config file");
-
-		CommandLineParser parser = new DefaultParser();
-		CommandLine cmd = parser.parse(options, args);
-
-		CoNLLRDFManager man = new CoNLLRDFManager();
-
-		if(cmd.hasOption("c")) {
-			try {
-				man.readConfig(cmd.getOptionValue("c"));
-			} catch (IOException e) {
-				throw new Exception("Error when reading config file "+new File(cmd.getOptionValue("c")).getAbsolutePath(), e);
-			}
-		}
-		else {
-		    throw new ParseException("No config file specified.");
+	public static void main(String[] args) throws IOException {
+		final CoNLLRDFManager manager;
+		try {
+			manager = new CoNLLRDFManagerFactory().buildFromCLI(args);
+			manager.buildComponentStack();
+		} catch (ParseException e) {
+			LOG.error(e);
+			System.exit(1);
+			return;
 		}
 
-		man.buildComponentStack();
-		man.start();
+		manager.start();
 	}
-
 
 	public void readConfig(String path) throws IOException {
 		ObjectMapper objectMapper = new ObjectMapper();
@@ -109,7 +98,7 @@ public class CoNLLRDFManager {
 		return output;
 	}
 
-	public void buildComponentStack() throws IOException {
+	public void buildComponentStack() throws IOException, ParseException {
 		//READ INPUT PARAMETER
 		input = parseConfAsInputStream(config.get("input").asText());
 
@@ -178,7 +167,7 @@ public class CoNLLRDFManager {
 		return ex;
 	}
 
-	private CoNLLRDFComponent buildUpdater(ObjectNode conf) throws IOException {
+	private CoNLLRDFComponent buildUpdater(ObjectNode conf) throws IOException, ParseException {
 
 		// READ THREAD PARAMETERS
 		int threads = 0;
@@ -228,7 +217,7 @@ public class CoNLLRDFManager {
 		if (conf.get("prefixDeduplication") != null) {
 			Boolean prefixDeduplication = conf.get("prefixDeduplication").asBoolean();
 			if (prefixDeduplication)
-				updater.activateRemovePrefixDuplicates();
+				updater.activatePrefixDeduplication();
 		}
 
 		// READ ALL UPDATES
@@ -245,7 +234,7 @@ public class CoNLLRDFManager {
 					throw e;
 			}
 			String path = update.get("path").asText();
-			updates.add(new Triple<String, String, String>(path, path, freq));
+			updates.add(new ImmutableTriple<String, String, String>(path, path, freq));
 		}
 		updater.parseUpdates(updates);
 
@@ -316,7 +305,7 @@ public class CoNLLRDFManager {
 				f.getModules().add(m);
 			}
 			if (modConf.get("mode").asText().equals("SPARQLTSV")) {
-				m.setMode(Mode.SPARQLTSV);
+				m.setMode(Mode.QUERY);
 				if (new File(modConf.get("select").asText()).canRead()) {
 					BufferedReader in = new BufferedReader(new FileReader(modConf.get("select").asText()));
 					String select="";
