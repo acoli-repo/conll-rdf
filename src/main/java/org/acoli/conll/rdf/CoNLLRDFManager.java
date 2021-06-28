@@ -9,10 +9,7 @@ import java.io.InputStreamReader;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.PrintStream;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 import com.fasterxml.jackson.core.JsonParser.Feature;
@@ -21,11 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import org.acoli.conll.rdf.CoNLLRDFFormatter.Mode;
-import org.acoli.conll.rdf.CoNLLRDFFormatter.Module;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.lang3.tuple.ImmutableTriple;
-import org.apache.commons.lang3.tuple.Triple;
 import org.apache.log4j.Logger;
 
 public class CoNLLRDFManager {
