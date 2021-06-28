@@ -267,6 +267,7 @@ public class CoNLLRDFManager {
 	}
 
 	private CoNLLRDFComponent buildFormatter(ObjectNode conf) throws IOException {
+		conf.set("output", config.get("output"));
 		return new CoNLLRDFFormatterFactory().buildFromJsonConfig(conf);
 	}
 

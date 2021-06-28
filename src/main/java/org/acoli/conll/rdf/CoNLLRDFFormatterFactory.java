@@ -2,11 +2,13 @@ package org.acoli.conll.rdf;
 
 import static org.acoli.conll.rdf.CoNLLRDFCommandLine.readString;
 import static org.acoli.conll.rdf.CoNLLRDFCommandLine.readUrl;
+import static org.acoli.conll.rdf.CoNLLRDFManager.parseConfAsOutputStream;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Paths;
@@ -193,8 +195,9 @@ public class CoNLLRDFFormatterFactory {
 		throw new ParseException("Failed to parse Option-Value as file-path or URL: " + optionValue);
 	}
 
-	public CoNLLRDFFormatter buildFromJsonConfig(ObjectNode conf) {
+	public CoNLLRDFFormatter buildFromJsonConfig(ObjectNode conf) throws IOException {
 		CoNLLRDFFormatter f = new CoNLLRDFFormatter();
+		PrintStream output = parseConfAsOutputStream(conf.get("output").asText());
 
 		if (conf.withArray("modules").size() <= 0) {
 			Module m = new Module();
