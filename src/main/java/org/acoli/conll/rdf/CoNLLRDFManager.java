@@ -156,15 +156,7 @@ public class CoNLLRDFManager {
 
 
 	private CoNLLRDFComponent buildStreamExtractor(ObjectNode conf) throws IOException {
-		CoNLLStreamExtractor ex = new CoNLLStreamExtractor();
-		ex.setBaseURI(conf.get("baseURI").asText());
-		ex.getColumns().clear();
-		//TODO: DONE------TEST
-		for (JsonNode col:conf.withArray("columns")) {
-			ex.getColumns().add(col.asText());
-		}
-
-		return ex;
+		return new CoNLLStreamExtractorFactory().buildFromJsonConf(conf);
 	}
 
 	private CoNLLRDFComponent buildUpdater(ObjectNode conf) throws IOException, ParseException {
