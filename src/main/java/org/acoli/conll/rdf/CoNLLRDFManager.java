@@ -68,7 +68,7 @@ public class CoNLLRDFManager {
 //		TODO: remove --- Car car = objectMapper.readValue(file, Car.class);
 	}
 
-	private BufferedReader parseConfAsInputStream(String confEntry) throws IOException {
+	protected static BufferedReader parseConfAsInputStream(String confEntry) throws IOException {
 		BufferedReader input;
 		if (confEntry.equals("System.in")) {
 			input = new BufferedReader(new InputStreamReader(System.in));
@@ -84,7 +84,7 @@ public class CoNLLRDFManager {
 		return input;
 	}
 
-	private PrintStream parseConfAsOutputStream(String confEntry) throws IOException {
+	protected static PrintStream parseConfAsOutputStream(String confEntry) throws IOException {
 		PrintStream output;
 		if (confEntry.equals("System.out")) {
 			output = System.out;
