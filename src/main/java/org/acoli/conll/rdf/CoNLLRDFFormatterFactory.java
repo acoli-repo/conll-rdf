@@ -3,12 +3,17 @@ package org.acoli.conll.rdf;
 import static org.acoli.conll.rdf.CoNLLRDFCommandLine.readString;
 import static org.acoli.conll.rdf.CoNLLRDFCommandLine.readUrl;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Arrays;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.acoli.conll.rdf.CoNLLRDFFormatter.Mode;
 import org.acoli.conll.rdf.CoNLLRDFFormatter.Module;
@@ -186,5 +191,73 @@ public class CoNLLRDFFormatterFactory {
 		}
 
 		throw new ParseException("Failed to parse Option-Value as file-path or URL: " + optionValue);
+	}
+
+	public CoNLLRDFFormatter buildFromJsonConfig(ObjectNode conf) {
+		CoNLLRDFFormatter f = new CoNLLRDFFormatter();
+
+		if (conf.withArray("modules").size() <= 0) {
+			Module m = new Module();
+			m.setMode(Mode.CONLLRDF);
+			m.setOutputStream(output);
+			m.getCols().clear();
+			f.getModules().add(m);
+		}
+		for (JsonNode modConf:conf.withArray("modules")) {
+			Module m = new Module();
+			try {
+				m.setOutputStream(parseConfAsOutputStream(modConf.get("output").asText()));
+			} catch (Exception e) {
+				m.setOutputStream(output);
+			}
+			if (modConf.get("mode").asText().equals("RDF") || modConf.get("mode").asText().equals("CONLLRDF")) {
+				m.setMode(Mode.CONLLRDF);
+				m.getCols().clear();
+				for (JsonNode col:modConf.withArray("columns")) {
+					m.getCols().add(col.asText());
+				}
+				f.getModules().add(m);
+			}
+			if (modConf.get("mode").asText().equals("CONLL")) {
+				m.setMode(Mode.CONLL);
+				m.getCols().clear();
+				for (JsonNode col:modConf.withArray("columns")) {
+					m.getCols().add(col.asText());
+				}
+				f.getModules().add(m);
+			}
+			if (modConf.get("mode").asText().equals("DEBUG")) {
+				m.setMode(Mode.DEBUG);
+				m.setOutputStream(System.err);
+				f.getModules().add(m);
+			}
+			if (modConf.get("mode").asText().equals("SPARQLTSV")) {
+				m.setMode(Mode.QUERY);
+				if (new File(modConf.get("select").asText()).canRead()) {
+					BufferedReader in = new BufferedReader(new FileReader(modConf.get("select").asText()));
+					String select="";
+					for(String line = in.readLine(); line!=null; line=in.readLine())
+						select=select+line+"\n";
+					m.setSelect(select);
+					in.close();
+					f.getModules().add(m);
+				} else {
+					throw new IOException("Could not read from " + modConf.get("select").asText());
+				}
+			}
+			if (modConf.get("mode").asText().equals("GRAMMAR")) {
+				m.setMode(Mode.GRAMMAR);
+				f.getModules().add(m);
+			}
+			if (modConf.get("mode").asText().equals("SEMANTICS")) {
+				m.setMode(Mode.SEMANTICS);
+				f.getModules().add(m);
+			}
+			if (modConf.get("mode").asText().equals("GRAMMAR+SEMANTICS")) {
+				m.setMode(Mode.GRAMMAR_SEMANTICS);
+				f.getModules().add(m);
+			}
+		}
+		return f;
 	}
 }

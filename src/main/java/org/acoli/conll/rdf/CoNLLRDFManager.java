@@ -267,71 +267,7 @@ public class CoNLLRDFManager {
 	}
 
 	private CoNLLRDFComponent buildFormatter(ObjectNode conf) throws IOException {
-		CoNLLRDFFormatter f = new CoNLLRDFFormatter();
-
-		if (conf.withArray("modules").size() <= 0) {
-			Module m = new Module();
-			m.setMode(Mode.CONLLRDF);
-			m.setOutputStream(output);
-			m.getCols().clear();
-			f.getModules().add(m);
-		}
-		for (JsonNode modConf:conf.withArray("modules")) {
-			Module m = new Module();
-			try {
-				m.setOutputStream(parseConfAsOutputStream(modConf.get("output").asText()));
-			} catch (Exception e) {
-				m.setOutputStream(output);
-			}
-			if (modConf.get("mode").asText().equals("RDF") || modConf.get("mode").asText().equals("CONLLRDF")) {
-				m.setMode(Mode.CONLLRDF);
-				m.getCols().clear();
-				for (JsonNode col:modConf.withArray("columns")) {
-					m.getCols().add(col.asText());
-				}
-				f.getModules().add(m);
-			}
-			if (modConf.get("mode").asText().equals("CONLL")) {
-				m.setMode(Mode.CONLL);
-				m.getCols().clear();
-				for (JsonNode col:modConf.withArray("columns")) {
-					m.getCols().add(col.asText());
-				}
-				f.getModules().add(m);
-			}
-			if (modConf.get("mode").asText().equals("DEBUG")) {
-				m.setMode(Mode.DEBUG);
-				m.setOutputStream(System.err);
-				f.getModules().add(m);
-			}
-			if (modConf.get("mode").asText().equals("SPARQLTSV")) {
-				m.setMode(Mode.QUERY);
-				if (new File(modConf.get("select").asText()).canRead()) {
-					BufferedReader in = new BufferedReader(new FileReader(modConf.get("select").asText()));
-					String select="";
-					for(String line = in.readLine(); line!=null; line=in.readLine())
-						select=select+line+"\n";
-					m.setSelect(select);
-					in.close();
-					f.getModules().add(m);
-				} else {
-					throw new IOException("Could not read from " + modConf.get("select").asText());
-				}
-			}
-			if (modConf.get("mode").asText().equals("GRAMMAR")) {
-				m.setMode(Mode.GRAMMAR);
-				f.getModules().add(m);
-			}
-			if (modConf.get("mode").asText().equals("SEMANTICS")) {
-				m.setMode(Mode.SEMANTICS);
-				f.getModules().add(m);
-			}
-			if (modConf.get("mode").asText().equals("GRAMMAR+SEMANTICS")) {
-				m.setMode(Mode.GRAMMAR_SEMANTICS);
-				f.getModules().add(m);
-			}
-		}
-		return f;
+		return new CoNLLRDFFormatterFactory().buildFromJsonConfig(conf);
 	}
 
 	private CoNLLRDFComponent buildSimpleLineBreakSplitter(ObjectNode conf) {
