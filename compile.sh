@@ -3,6 +3,11 @@
 # requires $HOME, $TARGET, and $CLASSPATH to be set, or maven to be installed.
 # do not call directly, indirectly invoked via ./run.sh
 
+# store the path of the conll-rdf directory in HOME
+HOME=$( dirname -- "$(realpath -- "$0")");
+TARGET="$HOME/target/classes";
+CLASSPATH="$TARGET:$HOME/lib/*";
+
 mkdir -p "$TARGET";
 
 JAVAS="";
@@ -10,7 +15,7 @@ JAVAS="";
 for java in $(find $HOME/src/main/java -name "*.java"); do
 	class=$TARGET${java#$HOME/src/main/java}
 	class=${class%.java}.class
-	if [ ! -e $class ] || [ $java -nt $class ]; then
+	if [ ! -e $class ] || [ $java -nt $class ] || [ $1 = "-f" ]; then
 		JAVAS="$JAVAS $java"
 	fi;
 done;
