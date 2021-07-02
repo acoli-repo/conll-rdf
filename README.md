@@ -100,17 +100,19 @@ It can write:
 ### CoNLLRDFAnnotator
 * can be used to manually annotate / change annotations in .ttl files.
 * will visualize input just like `CoNLLRDFFormatter -grammar`. Will not make in-place changes but write the changed file to `stdout` (e.g. `./run.sh CoNLLRDFAnnotator file_old.ttl > file_new.ttl`)
-	* **Note**: Piping output into old file is **not** supported! Will result in data loss.
+	* **Note**: Make sure that input file (`file_old.ttl`) and output file (`file_new.ttl`) are **different**. Piping output into old file in this way is **not** supported (by your operating system)! Will result in data loss.
 
 ### Other
 * `CoNLL2RDF` contains the central conversion functionality. For practical uses, interface with its functionality through CoNLLStreamExtractor. Arguments to CoNLLStreamExtractor will be passed through.
 * `CoNLLRDFViz` is an auxiliary class for the future development of debugging and visualizing complex SPARQL Update chains in their effects on selected pieces of CoNLL(-RDF) data
 * conll-rdf assumes UTF-8.
 
-## Authors
+## Authors and Maintainers
 * **Christian Chiarcos** - chiarcos@informatik.uni-frankfurt.de
 * **Christian Fäth** - faeth@em.uni-frankfurt.de
-* **Benjamin Kosmehl** - bkosmehl@gmail.com
+* **Benjamin Kosmehl** (2017-2018) - bkosmehl@gmail.com
+* **Luis Glaser** (2018-2020)
+* **Leo Gott** (2020-)
 
 See also the list of [contributors](https://github.com/acoli-repo/conll-rdf/graphs/contributors) who participated in this project.
 
@@ -126,6 +128,9 @@ This repository has been created in context of
   * funded by the German Federal Ministry of Education and Research (BMBF, funding code 01UG1631)
 * QuantQual@CEDIFOR ([QuantQual](http://acoli.cs.uni-frankfurt.de/projects.html#quantqual))
   * funded by the Centre for the Digital Foundation of Research in the Humanities, Social and Educational Science (CEDIFOR, funding code 01UG1416A)
+* Prêt-á-LLOD. Ready-to-use Multilingual Linked Language Data for Knowledge Services across Sectors ([Pret-a-LLOD](https://cordis.europa.eu/project/id/825182/results))
+  * Research and Innovation Action of the H2020 programme (ERC, grant agreement 825182)
+  * In this project, CoNLL-RDF has been applied/developed/restructured to serve as backend of the Flexible Integrated Transformation and Annotation Engineering ([FINTAN](https://github.com/Pret-a-LLOD/Fintan)) Platform.
 
 ## Licenses
 This repository is being published under two licenses. Apache 2.0 is used for code, see [LICENSE.main](LICENSE.main.txt). CC-BY 4.0 for all data from universal dependencies and SPARQL scripts, see [LICENSE.data](LICENSE.data.txt).
