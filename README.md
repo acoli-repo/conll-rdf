@@ -1,14 +1,23 @@
+# CoNLL-RDF
+__conll-rdf__ is a tool package for converting between formats of annotated linguistic corpora and annotations, as well as linking and enriching these with external ontologies.  
+It consists of a number of JAVA modules which can be chained to construct a data processing pipeline. 
 
-# conll-rdf
-__conll-rdf__ is a tool package for converting between formats of annotated linguistic corpora and linking to external ontologies.  
-It consists of a number of java modules which can be chained to construct a data processing pipeline.  
-A variety of CoNLL formats are supported.
+CoNLL-RDF can read and write any annotation format that fulfills the following criteria:
+* tab-separated columns (TSV format, i.e., [CSV](https://datatracker.ietf.org/doc/html/rfc4180) with TAB as separator)
+* every row represents one unit of annotation (e.g., a word) along with its annotations
+* every column represents one type of annotation (e.g., string form, lemma, parts-of-speech, ...)
+* empty lines as sentence separators (optional) 
+* comments and headlines marked by `#` (optional)
+
+In particular, it supports _all_ TSV formats used in previous shared tasks of the Conference of Natural Language Learning ([CoNLL](https://www.conll.org)), the formats of the Universal Dependencies ([UD: CoNLL-U, CoNLL-U Plus](https://universaldependencies.org/)), Universal Morphologies ([UniMorph](https://unimorph.github.io/)) and Universal Propositions ([UP: skel format](https://github.com/System-T/UniversalPropositions)) initiatives, and those of [SketchEngine](https://www.sketchengine.eu/) and [CWB](http://cwb.sourceforge.net/). Some of these formats introduce special notations that extend the basic TSV model (e.g., XML tags). CoNLL-RDF does support these, as well.
 
 ## What it can do
-* convert any CoNLL-like tsv format (e.g. `.conll`) to conll-rdf (`.ttl`).
+* convert _any_ CoNLL-like TSV format (e.g. `.conll`, `.conllu`, `.tsv`, `.skel`) to conll-rdf (`.ttl`).
 * perform SPARQL Updates on conll-rdf data.
 * visualize conll-rdf structure.
-* convert conll-rdf back to conll.
+* convert conll-rdf back to (any) CoNLL format.
+
+In particular, it serves as a ***generic converter*** between various CoNLL/TSV formats. For doing so, it requires the user to provide column labels. Also see [CoNLL-Transform](https://github.com/acoli-repo/conll-transform) for an effort on _automated_ transformation and transformation validation on this basis.
 
 ## How it works
 In general, we read data line by line from `stdin`, process it and write results to `stdout`.  
