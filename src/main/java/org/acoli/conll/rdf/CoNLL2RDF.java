@@ -93,6 +93,7 @@ public class CoNLL2RDF extends Format2RDF{
 						}
 					}
 					out.write(sentence+"\n");
+					out.flush();
 					predicates.clear();
 					sentence="";
 					tok=0;
@@ -176,8 +177,9 @@ public class CoNLL2RDF extends Format2RDF{
 			//out.write("\n");
 			for(String p : argsProperties)
 				out.write(p.trim()+"\n");
-			out.flush();			
 		}
+			out.flush();			
+			
 			if(tok>0) {
 				sent++;
 				tok=0;
