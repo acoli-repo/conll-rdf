@@ -5,6 +5,8 @@ import static org.acoli.conll.rdf.CoNLLRDFCommandLine.parseSelectOptionLegacy;
 import java.io.*;
 import java.util.*;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
@@ -66,5 +68,17 @@ public class CoNLLStreamExtractorFactory {
 		LOG.info("\tCoNLL columns: " + extractor.getColumns());
 
 		return extractor;
+	}
+
+	public CoNLLStreamExtractor buildFromJsonConf (JsonNode conf) {
+		CoNLLStreamExtractor ex = new CoNLLStreamExtractor();
+		ex.setBaseURI(conf.get("baseURI").asText());
+		ex.getColumns().clear();
+		//TODO: DONE------TEST
+		for (JsonNode col:conf.withArray("columns")) {
+			ex.getColumns().add(col.asText());
+		}
+
+		return ex;
 	}
 }

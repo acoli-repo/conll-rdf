@@ -9,10 +9,7 @@ import java.io.InputStreamReader;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.PrintStream;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 import com.fasterxml.jackson.core.JsonParser.Feature;
@@ -21,11 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import org.acoli.conll.rdf.CoNLLRDFFormatter.Mode;
-import org.acoli.conll.rdf.CoNLLRDFFormatter.Module;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.lang3.tuple.ImmutableTriple;
-import org.apache.commons.lang3.tuple.Triple;
 import org.apache.log4j.Logger;
 
 public class CoNLLRDFManager {
@@ -68,7 +61,7 @@ public class CoNLLRDFManager {
 //		TODO: remove --- Car car = objectMapper.readValue(file, Car.class);
 	}
 
-	private BufferedReader parseConfAsInputStream(String confEntry) throws IOException {
+	protected static BufferedReader parseConfAsInputStream(String confEntry) throws IOException {
 		BufferedReader input;
 		if (confEntry.equals("System.in")) {
 			input = new BufferedReader(new InputStreamReader(System.in));
@@ -84,7 +77,7 @@ public class CoNLLRDFManager {
 		return input;
 	}
 
-	private PrintStream parseConfAsOutputStream(String confEntry) throws IOException {
+	protected static PrintStream parseConfAsOutputStream(String confEntry) throws IOException {
 		PrintStream output;
 		if (confEntry.equals("System.out")) {
 			output = System.out;
@@ -156,182 +149,16 @@ public class CoNLLRDFManager {
 
 
 	private CoNLLRDFComponent buildStreamExtractor(ObjectNode conf) throws IOException {
-		CoNLLStreamExtractor ex = new CoNLLStreamExtractor();
-		ex.setBaseURI(conf.get("baseURI").asText());
-		ex.getColumns().clear();
-		//TODO: DONE------TEST
-		for (JsonNode col:conf.withArray("columns")) {
-			ex.getColumns().add(col.asText());
-		}
-
-		return ex;
+		return new CoNLLStreamExtractorFactory().buildFromJsonConf(conf);
 	}
 
 	private CoNLLRDFComponent buildUpdater(ObjectNode conf) throws IOException, ParseException {
-
-		// READ THREAD PARAMETERS
-		int threads = 0;
-		if (conf.get("threads") != null)
-			threads = conf.get("threads").asInt(0);
-		CoNLLRDFUpdater updater = new CoNLLRDFUpdater("","",threads);
-
-		// READ GRAPHSOUT PARAMETERS
-		if (conf.get("graphsoutDIR") != null) {
-			String graphOutputDir = conf.get("graphsoutDIR").asText("");
-			if (!graphOutputDir.equals("")) {
-				List<String> graphOutputSentences = new ArrayList<String>();
-				for (JsonNode snt:conf.withArray("graphsoutSNT")) {
-					graphOutputSentences.add(snt.asText());
-				}
-				updater.activateGraphsOut(graphOutputDir, graphOutputSentences);
-			}
-		}
-
-		// READ TRIPLESOUT PARAMETERS
-		if (conf.get("triplesoutDIR") != null) {
-			String triplesOutputDir = conf.get("triplesoutDIR").asText("");
-			if (!triplesOutputDir.equals("")) {
-				List<String> triplesOutputSentences = new ArrayList<String>();
-				for (JsonNode snt:conf.withArray("triplesoutSNT")) {
-					triplesOutputSentences.add(snt.asText());
-				}
-				updater.activateTriplesOut(triplesOutputDir, triplesOutputSentences);
-			}
-		}
-
-		// READ LOOKAHEAD PARAMETERS
-		if (conf.get("lookahead") != null) {
-			int lookahead_snts = conf.get("lookahead").asInt(0);
-			if (lookahead_snts > 0)
-				updater.activateLookahead(lookahead_snts);
-		}
-
-		// READ LOOKBACK PARAMETERS
-		if (conf.get("lookback") != null) {
-			int lookback_snts = conf.get("lookback").asInt(0);
-			if (lookback_snts > 0)
-				updater.activateLookback(lookback_snts);
-		}
-
-		// READ PREFIX DEDUPLICATION
-		if (conf.get("prefixDeduplication") != null) {
-			Boolean prefixDeduplication = conf.get("prefixDeduplication").asBoolean();
-			if (prefixDeduplication)
-				updater.activatePrefixDeduplication();
-		}
-
-		// READ ALL UPDATES
-		// should be <#UPDATEFILENAMEORSTRING, #UPDATESTRING, #UPDATEITER>
-		List<Triple<String, String, String>> updates = new ArrayList<Triple<String, String, String>>();
-		for (JsonNode update:conf.withArray("updates")) {
-			String freq = update.get("iter").asText("1");
-			if (freq.equals("u"))
-				freq = "*";
-			try {
-				Integer.parseInt(freq);
-			} catch (NumberFormatException e) {
-				if (!"*".equals(freq))
-					throw e;
-			}
-			String path = update.get("path").asText();
-			updates.add(new ImmutableTriple<String, String, String>(path, path, freq));
-		}
-		updater.parseUpdates(updates);
-
-		// READ ALL MODELS
-		for (JsonNode model:conf.withArray("models")) {
-			List<String> models = new ArrayList<String>();
-			String uri = model.get("source").asText();
-			if (!uri.equals("")) models.add(uri);
-			uri = model.get("graph").asText();
-			if (!uri.equals("")) models.add(uri);
-			if (models.size()==1) {
-				try {
-					updater.loadGraph(new URI(models.get(0)), new URI(models.get(0)));
-				} catch (URISyntaxException e) {
-					throw new IOException(e);
-				}
-			} else if (models.size()==2){
-				try {
-					updater.loadGraph(new URI(models.get(0)), new URI(models.get(1)));
-				} catch (URISyntaxException e) {
-					throw new IOException(e);
-				}
-			} else if (models.size()>2){
-				throw new IOException("Error while loading model: Please specify model source URI and graph destination.");
-			}
-			models.removeAll(models);
-		}
-
-		return updater;
+		return new CoNLLRDFUpdaterFactory().buildFromJsonConf(conf);
 	}
 
 	private CoNLLRDFComponent buildFormatter(ObjectNode conf) throws IOException {
-		CoNLLRDFFormatter f = new CoNLLRDFFormatter();
-
-		if (conf.withArray("modules").size() <= 0) {
-			Module m = new Module();
-			m.setMode(Mode.CONLLRDF);
-			m.setOutputStream(output);
-			m.getCols().clear();
-			f.getModules().add(m);
-		}
-		for (JsonNode modConf:conf.withArray("modules")) {
-			Module m = new Module();
-			try {
-				m.setOutputStream(parseConfAsOutputStream(modConf.get("output").asText()));
-			} catch (Exception e) {
-				m.setOutputStream(output);
-			}
-			if (modConf.get("mode").asText().equals("RDF") || modConf.get("mode").asText().equals("CONLLRDF")) {
-				m.setMode(Mode.CONLLRDF);
-				m.getCols().clear();
-				for (JsonNode col:modConf.withArray("columns")) {
-					m.getCols().add(col.asText());
-				}
-				f.getModules().add(m);
-			}
-			if (modConf.get("mode").asText().equals("CONLL")) {
-				m.setMode(Mode.CONLL);
-				m.getCols().clear();
-				for (JsonNode col:modConf.withArray("columns")) {
-					m.getCols().add(col.asText());
-				}
-				f.getModules().add(m);
-			}
-			if (modConf.get("mode").asText().equals("DEBUG")) {
-				m.setMode(Mode.DEBUG);
-				m.setOutputStream(System.err);
-				f.getModules().add(m);
-			}
-			if (modConf.get("mode").asText().equals("SPARQLTSV")) {
-				m.setMode(Mode.QUERY);
-				if (new File(modConf.get("select").asText()).canRead()) {
-					BufferedReader in = new BufferedReader(new FileReader(modConf.get("select").asText()));
-					String select="";
-					for(String line = in.readLine(); line!=null; line=in.readLine())
-						select=select+line+"\n";
-					m.setSelect(select);
-					in.close();
-					f.getModules().add(m);
-				} else {
-					throw new IOException("Could not read from " + modConf.get("select").asText());
-				}
-			}
-			if (modConf.get("mode").asText().equals("GRAMMAR")) {
-				m.setMode(Mode.GRAMMAR);
-				f.getModules().add(m);
-			}
-			if (modConf.get("mode").asText().equals("SEMANTICS")) {
-				m.setMode(Mode.SEMANTICS);
-				f.getModules().add(m);
-			}
-			if (modConf.get("mode").asText().equals("GRAMMAR+SEMANTICS")) {
-				m.setMode(Mode.GRAMMAR_SEMANTICS);
-				f.getModules().add(m);
-			}
-		}
-		return f;
+		conf.set("output", config.get("output"));
+		return new CoNLLRDFFormatterFactory().buildFromJsonConfig(conf);
 	}
 
 	private CoNLLRDFComponent buildSimpleLineBreakSplitter(ObjectNode conf) {
