@@ -1,7 +1,10 @@
 package org.acoli.conll.rdf;
 
+import static org.acoli.conll.rdf.CoNLLRDFCommandLine.readString;
+
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Options;
@@ -19,7 +22,7 @@ public class CoNLLRDFManagerFactory {
 
 		if (cmd.hasOption("c")) {
 			try {
-				manager.readConfig(cmd.getOptionValue("c"));
+				manager.parseConfig(readString(Paths.get(cmd.getOptionValue("c"))));
 			} catch (IOException e) {
 				throw new IOException(
 						"Error when reading config file " + new File(cmd.getOptionValue("c")).getAbsolutePath(), e);

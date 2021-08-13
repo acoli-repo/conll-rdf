@@ -55,15 +55,11 @@ public class CoNLLRDFManager {
 		manager.start();
 	}
 
-	public void readConfig(String path) throws IOException {
+	public void parseConfig(String jsonString) throws IOException {
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(Feature.ALLOW_COMMENTS, true);
 
-		File file = new File(path);
-		if (!file.canRead()) {
-			throw new IOException("File cannot be read.");
-		}
-		JsonNode node = objectMapper.readTree(file);
+		JsonNode node = objectMapper.readTree(jsonString);
 		if (!node.getNodeType().equals(JsonNodeType.OBJECT)) {
 			throw new IOException("File is no valid JSON config.");
 		}
