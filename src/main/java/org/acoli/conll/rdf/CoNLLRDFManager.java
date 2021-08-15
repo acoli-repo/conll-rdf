@@ -11,13 +11,12 @@ import java.io.PipedOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.zip.GZIPInputStream;
 
-import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -33,16 +32,55 @@ public class CoNLLRDFManager {
 		classFactoryMap.put(CoNLLStreamExtractor.class.getSimpleName(), () -> new CoNLLStreamExtractorFactory());
 		classFactoryMap.put(CoNLLRDFUpdater.class.getSimpleName(), () -> new CoNLLRDFUpdaterFactory());
 		classFactoryMap.put(CoNLLRDFFormatter.class.getSimpleName(), () -> new CoNLLRDFFormatterFactory());
-			// ObjectNode conf = (ObjectNode) pipelineElement;
 			// conf.set("output", config.get("output")); FIXME
 		classFactoryMap.put(SimpleLineBreakSplitter.class.getSimpleName(), () -> new SimpleLineBreakSplitterFactory());
 	}
 
-	private ObjectNode config;
-	private ArrayList<CoNLLRDFComponent> componentStack;
+	private BufferedReader input;
+	private PrintStream output;
+	private JsonNode[] pipeline;
+	private JsonNode config;
+	private ArrayList<CoNLLRDFComponent> componentStack = new ArrayList<CoNLLRDFComponent>();
 
-	PrintStream output;
-	BufferedReader input;
+	public BufferedReader getInput() {
+		return input;
+	}
+
+	public void setInput(BufferedReader input) {
+		this.input = input;
+	}
+
+	public PrintStream getOutput() {
+		return output;
+	}
+
+	public void setOutput(PrintStream output) {
+		this.output = output;
+	}
+
+	public JsonNode[] getPipeline() {
+		return pipeline;
+	}
+
+	public void setPipeline(JsonNode[] pipeline) {
+		this.pipeline = pipeline;
+	}
+
+	public JsonNode getConfig() {
+		return config;
+	}
+
+	public void setConfig(JsonNode config) {
+		this.config = config;
+	}
+
+	ArrayList<CoNLLRDFComponent> getComponentStack() {
+		return componentStack;
+	}
+
+	void setComponentStack(ArrayList<CoNLLRDFComponent> componentStack) {
+		this.componentStack = componentStack;
+	}	
 
 	public static void main(String[] args) throws IOException {
 		final CoNLLRDFManager manager;
@@ -58,22 +96,11 @@ public class CoNLLRDFManager {
 		manager.start();
 	}
 
-	public void parseConfig(String jsonString) throws IOException {
-		ObjectMapper objectMapper = new ObjectMapper();
-		objectMapper.configure(Feature.ALLOW_COMMENTS, true);
-
-		JsonNode node = objectMapper.readTree(jsonString);
-		if (!node.getNodeType().equals(JsonNodeType.OBJECT)) {
-			throw new IOException("File is no valid JSON config.");
-		}
-		config = (ObjectNode) node;
-
-//		TODO: remove --- Car car = objectMapper.readValue(file, Car.class);
-	}
-
 	protected static BufferedReader parseConfAsInputStream(String confEntry) throws IOException {
 		BufferedReader input;
-		if (confEntry.equals("System.in")) {
+		if (confEntry == null) {
+			throw new IllegalArgumentException();
+		} else if (confEntry.equals("System.in")) {
 			input = new BufferedReader(new InputStreamReader(System.in));
 		} else if (new File(confEntry).canRead()) {
 			if (confEntry.endsWith(".gz")) {
@@ -89,7 +116,9 @@ public class CoNLLRDFManager {
 
 	protected static PrintStream parseConfAsOutputStream(String confEntry) throws IOException {
 		PrintStream output;
-		if (confEntry.equals("System.out")) {
+		if (confEntry == null) {
+			throw new IllegalArgumentException();
+		} else if (confEntry.equals("System.out")) {
 			output = System.out;
 		} else if (new File(confEntry).canWrite()) {
 			output = new PrintStream(confEntry);
@@ -102,53 +131,65 @@ public class CoNLLRDFManager {
 	}
 
 	public void buildComponentStack() throws IOException, ParseException {
-		//READ INPUT PARAMETER
-		input = parseConfAsInputStream(config.get("input").asText());
-
-		//READ OUTPUT PARAMETER
-		output = parseConfAsOutputStream(config.get("output").asText());
-
 		//READ PIPELINE PARAMETER
-		if (!config.get("pipeline").isArray()) {
+		/*
+		JsonNode pipelineNode = config.get("pipeline");
+		if (!pipelineNode.isArray()) {
 			throw new IOException("File is no valid JSON config.");
 		}
+		componentStack.clear();
 
-		//BUILD COMPONENT STACK
-		if (componentStack == null)
-			componentStack = new ArrayList<CoNLLRDFComponent>();
-		else
-			componentStack.clear();
+		JsonNode[] pipelineArray = new JsonNode[] {config.withArray("pipeline")};
 
-		// First inputStream is always main input
-		BufferedReader nextInput = input;
-		// Traverse pipeline array
-		for (JsonNode pipelineElement:config.withArray("pipeline")) {
+		componentStack = parsePipeline(pipelineArray);
+		*/
+		linkComponents(componentStack, input, output);
+	}
+
+	static ArrayList<CoNLLRDFComponent> parsePipeline(Iterable<JsonNode> pipelineArray) throws IOException, ParseException {
+		ArrayList<CoNLLRDFComponent> componentArray = new ArrayList<>();
+
+		for (JsonNode pipelineElement:pipelineArray) {
 			if (!pipelineElement.getNodeType().equals(JsonNodeType.OBJECT)) {
-				throw new IOException("File is no valid JSON config.");
+				throw new IllegalArgumentException("Elements of \"pipeline\" have to be obejct-type");
 			}
 
 			// Create CoNLLRDFComponents (StreamExtractor, Updater, Formatter ...)
-			String className = pipelineElement.get("class").asText();
+			String className = pipelineElement.required("class").asText();
 			if (!classFactoryMap.containsKey(className)) {
-				throw new ParseException( "Invalid JSON pipeline. Unknown class: " + className);
+				throw new IllegalArgumentException( "Unknown class: " + className);
 			}
 
 			CoNLLRDFComponent component = classFactoryMap.get(className).get().buildFromJsonConf((ObjectNode) pipelineElement);
-			componentStack.add(component);
-
-			// Define Pipeline I/O
-			// always use previously defined input... first main input, later piped input
-			component.setInputStream(nextInput);
-			if (componentStack.size() == config.withArray("pipeline").size()) {
-				// last component, final output
-				component.setOutputStream(output);
-			} else {
-				// intermediate pipeline to next component (using PipedOutputStream->PipedInputStream)
-				PipedOutputStream compOutput = new PipedOutputStream();
-				componentStack.get(componentStack.size()-1).setOutputStream(new PrintStream(compOutput));
-				nextInput = new BufferedReader(new InputStreamReader(new PipedInputStream(compOutput)));
-			}
+			componentArray.add(component);
 		}
+		return componentArray;
+	}
+
+	/**
+	 * Link all components using Piped Streams, and set Pipeline I/O.
+	 * @param componentArray The List of components to be linked.
+	 * @param input Link this to the first component
+	 * @param output Link last component to this.
+	 */
+	static void linkComponents(List<CoNLLRDFComponent> componentArray, BufferedReader input, PrintStream output) throws IOException {
+		CoNLLRDFComponent prevComponent = null;
+		for (CoNLLRDFComponent component : componentArray) {
+			if (prevComponent == null) {
+				// link input to first component
+				component.setInputStream(input);
+			} else {
+				// prepare piped Streams
+				PipedOutputStream pipedOutput = new PipedOutputStream();
+				PipedInputStream pipedInput = new PipedInputStream(pipedOutput);
+				// link previous component to this one
+				prevComponent.setOutputStream(new PrintStream(pipedOutput));
+				component.setInputStream(new BufferedReader(new InputStreamReader(pipedInput)));
+			}
+			prevComponent = component;
+		}
+		// link last component to output
+		prevComponent.setOutputStream(output);
 	}
 
 	public void start() {
