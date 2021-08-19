@@ -1,5 +1,7 @@
 package org.acoli.conll.rdf;
 
+import static org.acoli.conll.rdf.CoNLLRDFCommandLine.readString;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,11 +13,13 @@ import java.io.PipedOutputStream;
 import java.io.PrintStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 import com.fasterxml.jackson.core.JsonParser.Feature;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
@@ -267,71 +271,71 @@ public class CoNLLRDFManager {
 	}
 
 	private CoNLLRDFComponent buildFormatter(ObjectNode conf) throws IOException {
-		CoNLLRDFFormatter f = new CoNLLRDFFormatter();
+		CoNLLRDFFormatter formatter = new CoNLLRDFFormatter();
+		ObjectMapper mapper = new ObjectMapper();
+		if (conf.path("output").isTextual()) {
+			PrintStream output = parseConfAsOutputStream(conf.get("output").asText());
+			formatter.setOutputStream(output);
+		}
+		for (JsonNode modConf : conf.withArray("modules")) {
+			Mode mode;
+			JsonNode columnsArray = null;
+			String select = "";
+			PrintStream outputStream = null;
+			String modeString = modConf.get("mode").asText();
+			switch (modeString) {
+				case "RDF":
+				case "CONLLRDF":
+					mode = Mode.CONLLRDF;
+					columnsArray = modConf.withArray("columns");
+					break;
+				case "CONLL":
+					mode = Mode.CONLL;
+					columnsArray = modConf.withArray("columns");
+					break;
+				case "DEBUG":
+					mode = Mode.DEBUG;
+					outputStream = System.err;
+					break;
+				case "SPARQLTSV":
+					// TODO case "QUERY":
+					mode = Mode.QUERY;
+					select = readString(Paths.get(modConf.get("select").asText()));
+					// TODO Attach context to IOExceptions thrown by readString
+					break;
+				case "GRAMMAR":
+					mode = Mode.GRAMMAR;
+					break;
+				case "SEMANTICS":
+					mode = Mode.SEMANTICS;
+					break;
+				case "GRAMMAR+SEMANTICS":
+					mode = Mode.GRAMMAR_SEMANTICS;
+					break;
 
-		if (conf.withArray("modules").size() <= 0) {
-			Module m = new Module();
-			m.setMode(Mode.CONLLRDF);
-			m.setOutputStream(output);
-			m.getCols().clear();
-			f.getModules().add(m);
+				default:
+					throw new IllegalArgumentException("Unknown mode: " + modeString);
+			}
+			Module module = formatter.addModule(mode);
+
+			// select is either "" or a selectQuery as String
+			module.setSelect(select);
+			// convert JSON array to Java List
+			if (columnsArray != null) {
+				List<String> columnList = mapper.convertValue(columnsArray, new TypeReference<List<String>>() {});
+				module.setCols(columnList);
+			}
+			// Set outputStream, if config has a property "output"
+			if (modConf.path("output").isTextual()) {
+				outputStream = parseConfAsOutputStream(modConf.get("output").asText());
+			}
+			// outputStream can be null or System.err
+			module.setOutputStream(outputStream);
 		}
-		for (JsonNode modConf:conf.withArray("modules")) {
-			Module m = new Module();
-			try {
-				m.setOutputStream(parseConfAsOutputStream(modConf.get("output").asText()));
-			} catch (Exception e) {
-				m.setOutputStream(output);
-			}
-			if (modConf.get("mode").asText().equals("RDF") || modConf.get("mode").asText().equals("CONLLRDF")) {
-				m.setMode(Mode.CONLLRDF);
-				m.getCols().clear();
-				for (JsonNode col:modConf.withArray("columns")) {
-					m.getCols().add(col.asText());
-				}
-				f.getModules().add(m);
-			}
-			if (modConf.get("mode").asText().equals("CONLL")) {
-				m.setMode(Mode.CONLL);
-				m.getCols().clear();
-				for (JsonNode col:modConf.withArray("columns")) {
-					m.getCols().add(col.asText());
-				}
-				f.getModules().add(m);
-			}
-			if (modConf.get("mode").asText().equals("DEBUG")) {
-				m.setMode(Mode.DEBUG);
-				m.setOutputStream(System.err);
-				f.getModules().add(m);
-			}
-			if (modConf.get("mode").asText().equals("SPARQLTSV")) {
-				m.setMode(Mode.QUERY);
-				if (new File(modConf.get("select").asText()).canRead()) {
-					BufferedReader in = new BufferedReader(new FileReader(modConf.get("select").asText()));
-					String select="";
-					for(String line = in.readLine(); line!=null; line=in.readLine())
-						select=select+line+"\n";
-					m.setSelect(select);
-					in.close();
-					f.getModules().add(m);
-				} else {
-					throw new IOException("Could not read from " + modConf.get("select").asText());
-				}
-			}
-			if (modConf.get("mode").asText().equals("GRAMMAR")) {
-				m.setMode(Mode.GRAMMAR);
-				f.getModules().add(m);
-			}
-			if (modConf.get("mode").asText().equals("SEMANTICS")) {
-				m.setMode(Mode.SEMANTICS);
-				f.getModules().add(m);
-			}
-			if (modConf.get("mode").asText().equals("GRAMMAR+SEMANTICS")) {
-				m.setMode(Mode.GRAMMAR_SEMANTICS);
-				f.getModules().add(m);
-			}
+		if (formatter.getModules().size() == 0) {
+			formatter.addModule(Mode.CONLLRDF);
 		}
-		return f;
+		return formatter;
 	}
 
 	private CoNLLRDFComponent buildSimpleLineBreakSplitter(ObjectNode conf) {

@@ -53,7 +53,7 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 	public static final String ANSI_CYAN_BK  = "\u001B[46m";
 	public static final String ANSI_WHITE_BK = "\u001B[47m";
 	
-	public static class Module {
+	public class Module {
 		private Mode mode = Mode.CONLLRDF;
 		private List<String> cols = new ArrayList<String>();
 		String select = "";
@@ -84,7 +84,12 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 		}
 
 		public PrintStream getOutputStream() {
-			return outputStream;
+			if (outputStream != null) {
+				return outputStream;
+			} else {
+				// Retrieve outputStream of the enclosing Formatter
+				return CoNLLRDFFormatter.this.getOutputStream();
+			}
 		}
 
 		public void setOutputStream(PrintStream outputStream) {
@@ -101,8 +106,11 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 	public List<Module> getModules() {
 		return modules;
 	}
-	public boolean addModule(Module module) {
-		return modules.add(module);
+	public Module addModule(Mode mode) {
+		Module module = new Module();
+		module.setMode(mode);
+		modules.add(module);
+		return module;
 	}
 
 		/** do some highlighting, but provide the full TTL data*/

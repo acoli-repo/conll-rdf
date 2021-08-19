@@ -45,77 +45,51 @@ public class CoNLLRDFFormatterFactory {
 		Module module;
 
 		if (cmd.hasOption("conll")) {
-			module = new Module();
-			module.setMode(Mode.CONLL);
-			module.setOutputStream(formatter.getOutputStream());
+			module = formatter.addModule(Mode.CONLL);
 			String[] optionValues = cmd.getOptionValues("conll");
 			if (optionValues != null) {
 				module.setCols(Arrays.asList(optionValues));
 			}
-			formatter.addModule(module);
 		}
 		if (cmd.hasOption("rdf")) {
-			module = new Module();
-			module.setMode(Mode.CONLLRDF);
-			module.setOutputStream(formatter.getOutputStream());
+			module = formatter.addModule(Mode.CONLLRDF);
 			String[] optionValues = cmd.getOptionValues("rdf");
 			if (optionValues != null) {
 				module.setCols(Arrays.asList(optionValues));
 			}
-			formatter.addModule(module);
 		}
 		if (cmd.hasOption("debug")) {
-			module = new Module();
-			module.setMode(Mode.DEBUG);
+			module = formatter.addModule(Mode.DEBUG);
 			module.setOutputStream(System.err);
-			formatter.addModule(module);
 		}
 
 		if (cmd.hasOption("sparqltsv")) {
 			LOG.warn("Option -sparqltsv has been deprecated in favor of -query");
-			module = new Module();
-			module.setMode(Mode.QUERY);
-			module.setOutputStream(formatter.getOutputStream());
+			module = formatter.addModule(Mode.QUERY);
 			module.setSelect(parseSparqlTSVOptionValues(cmd.getOptionValues("sparqltsv")));
-			formatter.addModule(module);
 		}
 		if (cmd.hasOption("query")) {
-			module = new Module();
-			module.setMode(Mode.QUERY);
-			module.setOutputStream(formatter.getOutputStream());
+			module = formatter.addModule(Mode.QUERY);
 			module.setSelect(parseSparqlTSVOptionValues(cmd.getOptionValues("query")));
-			formatter.addModule(module);
 		}
 		if (cmd.hasOption("query") && cmd.hasOption("sparqltsv")) {
 			throw new ParseException("Tried to combine deprecated -sparqltsv and -query");
 		}
 
 		if (cmd.hasOption("grammar") && !cmd.hasOption("semantics")) {
-			module = new Module();
-			module.setMode(Mode.GRAMMAR);
-			module.setOutputStream(formatter.getOutputStream());
-			formatter.addModule(module);
+			module = formatter.addModule(Mode.GRAMMAR);
 		}
 		if (cmd.hasOption("semantics") && !cmd.hasOption("grammar")) {
-			module = new Module();
-			module.setMode(Mode.SEMANTICS);
-			module.setOutputStream(formatter.getOutputStream());
-			formatter.addModule(module);
+			module = formatter.addModule(Mode.SEMANTICS);
 		}
 		if (cmd.hasOption("semantics") && cmd.hasOption("grammar")) {
-			module = new Module();
-			module.setMode(Mode.GRAMMAR_SEMANTICS);
-			module.setOutputStream(formatter.getOutputStream());
-			formatter.addModule(module);
+			module = formatter.addModule(Mode.GRAMMAR_SEMANTICS);
 		}
 
 		// if no modules were added, provide the default option
 		if (formatter.getModules().isEmpty()) {
 			LOG.info("No Option selected. Defaulting to Mode CoNLL-RDF");
-			module = new Module();
-			module.setMode(Mode.CONLLRDF);
-			module.setOutputStream(formatter.getOutputStream());
-			formatter.addModule(module);
+			module = formatter.addModule(Mode.CONLLRDF);
 		}
 
 		return formatter;
