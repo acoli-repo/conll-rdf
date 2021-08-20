@@ -1,7 +1,5 @@
 package org.acoli.conll.rdf;
 
-import static org.acoli.conll.rdf.CoNLLRDFCommandLine.readString;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,25 +9,16 @@ import java.io.InputStreamReader;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.PrintStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 import com.fasterxml.jackson.core.JsonParser.Feature;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import org.acoli.conll.rdf.CoNLLRDFFormatter.Mode;
-import org.acoli.conll.rdf.CoNLLRDFFormatter.Module;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.lang3.tuple.ImmutableTriple;
-import org.apache.commons.lang3.tuple.Triple;
 import org.apache.log4j.Logger;
 
 public class CoNLLRDFManager {
@@ -164,71 +153,7 @@ public class CoNLLRDFManager {
 	}
 
 	private CoNLLRDFComponent buildFormatter(ObjectNode conf) throws IOException {
-		CoNLLRDFFormatter formatter = new CoNLLRDFFormatter();
-		ObjectMapper mapper = new ObjectMapper();
-		if (conf.path("output").isTextual()) {
-			PrintStream output = parseConfAsOutputStream(conf.get("output").asText());
-			formatter.setOutputStream(output);
-		}
-		for (JsonNode modConf : conf.withArray("modules")) {
-			Mode mode;
-			JsonNode columnsArray = null;
-			String select = "";
-			PrintStream outputStream = null;
-			String modeString = modConf.get("mode").asText();
-			switch (modeString) {
-				case "RDF":
-				case "CONLLRDF":
-					mode = Mode.CONLLRDF;
-					columnsArray = modConf.withArray("columns");
-					break;
-				case "CONLL":
-					mode = Mode.CONLL;
-					columnsArray = modConf.withArray("columns");
-					break;
-				case "DEBUG":
-					mode = Mode.DEBUG;
-					outputStream = System.err;
-					break;
-				case "SPARQLTSV":
-					// TODO case "QUERY":
-					mode = Mode.QUERY;
-					select = readString(Paths.get(modConf.get("select").asText()));
-					// TODO Attach context to IOExceptions thrown by readString
-					break;
-				case "GRAMMAR":
-					mode = Mode.GRAMMAR;
-					break;
-				case "SEMANTICS":
-					mode = Mode.SEMANTICS;
-					break;
-				case "GRAMMAR+SEMANTICS":
-					mode = Mode.GRAMMAR_SEMANTICS;
-					break;
-
-				default:
-					throw new IllegalArgumentException("Unknown mode: " + modeString);
-			}
-			Module module = formatter.addModule(mode);
-
-			// select is either "" or a selectQuery as String
-			module.setSelect(select);
-			// convert JSON array to Java List
-			if (columnsArray != null) {
-				List<String> columnList = mapper.convertValue(columnsArray, new TypeReference<List<String>>() {});
-				module.setCols(columnList);
-			}
-			// Set outputStream, if config has a property "output"
-			if (modConf.path("output").isTextual()) {
-				outputStream = parseConfAsOutputStream(modConf.get("output").asText());
-			}
-			// outputStream can be null or System.err
-			module.setOutputStream(outputStream);
-		}
-		if (formatter.getModules().size() == 0) {
-			formatter.addModule(Mode.CONLLRDF);
-		}
-		return formatter;
+		return new CoNLLRDFFormatterFactory().buildFromJsonConf(conf);
 	}
 
 	private CoNLLRDFComponent buildSimpleLineBreakSplitter(ObjectNode conf) {

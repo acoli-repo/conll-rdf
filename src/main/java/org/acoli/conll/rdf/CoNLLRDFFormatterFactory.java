@@ -2,13 +2,21 @@ package org.acoli.conll.rdf;
 
 import static org.acoli.conll.rdf.CoNLLRDFCommandLine.readString;
 import static org.acoli.conll.rdf.CoNLLRDFCommandLine.readUrl;
+import static org.acoli.conll.rdf.CoNLLRDFManager.parseConfAsOutputStream;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.List;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.acoli.conll.rdf.CoNLLRDFFormatter.Mode;
 import org.acoli.conll.rdf.CoNLLRDFFormatter.Module;
@@ -17,9 +25,10 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.Logger;
 
-public class CoNLLRDFFormatterFactory {
+public class CoNLLRDFFormatterFactory extends CoNLLRDFComponentFactory {
 	static Logger LOG = Logger.getLogger(CoNLLRDFFormatterFactory.class);
 
+	@Override
 	public CoNLLRDFFormatter buildFromCLI(String[] args) throws IOException, ParseException {
 		final CoNLLRDFFormatter formatter = new CoNLLRDFFormatter();
 		final CoNLLRDFCommandLine conllCli = new CoNLLRDFCommandLine(
@@ -160,5 +169,83 @@ public class CoNLLRDFFormatterFactory {
 		}
 
 		throw new ParseException("Failed to parse Option-Value as file-path or URL: " + optionValue);
+	}
+
+	@Override
+	public CoNLLRDFFormatter buildFromJsonConf(ObjectNode conf) throws IOException {
+		CoNLLRDFFormatter formatter = new CoNLLRDFFormatter();
+
+		if (conf.path("output").isTextual()) {
+			PrintStream output = parseConfAsOutputStream(conf.get("output").asText());
+			formatter.setOutputStream(output);
+		}
+		for (JsonNode modConf : conf.withArray("modules")) {
+			addModule(formatter, modConf);
+		}
+		if (formatter.getModules().size() == 0) {
+			formatter.addModule(Mode.CONLLRDF);
+		}
+		return formatter;
+	}
+
+	private Module addModule(CoNLLRDFFormatter formatter, JsonNode modConf)
+			throws IOException {
+		ObjectMapper mapper = new ObjectMapper();
+
+		Mode mode;
+		JsonNode columnsArray = null;
+		String select = "";
+		PrintStream outputStream = null;
+		String modeString = modConf.get("mode").asText();
+		switch (modeString) {
+			case "RDF":
+			case "CONLLRDF":
+				mode = Mode.CONLLRDF;
+				columnsArray = modConf.withArray("columns");
+				break;
+			case "CONLL":
+				mode = Mode.CONLL;
+				columnsArray = modConf.withArray("columns");
+				break;
+			case "DEBUG":
+				mode = Mode.DEBUG;
+				outputStream = System.err;
+				break;
+			case "SPARQLTSV":
+				// TODO case "QUERY":
+				mode = Mode.QUERY;
+				// TODO check URI
+				select = readString(Paths.get(modConf.get("select").asText()));
+				// TODO Attach context to IOExceptions thrown by readString
+				break;
+			case "GRAMMAR":
+				mode = Mode.GRAMMAR;
+				break;
+			case "SEMANTICS":
+				mode = Mode.SEMANTICS;
+				break;
+			case "GRAMMAR+SEMANTICS":
+				mode = Mode.GRAMMAR_SEMANTICS;
+				break;
+
+			default:
+				throw new IllegalArgumentException("Unknown mode: " + modeString);
+		}
+		Module module = formatter.addModule(mode);
+
+		// select is either "" or a selectQuery as String
+		module.setSelect(select);
+		// convert JSON array to Java List
+		if (columnsArray != null) {
+			List<String> columnList = mapper.convertValue(columnsArray, new TypeReference<List<String>>() {});
+			module.setCols(columnList);
+		}
+		// Set outputStream, if config has a property "output"
+		if (modConf.path("output").isTextual()) {
+			outputStream = parseConfAsOutputStream(modConf.get("output").asText());
+		}
+		// outputStream can be null or System.err
+		module.setOutputStream(outputStream);
+		return module;
 	}
 }
