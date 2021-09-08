@@ -2,13 +2,21 @@ package org.acoli.conll.rdf;
 
 import static org.acoli.conll.rdf.CoNLLRDFCommandLine.readString;
 import static org.acoli.conll.rdf.CoNLLRDFCommandLine.readUrl;
+import static org.acoli.conll.rdf.CoNLLRDFManager.parseConfAsOutputStream;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.List;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.acoli.conll.rdf.CoNLLRDFFormatter.Mode;
 import org.acoli.conll.rdf.CoNLLRDFFormatter.Module;
@@ -17,9 +25,10 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.Logger;
 
-public class CoNLLRDFFormatterFactory {
+public class CoNLLRDFFormatterFactory extends CoNLLRDFComponentFactory {
 	static Logger LOG = Logger.getLogger(CoNLLRDFFormatterFactory.class);
 
+	@Override
 	public CoNLLRDFFormatter buildFromCLI(String[] args) throws IOException, ParseException {
 		final CoNLLRDFFormatter formatter = new CoNLLRDFFormatter();
 		final CoNLLRDFCommandLine conllCli = new CoNLLRDFCommandLine(
@@ -45,77 +54,51 @@ public class CoNLLRDFFormatterFactory {
 		Module module;
 
 		if (cmd.hasOption("conll")) {
-			module = new Module();
-			module.setMode(Mode.CONLL);
-			module.setOutputStream(formatter.getOutputStream());
+			module = formatter.addModule(Mode.CONLL);
 			String[] optionValues = cmd.getOptionValues("conll");
 			if (optionValues != null) {
 				module.setCols(Arrays.asList(optionValues));
 			}
-			formatter.addModule(module);
 		}
 		if (cmd.hasOption("rdf")) {
-			module = new Module();
-			module.setMode(Mode.CONLLRDF);
-			module.setOutputStream(formatter.getOutputStream());
+			module = formatter.addModule(Mode.CONLLRDF);
 			String[] optionValues = cmd.getOptionValues("rdf");
 			if (optionValues != null) {
 				module.setCols(Arrays.asList(optionValues));
 			}
-			formatter.addModule(module);
 		}
 		if (cmd.hasOption("debug")) {
-			module = new Module();
-			module.setMode(Mode.DEBUG);
+			module = formatter.addModule(Mode.DEBUG);
 			module.setOutputStream(System.err);
-			formatter.addModule(module);
 		}
 
 		if (cmd.hasOption("sparqltsv")) {
 			LOG.warn("Option -sparqltsv has been deprecated in favor of -query");
-			module = new Module();
-			module.setMode(Mode.QUERY);
-			module.setOutputStream(formatter.getOutputStream());
+			module = formatter.addModule(Mode.QUERY);
 			module.setSelect(parseSparqlTSVOptionValues(cmd.getOptionValues("sparqltsv")));
-			formatter.addModule(module);
 		}
 		if (cmd.hasOption("query")) {
-			module = new Module();
-			module.setMode(Mode.QUERY);
-			module.setOutputStream(formatter.getOutputStream());
+			module = formatter.addModule(Mode.QUERY);
 			module.setSelect(parseSparqlTSVOptionValues(cmd.getOptionValues("query")));
-			formatter.addModule(module);
 		}
 		if (cmd.hasOption("query") && cmd.hasOption("sparqltsv")) {
 			throw new ParseException("Tried to combine deprecated -sparqltsv and -query");
 		}
 
 		if (cmd.hasOption("grammar") && !cmd.hasOption("semantics")) {
-			module = new Module();
-			module.setMode(Mode.GRAMMAR);
-			module.setOutputStream(formatter.getOutputStream());
-			formatter.addModule(module);
+			module = formatter.addModule(Mode.GRAMMAR);
 		}
 		if (cmd.hasOption("semantics") && !cmd.hasOption("grammar")) {
-			module = new Module();
-			module.setMode(Mode.SEMANTICS);
-			module.setOutputStream(formatter.getOutputStream());
-			formatter.addModule(module);
+			module = formatter.addModule(Mode.SEMANTICS);
 		}
 		if (cmd.hasOption("semantics") && cmd.hasOption("grammar")) {
-			module = new Module();
-			module.setMode(Mode.GRAMMAR_SEMANTICS);
-			module.setOutputStream(formatter.getOutputStream());
-			formatter.addModule(module);
+			module = formatter.addModule(Mode.GRAMMAR_SEMANTICS);
 		}
 
 		// if no modules were added, provide the default option
 		if (formatter.getModules().isEmpty()) {
 			LOG.info("No Option selected. Defaulting to Mode CoNLL-RDF");
-			module = new Module();
-			module.setMode(Mode.CONLLRDF);
-			module.setOutputStream(formatter.getOutputStream());
-			formatter.addModule(module);
+			module = formatter.addModule(Mode.CONLLRDF);
 		}
 
 		return formatter;
@@ -186,5 +169,84 @@ public class CoNLLRDFFormatterFactory {
 		}
 
 		throw new ParseException("Failed to parse Option-Value as file-path or URL: " + optionValue);
+	}
+
+	@Override
+	public CoNLLRDFFormatter buildFromJsonConf(ObjectNode conf) throws IOException {
+		CoNLLRDFFormatter formatter = new CoNLLRDFFormatter();
+
+		if (conf.path("output").isTextual()) {
+			PrintStream output = parseConfAsOutputStream(conf.get("output").asText());
+			formatter.setOutputStream(output);
+		}
+		for (JsonNode modConf : conf.withArray("modules")) {
+			addModule(formatter, modConf);
+		}
+		if (formatter.getModules().size() == 0) {
+			formatter.addModule(Mode.CONLLRDF);
+		}
+		return formatter;
+	}
+
+	private Module addModule(CoNLLRDFFormatter formatter, JsonNode modConf)
+			throws IOException {
+		ObjectMapper mapper = new ObjectMapper();
+
+		Mode mode;
+		JsonNode columnsArray = null;
+		String select = "";
+		PrintStream outputStream = null;
+		String modeString = modConf.get("mode").asText();
+		switch (modeString) {
+			case "RDF":
+			case "CONLLRDF":
+				mode = Mode.CONLLRDF;
+				columnsArray = modConf.withArray("columns");
+				break;
+			case "CONLL":
+				mode = Mode.CONLL;
+				columnsArray = modConf.withArray("columns");
+				break;
+			case "DEBUG":
+				mode = Mode.DEBUG;
+				outputStream = System.err;
+				break;
+			case "SPARQLTSV":
+				LOG.warn("Mode SPARQLTSV is deprecated, please use QUERY instead.");
+			case "QUERY":
+				mode = Mode.QUERY;
+				// TODO check URI
+				select = readString(Paths.get(modConf.get("select").asText()));
+				// TODO Attach context to IOExceptions thrown by readString
+				break;
+			case "GRAMMAR":
+				mode = Mode.GRAMMAR;
+				break;
+			case "SEMANTICS":
+				mode = Mode.SEMANTICS;
+				break;
+			case "GRAMMAR+SEMANTICS":
+				mode = Mode.GRAMMAR_SEMANTICS;
+				break;
+
+			default:
+				throw new IllegalArgumentException("Unknown mode: " + modeString);
+		}
+		Module module = formatter.addModule(mode);
+
+		// select is either "" or a selectQuery as String
+		module.setSelect(select);
+		// convert JSON array to Java List
+		if (columnsArray != null) {
+			List<String> columnList = mapper.convertValue(columnsArray, new TypeReference<List<String>>() {});
+			module.setCols(columnList);
+		}
+		// Set outputStream, if config has a property "output"
+		if (modConf.path("output").isTextual()) {
+			outputStream = parseConfAsOutputStream(modConf.get("output").asText());
+		}
+		// outputStream can be null or System.err
+		module.setOutputStream(outputStream);
+		return module;
 	}
 }

@@ -5,14 +5,19 @@ import static org.acoli.conll.rdf.CoNLLRDFCommandLine.parseSelectOptionLegacy;
 import java.io.*;
 import java.util.*;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.tuple.*;
 import org.apache.log4j.Logger;
 
-public class CoNLLStreamExtractorFactory {
+public class CoNLLStreamExtractorFactory extends CoNLLRDFComponentFactory {
 	static Logger LOG = Logger.getLogger(CoNLLStreamExtractorFactory.class);
+
+	@Override
 	public CoNLLStreamExtractor buildFromCLI(String[] args) throws IOException, ParseException {
 		CoNLLStreamExtractor extractor = new CoNLLStreamExtractor();
 		//FIXME
@@ -66,5 +71,18 @@ public class CoNLLStreamExtractorFactory {
 		LOG.info("\tCoNLL columns: " + extractor.getColumns());
 
 		return extractor;
+	}
+
+	@Override
+	public CoNLLStreamExtractor buildFromJsonConf(ObjectNode conf) {
+		CoNLLStreamExtractor ex = new CoNLLStreamExtractor();
+		ex.setBaseURI(conf.get("baseURI").asText());
+		ex.getColumns().clear();
+		//TODO: DONE------TEST
+		for (JsonNode col:conf.withArray("columns")) {
+			ex.getColumns().add(col.asText());
+		}
+
+		return ex;
 	}
 }
