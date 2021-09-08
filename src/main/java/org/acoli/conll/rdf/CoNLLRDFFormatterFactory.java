@@ -212,7 +212,8 @@ public class CoNLLRDFFormatterFactory extends CoNLLRDFComponentFactory {
 				outputStream = System.err;
 				break;
 			case "SPARQLTSV":
-				// TODO case "QUERY":
+				LOG.warn("Mode SPARQLTSV is deprecated, please use QUERY instead.");
+			case "QUERY":
 				mode = Mode.QUERY;
 				// TODO check URI
 				select = readString(Paths.get(modConf.get("select").asText()));
