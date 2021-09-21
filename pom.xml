@@ -36,6 +36,7 @@
       <version>1.4</version>
       <scope>compile</scope>
     </dependency>
+    <!--
     <dependency>
       <groupId>org.apache.jena</groupId>
       <artifactId>jena-arq</artifactId>
@@ -46,6 +47,12 @@
       <artifactId>jena-core</artifactId>
       <version>3.6.0</version>
     </dependency>
+    -->
+    <dependency>
+	  <groupId>de.unifrankfurt.informatik.acoli</groupId>
+	  <artifactId>fintan-core</artifactId>
+	  <version>0.0.1-SNAPSHOT</version>
+	</dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>

@@ -5,7 +5,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.PrintStream;
@@ -36,25 +38,25 @@ public class CoNLLRDFManager {
 		classFactoryMap.put(SimpleLineBreakSplitter.class.getSimpleName(), () -> new SimpleLineBreakSplitterFactory());
 	}
 
-	private BufferedReader input;
-	private PrintStream output;
+	private InputStream input;
+	private OutputStream output;
 	private JsonNode[] pipeline;
 	private JsonNode config;
 	private ArrayList<CoNLLRDFComponent> componentStack = new ArrayList<CoNLLRDFComponent>();
 
-	public BufferedReader getInput() {
+	public InputStream getInput() {
 		return input;
 	}
 
-	public void setInput(BufferedReader input) {
+	public void setInput(InputStream input) {
 		this.input = input;
 	}
 
-	public PrintStream getOutput() {
+	public OutputStream getOutput() {
 		return output;
 	}
 
-	public void setOutput(PrintStream output) {
+	public void setOutput(OutputStream output) {
 		this.output = output;
 	}
 
@@ -96,17 +98,17 @@ public class CoNLLRDFManager {
 		manager.start();
 	}
 
-	protected static BufferedReader parseConfAsInputStream(String confEntry) throws IOException {
-		BufferedReader input;
+	protected static InputStream parseConfAsInputStream(String confEntry) throws IOException {
+		InputStream input;
 		if (confEntry == null) {
 			throw new IllegalArgumentException();
 		} else if (confEntry.equals("System.in")) {
-			input = new BufferedReader(new InputStreamReader(System.in));
+			input = System.in;
 		} else if (new File(confEntry).canRead()) {
 			if (confEntry.endsWith(".gz")) {
-				input = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(confEntry))));
+				input = new GZIPInputStream(new FileInputStream(confEntry));
 			} else {
-				input = new BufferedReader(new FileReader(confEntry));
+				input = new FileInputStream(confEntry);
 			}
 		} else {
 			throw new IOException("Could not read from " + confEntry);
@@ -172,7 +174,7 @@ public class CoNLLRDFManager {
 	 * @param input Link this to the first component
 	 * @param output Link last component to this.
 	 */
-	static void linkComponents(List<CoNLLRDFComponent> componentArray, BufferedReader input, PrintStream output) throws IOException {
+	static void linkComponents(List<CoNLLRDFComponent> componentArray, InputStream input, OutputStream output) throws IOException {
 		CoNLLRDFComponent prevComponent = null;
 		for (CoNLLRDFComponent component : componentArray) {
 			if (prevComponent == null) {
@@ -184,7 +186,7 @@ public class CoNLLRDFManager {
 				PipedInputStream pipedInput = new PipedInputStream(pipedOutput);
 				// link previous component to this one
 				prevComponent.setOutputStream(new PrintStream(pipedOutput));
-				component.setInputStream(new BufferedReader(new InputStreamReader(pipedInput)));
+				component.setInputStream(pipedInput);
 			}
 			prevComponent = component;
 		}

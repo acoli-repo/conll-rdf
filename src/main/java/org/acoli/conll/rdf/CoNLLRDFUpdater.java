@@ -798,14 +798,15 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 	protected void processSentenceStream() throws IOException {
 		initThreads();
 		running = true;
-
+		BufferedReader in = new BufferedReader(new InputStreamReader(getInputStream()));
+		PrintStream out = new PrintStream(getOutputStream());
 		
 		String prefixCache = new String();
 		String line;
 		String lastLine ="";
 		String buffer="";
 //		List<Pair<Integer,Long> > dRTs = new ArrayList<Pair<Integer,Long> >(); // iterations and execution time of each update in seconds
-		while((line = getInputStream().readLine())!=null) {
+		while((line = in.readLine())!=null) {
 			line=line.replaceAll("[\t ]+"," ").trim();
 
 			if(!buffer.trim().equals("") && (line.startsWith("@") || line.startsWith("#")) && !lastLine.startsWith("@") && !lastLine.startsWith("#")) { //!buffer.matches("@[^\n]*\n?$")) {
@@ -853,7 +854,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 					sentBufferLookback.add(buffer);
 				}
 
-				flushOutputBuffer(getOutputStream());
+				flushOutputBuffer(out);
 				buffer="";
 			}
 			buffer=buffer+line+"\n";
@@ -929,7 +930,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 			LOG.debug("Done - List of iterations and execution times for the updates done (in given order):\n\t\t" + dRTs_sum.toString());
 
 		//final flush
-		flushOutputBuffer(getOutputStream());
+		flushOutputBuffer(out);
 		getOutputStream().close();
 		
 	}

@@ -49,7 +49,7 @@ public class CoNLLRDFManagerIT {
 		CoNLLRDFUpdater updater = (CoNLLRDFUpdater) manager.getComponentStack().get(1);
 		CoNLLRDFFormatter formatter = (CoNLLRDFFormatter) manager.getComponentStack().get(2);
 
-		assertTrue(manager.getInput().ready());
+//		assertTrue(manager.getInput().ready());
 		assertNotNull(manager.getInput());
 		assertEquals(3, manager.getComponentStack().size());
 		assertEquals("https://github.com/UniversalDependencies/UD_English#", streamExtractor.getBaseURI());

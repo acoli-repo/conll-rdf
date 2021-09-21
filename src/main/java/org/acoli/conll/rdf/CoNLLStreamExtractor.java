@@ -92,8 +92,8 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 		CoNLL2RDF conll2rdf = new CoNLL2RDF(baseURI, columns.toArray(new String[columns.size()]));
 		List<Pair<Integer,Long> > dRTs = new ArrayList<Pair<Integer,Long> >(); // iterations and execution time of each update in seconds
 		LOG.info("process input ..");
-		BufferedReader in = getInputStream();
-		OutputStreamWriter out = new OutputStreamWriter(getOutputStream());
+		BufferedReader in = new BufferedReader(new InputStreamReader(getInputStream()));
+		OutputStreamWriter out = new OutputStreamWriter(new PrintStream(getOutputStream()));
 		String buffer = "";
 		ArrayList<String> comments = new ArrayList<>();
 		for(String line = ""; line !=null; line=in.readLine()) {
@@ -217,7 +217,7 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 	}
 
 	public void findColumnsFromComment() throws IOException {
-		this.setColumns(findFieldsFromComments(this.getInputStream(), 1));
+		this.setColumns(findFieldsFromComments(new BufferedReader(new InputStreamReader(this.getInputStream())), 1));
 		LOG.info("\tCoNLL columns: " + this.getColumns());
 	}
 

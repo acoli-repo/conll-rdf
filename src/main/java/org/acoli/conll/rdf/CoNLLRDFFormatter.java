@@ -88,7 +88,7 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 				return outputStream;
 			} else {
 				// Retrieve outputStream of the enclosing Formatter
-				return CoNLLRDFFormatter.this.getOutputStream();
+				return new PrintStream(CoNLLRDFFormatter.this.getOutputStream());
 			}
 		}
 
@@ -567,6 +567,37 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 			return select;
 		}
 		
+		/**
+		 * FOR LEO: please move whereever you like
+		 * @param m
+		 *     CoNLL-RDF sentence as Model
+		 * @return
+		 *     String[0]: all comments + \n
+		 *     String[1]: model as Turtle (unsorted)
+		 *     concatenate: Full CoNLL-RDF output
+		 */
+		public static String[] conllRdfModel2String(Model m) {
+			String[] out = new String[2];
+			
+			//generate comments in out[0]
+			out[0] = new String();
+			String selectComments = "PREFIX nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#>\n"
+					+ "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n"
+					+ "SELECT ?c WHERE {?x a nif:Sentence . ?x rdfs:comment ?c}";
+			QueryExecution qexec = QueryExecutionFactory.create(selectComments, m);
+			ResultSet results = qexec.execSelect();
+			while (results.hasNext()) {
+				//please check the regex. Should put a # in front of every line, which does not already start with #.
+				out[0] += results.next().getLiteral("c").toString().replaceAll("^([^#])", "#\1")+"\n";
+			}
+			
+			//generate CoNLL-RDF Turtle (unsorted) in out[1]
+			StringWriter modelOut = new StringWriter();
+			m.write(modelOut, "TTL");
+			out[1] = modelOut.toString();
+			return out;
+		}
+		
 		/** run either SELECT statement (cf. https://jena.apache.org/documentation/query/app_api.html) and return CoNLL-like TSV or just TTL <br>
 		*  Note: this CoNLL-like export has limitations, of course: it will export one property per column, hence, collapsed dependencies or 
 		*  SRL annotations cannot be reconverted */		
@@ -661,7 +692,8 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 		String line;
 		String lastLine ="";
 		String buffer="";
-		while((line = getInputStream().readLine())!=null) {
+		BufferedReader in = new BufferedReader(new InputStreamReader(getInputStream()));
+		while((line = in.readLine())!=null) {
 			line=line.replaceAll("[\t ]+"," ").trim();
 
 			if(!buffer.trim().equals(""))

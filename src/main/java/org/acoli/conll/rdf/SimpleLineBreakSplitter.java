@@ -1,6 +1,9 @@
 package org.acoli.conll.rdf;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
 
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.Logger;
@@ -10,17 +13,19 @@ public class SimpleLineBreakSplitter extends CoNLLRDFComponent {
 
 	@Override
 	protected void processSentenceStream() throws IOException {
+		BufferedReader in = new BufferedReader(new InputStreamReader(getInputStream()));
+		PrintStream out = new PrintStream(getOutputStream());
 		String line;
 		int empty = 0;
-		while((line = getInputStream().readLine())!=null) {
+		while((line = in.readLine())!=null) {
 			if (line.trim().isEmpty()) {
 				empty++;
 			} else {
 				if (empty > 0) {
-					getOutputStream().print("\n#newsegment\n");
+					out.print("\n#newsegment\n");
 					empty = 0;
 				}
-				getOutputStream().print(line+"\n");
+				out.print(line+"\n");
 			}
 		}
 		getOutputStream().close();

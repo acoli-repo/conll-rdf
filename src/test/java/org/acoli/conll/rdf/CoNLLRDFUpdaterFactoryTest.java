@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.*;
 
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Level;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -125,7 +126,7 @@ public class CoNLLRDFUpdaterFactoryTest {
 				+ "\n@prefix nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#> ."
 				+ "\n@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ." + "\n:s1_0 a nif:Sentence ."
 				+ "\n:s2_0 a nif:Sentence .";
-		updater.setInputStream(new BufferedReader(new StringReader(rdfSentence)));
+		updater.setInputStream(IOUtils.toInputStream(rdfSentence, "UTF-8"));
 		updater.processSentenceStream();
 		assertArrayEquals(new String[] { "s1_0" }, updater.getGraphOutputSentences());
 	}
@@ -156,7 +157,7 @@ public class CoNLLRDFUpdaterFactoryTest {
 				+ "\n@prefix nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#> ."
 				+ "\n@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ." + "\n:s1_0 a nif:Sentence ."
 				+ "\n:s2_0 a nif:Sentence .";
-		updater.setInputStream(new BufferedReader(new StringReader(rdfSentence)));
+		updater.setInputStream(IOUtils.toInputStream(rdfSentence, "UTF-8"));
 		updater.processSentenceStream();
 		assertArrayEquals(new String[] { "s1_0" }, updater.getTriplesOutputSentences());
 	}

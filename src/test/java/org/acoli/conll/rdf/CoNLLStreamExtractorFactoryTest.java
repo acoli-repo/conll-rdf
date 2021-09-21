@@ -11,6 +11,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,7 @@ public class CoNLLStreamExtractorFactoryTest {
 	void CoNLLUPlusStyleColumnLabelWithDash() throws ParseException, IOException {
 		CoNLLStreamExtractor extractor = new CoNLLStreamExtractorFactory().buildFromCLI(new String[] { "url" });
 		extractor.setInputStream(
-				new BufferedReader(new StringReader("# global.columns = WORD POS PARSE NER COREF PRED PRED-ARGS \n\n")));
+				IOUtils.toInputStream("# global.columns = WORD POS PARSE NER COREF PRED PRED-ARGS \n\n", "UTF-8"));
 		extractor.findColumnsFromComment();
 		assertEquals("url", extractor.getBaseURI());
 		assertEquals(new LinkedList<String>(Arrays.asList("WORD", "POS", "PARSE", "NER", "COREF", "PRED", "PRED-ARGS")),
@@ -56,7 +57,7 @@ public class CoNLLStreamExtractorFactoryTest {
 		CoNLLStreamExtractor extractor = new CoNLLStreamExtractorFactory().buildFromCLI(new String [] {
 			"url", "WORD", "POS", "PARSE", "NER", "COREF", "PRED", "PRED-ARGS", "-u", "example/sparql/remove-ID.sparql"});
 		extractor.setInputStream(
-				new BufferedReader(new StringReader("\n\n")));
+				IOUtils.toInputStream("\n\n", "UTF-8"));
 		List<Pair<String, String>> actualUpdates = extractor.getUpdates();
 		assertEquals(1, actualUpdates.size());
 		assertEquals("example/sparql/remove-ID.sparql\n", actualUpdates.get(0).getLeft());
@@ -71,7 +72,7 @@ public class CoNLLStreamExtractorFactoryTest {
 		CoNLLStreamExtractor extractor = new CoNLLStreamExtractorFactory().buildFromCLI(new String [] {
 			"url", "WORD", "POS", "PARSE", "NER", "COREF", "PRED", "PRED-ARGS", "-u", "example/sparql/remove-ID.sparql{2}"});
 		extractor.setInputStream(
-				new BufferedReader(new StringReader("\n\n")));
+				IOUtils.toInputStream("\n\n", "UTF-8"));
 		List<Pair<String, String>> actualUpdates = extractor.getUpdates();
 		assertEquals(1, actualUpdates.size());
 		assertEquals("example/sparql/remove-ID.sparql\n", actualUpdates.get(0).getLeft());
