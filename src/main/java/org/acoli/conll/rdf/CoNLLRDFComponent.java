@@ -1,6 +1,8 @@
 package org.acoli.conll.rdf;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
 
@@ -15,7 +17,23 @@ public abstract class CoNLLRDFComponent extends StreamTransformerGenericIO {
 
 	protected abstract void processSentenceStream() throws IOException;
 
+	@Override
+	public void setInputStream(InputStream inputStream, String name) throws IOException {
+		if (name == null || FINTAN_DEFAULT_STREAM_NAME.equals(name)) {
+			setInputStream(inputStream);
+		} else {
+			throw new IOException("Only default InputStream is supported for "+CoNLLRDFComponent.class.getName());
+		}
+	}
 	
+	@Override
+	public void setOutputStream(OutputStream outputStream, String name) throws IOException {
+		if (name == null || FINTAN_DEFAULT_STREAM_NAME.equals(name)) {
+			setOutputStream(outputStream);
+		} else {
+			throw new IOException("Only default OutputStream is supported for "+CoNLLRDFComponent.class.getName());
+		}
+	}
 
 	@Override
 	public final void run() {

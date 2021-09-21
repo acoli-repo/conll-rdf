@@ -31,20 +31,18 @@ public class SimpleLineBreakSplitter extends CoNLLRDFComponent {
 		getOutputStream().close();
 	}
 
-	public void configureFromCommandLine(String[] args) throws IOException, ParseException {
-		// Nothing to do
-	}
 
 	public static void main(String[] args) throws IOException {
-		SimpleLineBreakSplitter splitter = new SimpleLineBreakSplitter();
-
+		final SimpleLineBreakSplitter splitter;
 		try {
-			splitter.configureFromCommandLine(args);
-		} catch (ParseException e) {
+			splitter = new SimpleLineBreakSplitterFactory().buildFromCLI(args);
+			splitter.setInputStream(System.in);
+			splitter.setOutputStream(System.out);
+		} catch (Exception e){
 			LOG.error(e);
 			System.exit(1);
+			return;
 		}
-
 		long start = System.currentTimeMillis();
 		// READ SENTENCES from System.in
 		splitter.processSentenceStream();

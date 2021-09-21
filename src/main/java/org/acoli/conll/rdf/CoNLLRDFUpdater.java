@@ -1065,6 +1065,8 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 		final CoNLLRDFUpdater updater;
 		try {
 			updater = new CoNLLRDFUpdaterFactory().buildFromCLI(args);
+			updater.setInputStream(System.in);
+			updater.setOutputStream(System.out);
 		} catch (ParseException e) {
 			LOG.error(e);
 			System.exit(1);

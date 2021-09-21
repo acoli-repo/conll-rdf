@@ -333,6 +333,8 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 		final CoNLLStreamExtractor extractor;
 		try {
 			extractor = new CoNLLStreamExtractorFactory().buildFromCLI(args);
+			extractor.setInputStream(System.in);
+			extractor.setOutputStream(System.out);
 		} catch (ParseException e) {
 			LOG.error(e);
 			System.exit(1);

@@ -790,6 +790,8 @@ public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 		final CoNLLRDFFormatter formatter;
 		try {
 			formatter = new CoNLLRDFFormatterFactory().buildFromCLI(args);
+			formatter.setInputStream(System.in);
+			formatter.setOutputStream(System.out);
 		} catch (ParseException e) {
 			LOG.error(e);
 			System.exit(1);
