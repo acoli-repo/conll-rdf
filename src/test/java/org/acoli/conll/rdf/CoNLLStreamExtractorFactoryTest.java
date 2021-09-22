@@ -3,9 +3,7 @@ package org.acoli.conll.rdf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -53,7 +51,7 @@ public class CoNLLStreamExtractorFactoryTest {
 
 	// deprecated update
 	@Test
-	void optionUpdate() throws ParseException, IOException {
+	void optionUpdate() throws ParseException, IOException, InterruptedException {
 		CoNLLStreamExtractor extractor = new CoNLLStreamExtractorFactory().buildFromCLI(new String [] {
 			"url", "WORD", "POS", "PARSE", "NER", "COREF", "PRED", "PRED-ARGS", "-u", "example/sparql/remove-ID.sparql"});
 		extractor.setInputStream(
