@@ -57,8 +57,8 @@ public class CoNLLStreamExtractorFactoryTest {
 	void optionUpdate() throws ParseException, IOException {
 		CoNLLStreamExtractor extractor = new CoNLLStreamExtractorFactory().buildFromCLI(new String [] {
 			"url", "WORD", "POS", "PARSE", "NER", "COREF", "PRED", "PRED-ARGS", "-u", "example/sparql/remove-ID.sparql"});
-		extractor.setInputStream(
-				IOUtils.toInputStream("\n\n", "UTF-8"));
+		extractor.setInputStream(IOUtils.toInputStream("\n\n", "UTF-8"));
+		extractor.setOutputStream(System.out);
 		List<Pair<String, String>> actualUpdates = extractor.getUpdates();
 		assertEquals(1, actualUpdates.size());
 		assertEquals("example/sparql/remove-ID.sparql\n", actualUpdates.get(0).getLeft());

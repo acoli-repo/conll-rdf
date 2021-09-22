@@ -127,6 +127,7 @@ public class CoNLLRDFUpdaterFactoryTest {
 				+ "\n@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ." + "\n:s1_0 a nif:Sentence ."
 				+ "\n:s2_0 a nif:Sentence .";
 		updater.setInputStream(IOUtils.toInputStream(rdfSentence, "UTF-8"));
+		updater.setOutputStream(System.out);
 		updater.processSentenceStream();
 		assertArrayEquals(new String[] { "s1_0" }, updater.getGraphOutputSentences());
 	}
@@ -158,6 +159,7 @@ public class CoNLLRDFUpdaterFactoryTest {
 				+ "\n@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ." + "\n:s1_0 a nif:Sentence ."
 				+ "\n:s2_0 a nif:Sentence .";
 		updater.setInputStream(IOUtils.toInputStream(rdfSentence, "UTF-8"));
+		updater.setOutputStream(System.out);
 		updater.processSentenceStream();
 		assertArrayEquals(new String[] { "s1_0" }, updater.getTriplesOutputSentences());
 	}
