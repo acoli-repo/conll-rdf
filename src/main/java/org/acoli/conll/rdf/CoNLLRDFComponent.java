@@ -6,7 +6,7 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
 
-import de.unifrankfurt.informatik.acoli.fintan.core.StreamTransformerGenericIO;
+import org.acoli.fintan.core.StreamTransformerGenericIO;
 
 public abstract class CoNLLRDFComponent extends StreamTransformerGenericIO {
 	static final List<Integer> CHECKINTERVAL = Arrays.asList(3, 10, 25, 50, 100, 200, 500);

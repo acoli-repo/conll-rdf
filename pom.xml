@@ -49,7 +49,7 @@
     </dependency>
     -->
     <dependency>
-	  <groupId>de.unifrankfurt.informatik.acoli</groupId>
+	  <groupId>org.acoli.fintan</groupId>
 	  <artifactId>fintan-core</artifactId>
 	  <version>0.0.1-SNAPSHOT</version>
 	</dependency>
