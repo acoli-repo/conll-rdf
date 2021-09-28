@@ -1,12 +1,12 @@
 /*
  * Copyright [2017] [ACoLi Lab, Prof. Dr. Chiarcos, Goethe University Frankfurt]
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,9 +15,20 @@
  */
 package org.acoli.conll.rdf;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.StringReader;
+import java.io.Writer;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.apache.jena.rdf.listeners.ChangedListener;
 import org.apache.jena.rdf.model.*;
@@ -25,9 +36,18 @@ import org.apache.jena.update.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.jena.query.*;
+import org.apache.jena.query.ParameterizedSparqlString;
+import org.apache.jena.rdf.listeners.ChangedListener;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.update.UpdateAction;
+import org.apache.jena.update.UpdateFactory;
+
+import org.acoli.fintan.core.FintanStreamHandler;
+import org.acoli.fintan.core.StreamLoader;
+import org.acoli.fintan.write.RDFStreamWriter;
 
 /** extracts RDF data from CoNLL files, transforms the result using SPARQL UPDATE queries,
  * 	optionally followed by SPARQL SELECT to produce TSV output<br>
@@ -36,8 +56,11 @@ import org.apache.jena.query.*;
  *  @author Christian Chiarcos {@literal chiarcos@informatik.uni-frankfurt.de}
  *  @author Christian Faeth {@literal faeth@em.uni-frankfurt.de}
  */
-public class CoNLLStreamExtractor extends CoNLLRDFComponent {
+
+public class CoNLLStreamExtractor extends StreamLoader {
 	private static Logger LOG = LogManager.getLogger(CoNLLStreamExtractor.class.getName());
+	private static final List<Integer> CHECKINTERVAL = Arrays.asList(3, 10, 25, 50, 100, 200, 500);
+	private static final int MAXITERATE = 999;
 	private String baseURI;
 	private List<String> columns = new ArrayList<String>();
 	private boolean readColumnComment = false;
@@ -80,8 +103,8 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 		this.updates = updates;
 	}
 
-	@Override
-	protected void processSentenceStream() throws IOException {
+	// FIXME @Override
+	protected void processSentenceStream() throws IOException, InterruptedException {
 		if (readColumnComment) {
 			// look for a CoNLL-U Plus -style comment containing the Columns
 			this.findColumnsFromComment();
@@ -94,12 +117,14 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 		List<Pair<Integer,Long> > dRTs = new ArrayList<Pair<Integer,Long> >(); // iterations and execution time of each update in seconds
 		LOG.info("process input ..");
 		BufferedReader in = new BufferedReader(new InputStreamReader(getInputStream()));
-		OutputStreamWriter out = new OutputStreamWriter(new PrintStream(getOutputStream()));
+		// FIXME out = null;
+		OutputStreamWriter out = null;
 		String buffer = "";
 		ArrayList<String> comments = new ArrayList<>();
 		for(String line = ""; line !=null; line=in.readLine()) {
 			if(line.contains("#")) {
-				out.write(line.replaceAll("^[^#]*#", "#") + "\n");
+				// Remove all characters before the first '#'
+				// FIXME? out.write(line.replaceAll("^[^#]*#", "#") + "\n");
 				comments.add(line.replaceAll("^[^#]*#", ""));
 			}
 			line=line.replaceAll("<[\\/]?[psPS]( [^>]*>|>)","").trim(); // in this way, we can also read sketch engine data and split at s and p elements
@@ -140,8 +165,8 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 		if (!dRTs.isEmpty())
 			LOG.debug("Done - List of interations and execution times for the updates done (in given order):\n\t\t" + dRTs.toString());
 
-		getOutputStream().close();
-	
+		getOutputStream().terminate();
+
 	}
 
 	/**
@@ -256,12 +281,16 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 		}
 		return result;
 	}
-		
+
 	/** run either SELECT statement (cf. https://jena.apache.org/documentation/query/app_api.html) and return CoNLL-like TSV or just TTL <br>
-	 *  Note: this CoNLL-like export has limitations, of course: it will export one property per column, hence, collapsed dependencies or 
-	 *  SRL annotations cannot be reconverted */
-	public void print(Model m, String select, Writer out) throws IOException {
+	 *  Note: this CoNLL-like export has limitations, of course: it will export one property per column, hence, collapsed dependencies or
+	 *  SRL annotations cannot be reconverted
+	 */
+	public void print(Model m, String select, Writer out) throws IOException, InterruptedException {
 		if(select!=null) {
+			// FIXME
+			throw new NotImplementedException("The select option cannot be implemented easily, as this class is expected to output a model stream");
+			/*
 			QueryExecution qexec = QueryExecutionFactory.create(select, m);
 			ResultSet results = qexec.execSelect();
 			List<String> cols = results.getResultVars();
@@ -280,10 +309,12 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 			}
 			out.write("\n");
 			out.flush();
-		} else {
-			m.write(out, "TTL");
-			out.flush();
+			*/
+		// } else {
+			// m.write(out, "TTL");
+			// out.flush();
 		}
+		getOutputStream().write(m);
 	}
 
 	public Pair<String, String> parseUpdate(String updateArg) throws IOException {
@@ -302,7 +333,8 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 	}
 
 	public String parseSparqlArg(String sparqlArg) throws IOException {
-		// TODO this code is duplicate and should be stored centrally in CoNLLRDFCommandLine
+		// TODO this code is duplicate and should be stored centrally in
+		// CoNLLRDFCommandLine
 		// TODO Unit Testing for this Method
 		String sparql = "";
 
@@ -330,17 +362,37 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 		return sparql;
 	}
 
+	@Override
+	public void run() {
+		try {
+			processSentenceStream();
+		} catch (IOException | InterruptedException e) {
+			LOG.error(e);
+			System.exit(1);
+		}
+	}
+
+	@Override
+	public void start() {
+		run();
+	}
+
 	public static void main(String[] args) throws IOException {
 		final CoNLLStreamExtractor extractor;
+		final FintanStreamHandler<Model> stream = new FintanStreamHandler<Model>();
+		final RDFStreamWriter streamWriter = new RDFStreamWriter();
 		try {
 			extractor = new CoNLLStreamExtractorFactory().buildFromCLI(args);
 			extractor.setInputStream(System.in);
-			extractor.setOutputStream(System.out);
+			extractor.setOutputStream(stream);
+			streamWriter.setInputStream(stream);
+			streamWriter.setOutputStream(System.out);
 		} catch (ParseException e) {
 			LOG.error(e);
 			System.exit(1);
 			return;
 		}
-		extractor.processSentenceStream();
+		new Thread(extractor).start();
+		new Thread(streamWriter).start();
 	}
 }

@@ -14,9 +14,11 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.tuple.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.acoli.fintan.core.FintanStreamComponentFactory;
 
-public class CoNLLStreamExtractorFactory extends CoNLLRDFComponentFactory {
+public class CoNLLStreamExtractorFactory implements FintanStreamComponentFactory {
 	static Logger LOG = LogManager.getLogger(CoNLLStreamExtractorFactory.class);
+
 
 	@Override
 	public CoNLLStreamExtractor buildFromCLI(String[] args) throws IOException, ParseException {

@@ -43,6 +43,7 @@ public class CoNLLRDFManagerIT {
 
 	// TODO: Change and rename these tests
 	@Test
+	@Disabled("Disabled until CoNLLRDFManager has been updated")
 	void testAPipeline() throws IOException, ParseException {
 		String given = CoNLLRDFCommandLine.readString(Paths.get("examples/analyze-ud.json"));
 		CoNLLRDFManager manager = new CoNLLRDFManagerFactory().parseJsonConf(given);

@@ -3,18 +3,19 @@ package org.acoli.conll.rdf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.acoli.fintan.core.FintanStreamHandler;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.jena.rdf.model.Model;
+import org.apache.log4j.Logger;
 import org.junit.jupiter.api.Test;
 
 public class CoNLLStreamExtractorFactoryTest {
@@ -54,11 +55,12 @@ public class CoNLLStreamExtractorFactoryTest {
 
 	// deprecated update
 	@Test
-	void optionUpdate() throws ParseException, IOException {
+	void optionUpdate() throws ParseException, IOException, InterruptedException {
 		CoNLLStreamExtractor extractor = new CoNLLStreamExtractorFactory().buildFromCLI(new String [] {
 			"url", "WORD", "POS", "PARSE", "NER", "COREF", "PRED", "PRED-ARGS", "-u", "example/sparql/remove-ID.sparql"});
+		final FintanStreamHandler<Model> stream = new FintanStreamHandler<Model>();
 		extractor.setInputStream(IOUtils.toInputStream("\n\n", "UTF-8"));
-		extractor.setOutputStream(System.out);
+		extractor.setOutputStream(stream);
 		List<Pair<String, String>> actualUpdates = extractor.getUpdates();
 		assertEquals(1, actualUpdates.size());
 		assertEquals("example/sparql/remove-ID.sparql\n", actualUpdates.get(0).getLeft());
