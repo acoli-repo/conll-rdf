@@ -17,6 +17,7 @@ package org.acoli.conll.rdf;
 
 import java.io.*;
 import java.util.*;
+
 import org.apache.jena.rdf.model.*;		// Jena 2.x
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,28 +36,6 @@ import org.apache.jena.query.*;
 public class CoNLLRDFFormatter extends StreamWriter {
 
 	protected static Logger LOG = LogManager.getLogger(CoNLLRDFFormatter.class.getName());
-
-	public static final String ANSI_RESET    = "\u001B[0m";
-	public static final String ANSI_BRIGHTER = "\u001B[1m";
-	public static final String ANSI_ULINE    = "\u001B[4m";
-	public static final String ANSI_FLASH	 = "\u001B[5m";
-	public static final String ANSI_BLACK    = "\u001B[30m";
-	public static final String ANSI_RED      = "\u001B[31m";
-	public static final String ANSI_GREEN    = "\u001B[32m";
-	public static final String ANSI_YELLOW   = "\u001B[33m";
-	public static final String ANSI_BLUE     = "\u001B[34m";
-	public static final String ANSI_PURPLE   = "\u001B[35m";
-	public static final String ANSI_CYAN     = "\u001B[36m";
-	public static final String ANSI_WHITE    = "\u001B[37m";
-	public static final String ANSI_BLACK_BK = "\u001B[40m";
-	public static final String ANSI_RED_BK   = "\u001B[41m";
-	public static final String ANSI_GREEN_BK = "\u001B[42m";
-	public static final String ANSI_YLW_BK   = "\u001B[43m";
-	public static final String ANSI_BLUE_BK  = "\u001B[44m";
-	public static final String ANSI_PPL_BK   = "\u001B[45m";
-	public static final String ANSI_CYAN_BK  = "\u001B[46m";
-	public static final String ANSI_WHITE_BK = "\u001B[47m";
-
 	public class Module {
 		private Mode mode = Mode.CONLLRDF;
 		private List<String> cols = new ArrayList<String>();
@@ -119,10 +98,10 @@ public class CoNLLRDFFormatter extends StreamWriter {
 
 		/** do some highlighting, but provide the full TTL data*/
 		public String colorTTL(String buffer) {
-			return buffer.replaceAll("(terms:[^ ]*)",ANSI_YLW_BK+"$1"+ANSI_RESET)
-						.replaceAll("(rdfs:label +)(\"[^\"]*\")","$1"+ANSI_CYAN+"$2"+ANSI_RESET)
-						.replaceAll("(nif:[^ ]*)",ANSI_YELLOW+"$1"+ANSI_RESET)
-						.replaceAll("(conll:[^ \n]*)([^;\n]*[;]?)",ANSI_CYAN_BK+ANSI_BRIGHTER+ANSI_BLUE+"$1"+ANSI_RESET+ANSI_CYAN_BK+ANSI_BRIGHTER+"$2"+ANSI_RESET);
+			return buffer.replaceAll("(terms:[^ ]*)",ANSI.YLW_BK+"$1"+ANSI.RESET)
+						.replaceAll("(rdfs:label +)(\"[^\"]*\")","$1"+ANSI.CYAN+"$2"+ANSI.RESET)
+						.replaceAll("(nif:[^ ]*)",ANSI.YELLOW+"$1"+ANSI.RESET)
+						.replaceAll("(conll:[^ \n]*)([^;\n]*[;]?)",ANSI.CYAN_BK+ANSI.BRIGHTER+ANSI.BLUE+"$1"+ANSI.RESET+ANSI.CYAN_BK+ANSI.BRIGHTER+"$2"+ANSI.RESET);
 		}
 
 		/** default: do not return type assignments */
@@ -185,13 +164,13 @@ public class CoNLLRDFFormatter extends StreamWriter {
 						String nextRel = next.get("?rel").toString().replaceFirst(".*#","");
 						if(!rel.equals(nextRel))
 							anno=anno+
-								ANSI_BLUE+ANSI_ULINE+
+								ANSI.BLUE+ANSI.ULINE+
 								nextRel+
-								ANSI_RESET+" ";
+								ANSI.RESET+" ";
 						rel=nextRel;
 						anno=anno+
 								next.get("?val").toString().
-								 replaceFirst("^http://purl.org/acoli/open-ie/(.*)$",ANSI_YLW_BK+"$1"+ANSI_RESET).
+								 replaceFirst("^http://purl.org/acoli/open-ie/(.*)$",ANSI.YLW_BK+"$1"+ANSI.RESET).
 								 replaceFirst(".*#","")+
 								" ";
 					}
@@ -205,9 +184,9 @@ public class CoNLLRDFFormatter extends StreamWriter {
 							m).execSelect();
 					while(olia_types.hasNext())
 							anno=anno+
-								ANSI_RED+
+								ANSI.RED+
 								olia_types.next().get("?concept").toString().replaceFirst("^.*/([^/]*)\\.(owl|rdf)[#/]","$1:")+
-								ANSI_RESET+" ";
+								ANSI.RESET+" ";
 
 					// append OLiA features
 					ResultSet olia_feats= QueryExecutionFactory.create(
@@ -220,11 +199,11 @@ public class CoNLLRDFFormatter extends StreamWriter {
 					while(olia_feats.hasNext()) {
 						QuerySolution next = olia_feats.next();
 						anno = anno+
-								ANSI_RED+ANSI_ULINE+
+								ANSI.RED+ANSI.ULINE+
 								next.get("?rel").toString().replaceFirst("^.*/([^/]*)\\.(owl|rdf)[#/]","$1:")+
-								ANSI_RESET+"."+ANSI_RED+
+								ANSI.RESET+"."+ANSI.RED+
 								next.get("?concept").toString().replaceFirst("^.*/([^/]*)\\.(owl|rdf)[#/]","$1:")+
-								ANSI_RESET+" ";
+								ANSI.RESET+" ";
 					}
 
 					annos.add(anno);
@@ -305,10 +284,10 @@ public class CoNLLRDFFormatter extends StreamWriter {
 				result=result+ids.get(i);
 				for(int j = ids.get(i).length(); j<maxIdLength; j++)
 					result=result+" ";
-				result=result+ANSI_WHITE;
+				result=result+ANSI.WHITE;
 				for(int j=depth.get(i);j>0;j--)
 					result=result+" .";
-				result=result+ANSI_RESET;
+				result=result+ANSI.RESET;
 				result=result+headDir.get(i);
 				result=result+edges.get(i);
 				for(int j = maxDepth-depth.get(i);j>0;j--)
@@ -318,7 +297,7 @@ public class CoNLLRDFFormatter extends StreamWriter {
 				result=result+" "+words.get(i);
 				for(int j = words.get(i).length(); j<maxWordLength; j++)
 					result=result+" ";
-				result=result+" "+ANSI_YLW_BK+terms.get(i)+ANSI_RESET;
+				result=result+" "+ANSI.YLW_BK+terms.get(i)+ANSI.RESET;
 				for(int j = terms.get(i).length(); j<maxTermLength; j++)
 					result=result+" ";
 				result=result+" "+annos.get(i)+"\n";
@@ -381,22 +360,22 @@ public class CoNLLRDFFormatter extends StreamWriter {
 					RDFNode sNode = next.get("?s");
 					String nextS = sNode.toString().replaceAll(".*[#/]","");
 					if(!sNode.isURIResource()) nextS="[]";
-					if(next.get("?sl")!=null) nextS=nextS+" "+ANSI_CYAN+"\""+next.get("?sl")+"\""+ANSI_RESET;
+					if(next.get("?sl")!=null) nextS=nextS+" "+ANSI.CYAN+"\""+next.get("?sl")+"\""+ANSI.RESET;
 					if(!nextS.equals(s)) {
 						result=result+"\n"+nextS+" ("+
 								("0"+next.get("?in")).replaceFirst("[^0-9].*","").replaceFirst("^0*([^0])","$1")+" > node > "+
 								("0"+next.get("?out")).toString().replaceFirst("[^0-9].*","").replaceFirst("^0*([^0])","$1")+")";
 					}
 					String nextR = next.get("?r").toString()
-							.replaceAll("http://ufal.mff.cuni.cz/conll2009-st/task-description.html#(.*)$",ANSI_BLUE+ANSI_ULINE+"$1"+ANSI_RESET)
-							.replaceAll("http://purl.org/acoli/open-ie/(.*)",ANSI_YLW_BK+"terms:$1"+ANSI_RESET)
+							.replaceAll("http://ufal.mff.cuni.cz/conll2009-st/task-description.html#(.*)$",ANSI.BLUE+ANSI.ULINE+"$1"+ANSI.RESET)
+							.replaceAll("http://purl.org/acoli/open-ie/(.*)",ANSI.YLW_BK+"terms:$1"+ANSI.RESET)
 							.replaceAll("http://www.w3.org/1999/02/22-rdf-syntax-ns#type","a");
 
 					String nextO = next.get("?o").toString()
-							.replaceAll("http://purl.org/acoli/open-ie/(.*)",ANSI_YLW_BK+"terms:$1"+ANSI_RESET)
+							.replaceAll("http://purl.org/acoli/open-ie/(.*)",ANSI.YLW_BK+"terms:$1"+ANSI.RESET)
 							.replaceAll("[^ \t]*[#/]","");
 					if(next.get("?ol")!=null)
-						nextO=nextO+" "+ANSI_CYAN+"\""+next.get("?ol")+"\""+ANSI_RESET;
+						nextO=nextO+" "+ANSI.CYAN+"\""+next.get("?ol")+"\""+ANSI.RESET;
 
 					if(!nextR.equals("a") || includeTermConcepts==true) {
 						if(!nextS.equals(s) || !nextR.equals(r))
