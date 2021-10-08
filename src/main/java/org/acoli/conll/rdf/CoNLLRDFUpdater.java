@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -38,7 +37,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
-import java.util.zip.GZIPInputStream;
 
 import org.acoli.fintan.core.FintanStreamHandler;
 import org.acoli.fintan.load.RDFStreamLoader;
@@ -105,7 +103,6 @@ public class CoNLLRDFUpdater extends RDFUpdater {
 
 
 	private class UpdateThread extends Thread {
-
 		private CoNLLRDFUpdater updater;
 		private int threadID;
 		private Dataset memDataset;
@@ -144,10 +141,16 @@ public class CoNLLRDFUpdater extends RDFUpdater {
 				//Execute Thread
 
 				LOG.trace("NOW Processing on thread "+threadID+": outputbuffersize "+sentBufferOut.size());
-				Triple<List<String>, String, List<String>> sentBufferThread = sentBufferThreads.get(threadID);
+
+				// unpack triple for better readability of code
+				final Triple<List<String>, String, List<String>> sentBufferThread = sentBufferThreads.get(threadID);
+				final List<String> lookbackSentenceList = sentBufferThread.getLeft();
+				final String currentSentence = sentBufferThread.getMiddle();
+				final List<String> lookaheadSentenceList = sentBufferThread.getRight();
+
 				StringWriter out = new StringWriter();
 				try {
-					loadBuffer(sentBufferThread);
+					loadBuffer(lookbackSentenceList, currentSentence, lookaheadSentenceList);
 
 					List<Pair<Integer,Long> > ret = executeUpdates(updates);
 					if (dRTs.get(threadID).isEmpty())
@@ -158,7 +161,7 @@ public class CoNLLRDFUpdater extends RDFUpdater {
 									dRTs.get(threadID).get(x).getKey() + ret.get(x).getKey(),
 									dRTs.get(threadID).get(x).getValue() + ret.get(x).getValue()));
 
-					unloadBuffer(sentBufferThread, out);
+					unloadBuffer(currentSentence, out);
 				} catch (Exception e) {
 //					memDataset.begin(ReadWrite.WRITE);
 					memDataset.getDefaultModel().removeAll();
@@ -183,7 +186,6 @@ public class CoNLLRDFUpdater extends RDFUpdater {
 				//go to sleep and let Updater take control
 					LOG.trace("Updater notified by "+threadID);
 					updater.notify();
-
 				}
 				try {
 					synchronized (this) {
@@ -199,41 +201,41 @@ public class CoNLLRDFUpdater extends RDFUpdater {
 
 		/**
 		 * Loads Data to this thread's working model.
-		 * @param buffer
-		 * 			the model to be read.
-		 * @throws Exception
 		 */
-		private void loadBuffer(Triple<List<String>, String, List<String>> sentBufferThread) throws Exception { //TODO: adjust for TXN-Models
-			//check validity of current sentence
+		private void loadBuffer(List<String> lookbackSentenceList, String currentSentence,
+				List<String> lookaheadSentenceList) throws Exception {
+			// TODO: adjust for TXN-Models
+			// check validity of current sentence
 
-			//load ALL
+			// load ALL
 			try {
-//				memDataset.begin(ReadWrite.WRITE);
+				// memDataset.begin(ReadWrite.WRITE);
 
 				// for lookback
-				for (String sent:sentBufferThread.getLeft()) {
-					memDataset.getNamedModel("https://github.com/acoli-repo/conll-rdf/lookback").read(new StringReader(sent),null, "TTL");
+				for (String sentence : lookbackSentenceList) {
+					memDataset.getNamedModel("https://github.com/acoli-repo/conll-rdf/lookback")
+							.read(new StringReader(sentence), null, "TTL");
 				}
 
 				// for current sentence
-				memDataset.getDefaultModel().read(new StringReader(sentBufferThread.getMiddle()),null, "TTL");
+				memDataset.getDefaultModel().read(new StringReader(currentSentence), null, "TTL");
 
 				// for lookahead
-				for (String sent:sentBufferThread.getRight()) {
-					memDataset.getNamedModel("https://github.com/acoli-repo/conll-rdf/lookahead").read(new StringReader(sent),null, "TTL");
+				for (String sentence : lookaheadSentenceList) {
+					memDataset.getNamedModel("https://github.com/acoli-repo/conll-rdf/lookahead")
+							.read(new StringReader(sentence), null, "TTL");
 				}
 
-//				memDataset.commit();
-//				Model m = ModelFactory.createDefaultModel().read(new StringReader(buffer),null, "TTL");
-//				memAccessor.add(m);
-//				memDataset.getDefaultModel().setNsPrefixes(m.getNsPrefixMap());
+				// memDataset.commit();
+				// Model m = ModelFactory.createDefaultModel().read(new StringReader(buffer),null, "TTL");
+				// memAccessor.add(m);
+				// memDataset.getDefaultModel().setNsPrefixes(m.getNsPrefixMap());
 			} catch (Exception ex) {
-				LOG.error("Exception while reading: " + sentBufferThread.getMiddle());
+				LOG.error("Exception while reading: " + currentSentence);
 				throw ex;
 			} finally {
-//				memDataset.end();
+				// memDataset.end();
 			}
-
 		}
 
 		/**
@@ -245,30 +247,30 @@ public class CoNLLRDFUpdater extends RDFUpdater {
 		 * 			Output Writer.
 		 * @throws Exception
 		 */
-		private void unloadBuffer(Triple<List<String>, String, List<String>> sentBufferThread, Writer out) throws Exception { //TODO: adjust for TXN-Models
-			String buffer = sentBufferThread.getMiddle();
+		private void unloadBuffer(String currentSentence, Writer out)
+				throws Exception { // TODO: adjust for TXN-Models
 			try {
-				BufferedReader in = new BufferedReader(new StringReader(buffer));
+				BufferedReader in = new BufferedReader(new StringReader(currentSentence));
 				String line;
-				while((line=in.readLine())!=null) {
-					line=line.trim();
-					if(line.startsWith("#")) out.write(line+"\n");
+				while ((line = in.readLine()) != null) {
+					line = line.trim();
+					if (line.startsWith("#"))
+						out.write(line + "\n");
 				}
 				memDataset.getDefaultModel().write(out, "TTL");
 				out.write("\n");
 				out.flush();
 			} catch (Exception ex) {
-//				memDataset.abort();
-				LOG.error("Exception while unloading: " + buffer);
+				// memDataset.abort();
+				LOG.error("Exception while unloading: " + currentSentence);
 			} finally {
-//				memDataset.begin(ReadWrite.WRITE);
+				// memDataset.begin(ReadWrite.WRITE);
 				memDataset.getDefaultModel().removeAll();
 				memDataset.getNamedModel("https://github.com/acoli-repo/conll-rdf/lookback").removeAll();
 				memDataset.getNamedModel("https://github.com/acoli-repo/conll-rdf/lookahead").removeAll();
-//				memDataset.commit();
-//				memDataset.end();
+				// memDataset.commit();
+				// memDataset.end();
 			}
-
 		}
 
 		/**
@@ -654,7 +656,7 @@ public class CoNLLRDFUpdater extends RDFUpdater {
 		}
 		Model m = ModelFactory.createDefaultModel();
 		try {
-			m.read(readInURI(url));
+			m.read(CoNLLRDFUtil.readInURI(url));
 			dataset.addNamedModel(graph.toString(), m);
 		} catch (IOException ex) {
 			LOG.error("Exception while reading " + url + " into " + graph);
@@ -748,34 +750,6 @@ public class CoNLLRDFUpdater extends RDFUpdater {
 			LOG.debug("Update parsed ok");
 		}
 		updates.addAll(Collections.synchronizedList(updatesOut));
-	}
-
-	/**
-	 * Tries to read from a specific URI.
-	 * Tries to read content directly or from GZIP
-	 * Validates content against UTF-8.
-	 * @param uri
-	 * 		the URI to be read
-	 * @return
-	 * 		the text content
-	 * @throws MalformedURLException
-	 * @throws IOException
-	 */
-	private static String readInURI(URI uri) throws MalformedURLException, IOException {
-		String result = null;
-		try {
-			result = uri.toString();
-			if (result != null && result.endsWith(".gz")) {
-				StringBuilder sb = new StringBuilder();
-				BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(uri.toURL().openStream())));
-				for (String line; (line = br.readLine()) != null; sb.append(line));
-				result = sb.toString();
-			}
-		} catch (Exception ex) {
-			LOG.error("Excpetion while reading " + uri.getPath());
-			throw ex;
-		}
-		return result;
 	}
 
 	/**

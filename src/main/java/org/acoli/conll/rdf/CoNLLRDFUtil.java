@@ -1,6 +1,12 @@
 package org.acoli.conll.rdf;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.StringWriter;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.util.zip.GZIPInputStream;
 
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QueryExecutionFactory;
@@ -45,6 +51,34 @@ public class CoNLLRDFUtil {
     		out += results.next().getLiteral("c").toString().replaceAll("^([^#])", "#\1") + "\n";
     	}
         return out;
+    }
+
+    /**
+     * Tries to read from a specific URI.
+     * Tries to read content directly or from GZIP
+     * Validates content against UTF-8.
+     * @param uri
+     * 		the URI to be read
+     * @return
+     * 		the text content
+     * @throws MalformedURLException
+     * @throws IOException
+     */
+    static String readInURI(URI uri) throws MalformedURLException, IOException {
+    	String result = null;
+    	try {
+    		result = uri.toString();
+    		if (result != null && result.endsWith(".gz")) {
+    			StringBuilder sb = new StringBuilder();
+    			BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(uri.toURL().openStream())));
+    			for (String line; (line = br.readLine()) != null; sb.append(line));
+    			result = sb.toString();
+    		}
+    	} catch (Exception ex) {
+    		CoNLLRDFUpdater.LOG.error("Excpetion while reading " + uri.getPath());
+    		throw ex;
+    	}
+    	return result;
     }
     
 }
