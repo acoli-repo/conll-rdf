@@ -871,13 +871,13 @@ public class CoNLLRDFUpdater extends RDFUpdater {
 
 		// GRAPH OUTPUT determine first sentence's id, if none were specified
 		if ((graphOutputDir != null) && (graphOutputSentences.isEmpty())) {
-			String sentID = old_readFirstSentenceID(buffer);
+			String sentID = readFirstSentenceID(model);
 			graphOutputSentences.add(sentID);
 			LOG.debug("Graph Output defaults to first sentence: " + sentID);
 		}
 		// TRIPLES OUTPUT determine first sentence's id, if none were specified
 		if ((triplesOutputDir != null) && (triplesOutputSentences.isEmpty())) {
-			String sentID = old_readFirstSentenceID(buffer);
+			String sentID = readFirstSentenceID(model);
 			triplesOutputSentences.add(sentID);
 			LOG.debug("Triples Output defaults to first sentence: " + sentID);
 		}
@@ -899,26 +899,17 @@ public class CoNLLRDFUpdater extends RDFUpdater {
 			sentBufferLookback.add(buffer);
 		}
 
-
 		return prefixCache;
-	}
-
-	/**
-	 * Retrieve the first "Sentence ID" (nif-core#Sentence -property) from the buffer and return it
-	 */
-	private String old_readFirstSentenceID(String buffer) {
-		Model m = ModelFactory.createDefaultModel();
-		return readFirstSentenceID(buffer, m);
 	}
 
 	/**
 	 * Retrieve the first "Sentence ID" (nif-core#Sentence -property) from the model and return it
 	 */
-	private String readFirstSentenceID(String buffer, Model m) {
-		String sentID = m.read(new StringReader(buffer),null, "TTL").listSubjectsWithProperty(
-				m.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
-				m.getProperty("http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Sentence")
-			).next().getLocalName();
+	private String readFirstSentenceID(Model model) {
+		String sentID = model
+				.listResourcesWithProperty(model.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
+						model.getProperty("http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Sentence"))
+				.next().getLocalName();
 		return sentID;
 	}
 
