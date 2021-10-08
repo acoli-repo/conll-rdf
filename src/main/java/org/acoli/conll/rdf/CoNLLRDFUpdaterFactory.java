@@ -11,6 +11,7 @@ import java.util.List;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import org.acoli.fintan.core.FintanStreamComponentFactory;
 import org.apache.commons.cli.*;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Pair;
@@ -18,7 +19,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CoNLLRDFUpdaterFactory extends CoNLLRDFComponentFactory {
+public class CoNLLRDFUpdaterFactory implements FintanStreamComponentFactory {
 	static Logger LOG = LogManager.getLogger(CoNLLRDFUpdaterFactory.class);
 	@Override
 	public CoNLLRDFUpdater buildFromCLI(String[] args) throws IOException, ParseException {

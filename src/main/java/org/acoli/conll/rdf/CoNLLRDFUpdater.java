@@ -24,7 +24,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.PrintStream;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
@@ -41,6 +40,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 
+import org.acoli.fintan.core.FintanStreamHandler;
+import org.acoli.fintan.load.RDFStreamLoader;
+import org.acoli.fintan.rdf.RDFUpdater;
+import org.acoli.fintan.write.RDFStreamWriter;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
@@ -65,7 +68,7 @@ import org.apache.logging.log4j.Logger;
  *  @author Christian Chiarcos {@literal chiarcos@informatik.uni-frankfurt.de}
  *  @author Christian Faeth {@literal faeth@em.uni-frankfurt.de}
  */
-public class CoNLLRDFUpdater extends CoNLLRDFComponent {
+public class CoNLLRDFUpdater extends RDFUpdater {
 	static final Logger LOG = LogManager.getLogger(CoNLLRDFUpdater.class);
 
 	private final Dataset dataset;
@@ -94,7 +97,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 	private final List<String> sentBufferLookahead = Collections.synchronizedList(new ArrayList<String>());
 	private final List<String> sentBufferLookback = Collections.synchronizedList(new ArrayList<String>());
 	// Buffer for outputting sentences in original order
-	private final List<String> sentBufferOut = Collections.synchronizedList(new ArrayList<String>()); 
+	private final List<String> sentBufferOut = Collections.synchronizedList(new ArrayList<String>());
 
 	//for statistics
 	private final List<List<Pair<Integer,Long>>> dRTs = Collections.synchronizedList(new ArrayList<List<Pair<Integer,Long>>>());
@@ -102,18 +105,18 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 
 
 	private class UpdateThread extends Thread {
-		
+
 		private CoNLLRDFUpdater updater;
 		private int threadID;
 		private Dataset memDataset;
-		
+
 		/**
 		 * Each UpdateThread receives its own ID and a back-reference to the calling Updater.
-		 * 
+		 *
 		 * In the current implementation, each thread manages its own in-memory Dataset.
 		 * This is the fastest approach since no concurring access on a single Datasets occurs.
 		 * However: lots of RAM may be needed.
-		 * 
+		 *
 		 * @param updater
 		 * 				The calling Updater (= ThreadHandler)
 		 * @param id
@@ -131,7 +134,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 			memDataset.addNamedModel("https://github.com/acoli-repo/conll-rdf/lookback", ModelFactory.createDefaultModel());
 			memDataset.addNamedModel("https://github.com/acoli-repo/conll-rdf/lookahead", ModelFactory.createDefaultModel());
 		}
-		
+
 		/**
 		 * Run the update thread.
 		 * Load the buffer, execute the updates with all iterations and graphsout, unload the buffer.
@@ -145,7 +148,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 				StringWriter out = new StringWriter();
 				try {
 					loadBuffer(sentBufferThread);
-					
+
 					List<Pair<Integer,Long> > ret = executeUpdates(updates);
 					if (dRTs.get(threadID).isEmpty())
 						dRTs.get(threadID).addAll(ret);
@@ -154,7 +157,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 							dRTs.get(threadID).set(x, new ImmutablePair<Integer, Long>(
 									dRTs.get(threadID).get(x).getKey() + ret.get(x).getKey(),
 									dRTs.get(threadID).get(x).getValue() + ret.get(x).getValue()));
-					
+
 					unloadBuffer(sentBufferThread, out);
 				} catch (Exception e) {
 //					memDataset.begin(ReadWrite.WRITE);
@@ -175,8 +178,8 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 						sentBufferOut.set(i, out.toString());
 						break;
 					}
-				}				
-				
+				}
+
 				//go to sleep and let Updater take control
 					LOG.trace("Updater notified by "+threadID);
 					updater.notify();
@@ -193,10 +196,10 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 				}
 			}
 		}
-		
+
 		/**
 		 * Loads Data to this thread's working model.
-		 * @param buffer 
+		 * @param buffer
 		 * 			the model to be read.
 		 * @throws Exception
 		 */
@@ -206,12 +209,12 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 			//load ALL
 			try {
 //				memDataset.begin(ReadWrite.WRITE);
-				
+
 				// for lookback
 				for (String sent:sentBufferThread.getLeft()) {
 					memDataset.getNamedModel("https://github.com/acoli-repo/conll-rdf/lookback").read(new StringReader(sent),null, "TTL");
 				}
-				
+
 				// for current sentence
 				memDataset.getDefaultModel().read(new StringReader(sentBufferThread.getMiddle()),null, "TTL");
 
@@ -219,7 +222,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 				for (String sent:sentBufferThread.getRight()) {
 					memDataset.getNamedModel("https://github.com/acoli-repo/conll-rdf/lookahead").read(new StringReader(sent),null, "TTL");
 				}
-				
+
 //				memDataset.commit();
 //				Model m = ModelFactory.createDefaultModel().read(new StringReader(buffer),null, "TTL");
 //				memAccessor.add(m);
@@ -230,7 +233,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 			} finally {
 //				memDataset.end();
 			}
-			
+
 		}
 
 		/**
@@ -265,12 +268,12 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 //				memDataset.commit();
 //				memDataset.end();
 			}
-			
+
 		}
-		
+
 		/**
 		 * Executes updates on this thread. Data must be preloaded first.
-		 * 
+		 *
 		 * @param updates
 		 * 			The updates as a List of Triples containing
 		 * 			- update filename
@@ -281,7 +284,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 		 * 			- total no. of iterations
 		 * 			- total time
 		 */
-		private List<Pair<Integer, Long>> executeUpdates(List<Triple<String, String, String>> updates) { 
+		private List<Pair<Integer, Long>> executeUpdates(List<Triple<String, String, String>> updates) {
 
 			String sent = new String();
 			boolean graphsout = false;
@@ -289,7 +292,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 			if (graphOutputDir != null || triplesOutputDir != null) {
 				try {
 				sent = memDataset.getDefaultModel().listSubjectsWithProperty(
-								memDataset.getDefaultModel().getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), 
+								memDataset.getDefaultModel().getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
 								memDataset.getDefaultModel().getProperty("http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Sentence")
 							).next().getLocalName();
 				} catch (Exception e) {
@@ -374,8 +377,8 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 						LOG.error("Error while processing update No. "+upd_id+": "+update.getLeft());
 						e.printStackTrace();
 					}
-					
-					
+
+
 					if (oldModel.isEmpty()) {
 						change = cL.hasChanged();
 						LOG.trace("cl.hasChanged(): "+change);
@@ -393,13 +396,13 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 				result.add(new ImmutablePair<Integer, Long>(v, System.currentTimeMillis() - startTime));
 				defaultModel.unregister(cL);
 				upd_id++;
-			}			
+			}
 			return result;
 		}
-		
+
 		/**
 		 * Produce dotFile for a specific update iteration.
-		 * 
+		 *
 		 * @param m
 		 * 			The current model.
 		 * @param updateSrc
@@ -420,7 +423,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 			if (graphOutputDir != null) {
 				String updateName = (new File(updateSrc)).getName();
 				updateName = (updateName != null && !updateName.isEmpty()) ? updateName : UUID.randomUUID().toString();
-				
+
 				File outputFile = new File(graphOutputDir, sent
 								+"__U"+String.format("%03d", upd_id)
 								+"_I" +String.format("%04d", iter_id)
@@ -428,12 +431,12 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 								+"__" +updateName.replace(".sparql", "")+".dot");
 				Writer w = new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8);
 				CoNLLRDFViz.produceDot(m, w, updateQuery);
-			}		
+			}
 		}
-		
+
 		/**
 		 * Produce lexicographically sorted ntriples-file for a specific update iteration.
-		 * 
+		 *
 		 * @param m
 		 * 			The current model.
 		 * @param updateSrc
@@ -454,7 +457,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 			if (triplesOutputDir != null) {
 				String updateName = (new File(updateSrc)).getName();
 				updateName = (updateName != null && !updateName.isEmpty()) ? updateName : UUID.randomUUID().toString();
-				
+
 				File outputFile = new File(triplesOutputDir, sent
 								+"__U"+String.format("%03d", upd_id)
 								+"_I" +String.format("%04d", iter_id)
@@ -473,7 +476,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 				}
 				out.flush();
 				out.close();
-			}		
+			}
 		}
 	}
 
@@ -483,19 +486,19 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 	public CoNLLRDFUpdater() {
 		this("", "", 0);
 	}
-	
+
 	/**
 	 * Standard Constructor for Updater. Creates Threads and Buffers for Thread handling.
 	 * Also creates the database modules for the respective execution modes.
 	 * @param type: The type of database to be used:
-	 * 				MEM: fully independent in-memory datasets per thread 
+	 * 				MEM: fully independent in-memory datasets per thread
 	 * 						(fastest, no transactions, high RAM usage, no HDD)
 	 * 				TXN: single transactional in-memory dataset for all threads
 	 * 						(in development, medium speed and RAM, no HDD)
 	 * 				TDB2: single transactional TDB2-database for all threads
 	 * 						(in development, slow-medium speed, low RAM usage, high HDD usage)
 	 * 				default: MEM
-	 * @param path: 
+	 * @param path:
 	 * 				path to database (only for TDB2 or other DB-backed modes)
 	 * @param threads
 	 * 				Maximum amount of threads for execution.
@@ -629,9 +632,9 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 	}
 
 	/**
-	 * Load external RDF file into a named graph of the local dataset. 
+	 * Load external RDF file into a named graph of the local dataset.
 	 * This graph is permanent for the runtime and is accessed read-only by all threads.
-	 * The default graph of the local dataset is reserved for updating nif:Sentences and 
+	 * The default graph of the local dataset is reserved for updating nif:Sentences and
 	 * can not be defined here.
 	 * @param url
 	 * 			location of the RDF file to be loaded
@@ -775,122 +778,47 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 		}
 		return result;
 	}
-	
+
 	private static void isValidUTF8(String s, String message) {
-		try 
+		try
 		{
 			s.getBytes("UTF-8");
-		} 
+		}
 		catch (UnsupportedEncodingException e)
 		{
 		    LOG.error(message + " - Encoding error: " + e.getMessage());
 		    System.exit(-1);
-		}		
+		}
 	}
 
 	/**
 	 * Processes CoNLL-RDF on the local dataset using the predfined updates and threads.
-	 * Streams data from a buffered reader to a buffered writer. Distributes the processing 
+	 * Streams data from a buffered reader to a buffered writer. Distributes the processing
 	 * across available threads. Each thread handles one sentence at a time.
 	 * Caches and outputs the resulting sentences in-order.
 	 * @throws IOException
+	 * @throws InterruptedException
 	 */
-	@Override
-	protected void processSentenceStream() throws IOException {
+	// FIXME @Override
+	protected void processSentenceStream() throws IOException, InterruptedException {
 		initThreads();
 		running = true;
-		BufferedReader in = new BufferedReader(new InputStreamReader(getInputStream()));
-		PrintStream out = new PrintStream(getOutputStream());
-		
+		Model model;
 		String prefixCache = new String();
-		String line;
-		String lastLine ="";
-		String buffer="";
-//		List<Pair<Integer,Long> > dRTs = new ArrayList<Pair<Integer,Long> >(); // iterations and execution time of each update in seconds
-		while((line = in.readLine())!=null) {
-			line=line.replaceAll("[\t ]+"," ").trim();
 
-			if(!buffer.trim().equals("") && (line.startsWith("@") || line.startsWith("#")) && !lastLine.startsWith("@") && !lastLine.startsWith("#")) { //!buffer.matches("@[^\n]*\n?$")) {
-				// If the buffer is not empty and the current line starts with @ or #
-				// and the previous line did not start with @ or #
-				// check if the buffer contains a ttl prefix
-				if (buffer.contains("@prefix"))  {
-					prefixCache = new String();
-					for (String buffLine:buffer.split("\n")) {
-						if (buffLine.trim().startsWith("@prefix")) {
-							prefixCache += buffLine+"\n";
-						}
-					}
-				} else {
-					buffer = prefixCache+buffer;
-				}
-
-				// GRAPH OUTPUT determine first sentence's id, if none were specified
-				if ((graphOutputDir != null) && (graphOutputSentences.isEmpty())) {
-					String sentID = readFirstSentenceID(buffer);
-					graphOutputSentences.add(sentID);
-					LOG.debug("Graph Output defaults to first sentence: " + sentID);
-				}
-				// TRIPLES OUTPUT determine first sentence's id, if none were specified
-				if ((triplesOutputDir != null) && (triplesOutputSentences.isEmpty())) {
-					String sentID = readFirstSentenceID(buffer);
-					triplesOutputSentences.add(sentID);
-					LOG.debug("Triples Output defaults to first sentence: " + sentID);
-				}
-
-				//lookahead
-				//add ALL sentences to sentBufferLookahead
-				sentBufferLookahead.add(buffer);
-				if (sentBufferLookahead.size() > lookahead_snts) {
-					//READY TO PROCESS 
-					// remove first sentence from buffer and process it.
-					// !!if lookahead = 0 then only current buffer is in sentBufferLookahead!!
-					executeThread(sentBufferLookahead.remove(0));
-				}		
-				
-				//lookback
-				//needs to consider lookahead buffer. The full buffer size needs to be lookahead + lookback.
-				if (lookback_snts > 0) {
-					while (sentBufferLookback.size() >= lookback_snts + sentBufferLookahead.size()) sentBufferLookback.remove(0);
-					sentBufferLookback.add(buffer);
-				}
-
-				flushOutputBuffer(out);
-				buffer="";
-			}
-			buffer=buffer+line+"\n";
-			lastLine=line;
-		}
-
-		// FINAL SENTENCE (with prefixes if necessary)
-		if (!buffer.contains("@prefix"))  {
-			buffer = prefixCache+buffer;
-		}
-
-		// To address the edge case of no comments or prefixes occuring after the first sentence of a stream
-		// GRAPH OUTPUT determine first sentence's id, if none were specified
-		if ((graphOutputDir != null) && (graphOutputSentences.isEmpty())) {
-			String sentID = readFirstSentenceID(buffer);
-			graphOutputSentences.add(sentID);
-			LOG.debug("Graph Output defaults to first sentence: " + sentID);
-		}
-		// TRIPLES OUTPUT determine first sentence's id, if none were specified
-		if ((triplesOutputDir != null) && (triplesOutputSentences.isEmpty())) {
-			String sentID = readFirstSentenceID(buffer);
-			triplesOutputSentences.add(sentID);
-			LOG.debug("Triples Output defaults to first sentence: " + sentID);
+		while((model = getInputStream().read()) != null) {
+			prefixCache = processModel(prefixCache, model);
+			flushOutputBuffer();
 		}
 
 		// LOOKAHEAD work down remaining buffer
-		sentBufferLookahead.add(buffer);
 		while (sentBufferLookahead.size()>0) {
 			executeThread(sentBufferLookahead.remove(0));
 			if (lookback_snts > 0) {
 				while (sentBufferLookback.size() >= lookback_snts + sentBufferLookahead.size()) sentBufferLookback.remove(0);
 			}
 		}
-			
-		
+
 		//wait for threads to finish work
 		boolean threadsRunning = true;
 		while(threadsRunning) {
@@ -914,7 +842,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 				}
 			}
 		}
-		
+
 		//sum up statistics
 		List<Pair<Integer,Long>> dRTs_sum = new ArrayList<Pair<Integer,Long> >();
 		for (List<Pair<Integer,Long>> dRT_thread:dRTs) {
@@ -925,24 +853,83 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 					dRTs_sum.set(x, new ImmutablePair<Integer, Long>(
 							dRTs_sum.get(x).getKey() + dRT_thread.get(x).getKey(),
 							dRTs_sum.get(x).getValue() + dRT_thread.get(x).getValue()));
-			
+
 		}
 		if (!dRTs_sum.isEmpty())
 			LOG.debug("Done - List of iterations and execution times for the updates done (in given order):\n\t\t" + dRTs_sum.toString());
 
 		//final flush
-		flushOutputBuffer(out);
-		getOutputStream().close();
-		
+		flushOutputBuffer();
+		getOutputStream().terminate();
+	}
+
+	private String processModel(String prefixCache, Model model) {
+		//!buffer.matches("@[^\n]*\n?$")) {
+		String buffer = CoNLLRDFUtil.conllRdfModel2String(model);
+		// If the buffer is not empty and the current line starts with @ or #
+		// and the previous line did not start with @ or #
+		// check if the buffer contains a ttl prefix
+
+		// TODO model.getNsPrefixMap()
+		if (buffer.contains("@prefix"))  {
+			prefixCache = new String();
+			for (String buffLine:buffer.split("\n")) {
+				if (buffLine.trim().startsWith("@prefix")) {
+					prefixCache += buffLine+"\n";
+				}
+			}
+		} else {
+			buffer = prefixCache+buffer;
+		}
+
+		// GRAPH OUTPUT determine first sentence's id, if none were specified
+		if ((graphOutputDir != null) && (graphOutputSentences.isEmpty())) {
+			String sentID = old_readFirstSentenceID(buffer);
+			graphOutputSentences.add(sentID);
+			LOG.debug("Graph Output defaults to first sentence: " + sentID);
+		}
+		// TRIPLES OUTPUT determine first sentence's id, if none were specified
+		if ((triplesOutputDir != null) && (triplesOutputSentences.isEmpty())) {
+			String sentID = old_readFirstSentenceID(buffer);
+			triplesOutputSentences.add(sentID);
+			LOG.debug("Triples Output defaults to first sentence: " + sentID);
+		}
+
+		//lookahead
+		//add ALL sentences to sentBufferLookahead
+		sentBufferLookahead.add(buffer);
+		if (sentBufferLookahead.size() > lookahead_snts) {
+			//READY TO PROCESS
+			// remove first sentence from buffer and process it.
+			// !!if lookahead = 0 then only current buffer is in sentBufferLookahead!!
+			executeThread(sentBufferLookahead.remove(0));
+		}
+
+		//lookback
+		//needs to consider lookahead buffer. The full buffer size needs to be lookahead + lookback.
+		if (lookback_snts > 0) {
+			while (sentBufferLookback.size() >= lookback_snts + sentBufferLookahead.size()) sentBufferLookback.remove(0);
+			sentBufferLookback.add(buffer);
+		}
+
+
+		return prefixCache;
 	}
 
 	/**
 	 * Retrieve the first "Sentence ID" (nif-core#Sentence -property) from the buffer and return it
 	 */
-	private String readFirstSentenceID(String buffer) {
+	private String old_readFirstSentenceID(String buffer) {
 		Model m = ModelFactory.createDefaultModel();
+		return readFirstSentenceID(buffer, m);
+	}
+
+	/**
+	 * Retrieve the first "Sentence ID" (nif-core#Sentence -property) from the model and return it
+	 */
+	private String readFirstSentenceID(String buffer, Model m) {
 		String sentID = m.read(new StringReader(buffer),null, "TTL").listSubjectsWithProperty(
-				m.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), 
+				m.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
 				m.getProperty("http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#Sentence")
 			).next().getLocalName();
 		return sentID;
@@ -964,18 +951,18 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 		}
 	}
 
-	private synchronized void flushOutputBuffer(PrintStream out) {
-		LOG.trace("OutBufferSize: "+sentBufferOut.size());
+	private synchronized void flushOutputBuffer() throws InterruptedException {
+		LOG.trace("OutBufferSize: " + sentBufferOut.size());
 
 		String prefixCacheOut = new String();
 
-		while (!sentBufferOut.isEmpty()) {
-			if (sentBufferOut.get(0).matches("\\d+")) break;
-			
+		for (String buffer : sentBufferOut) {
+			if (buffer.matches("\\d+")) break;
+
 			String outString = new String();
 			if (prefixDeduplication) {
 				String prefixCacheTMP = new String();
-				for (String buffLine:sentBufferOut.remove(0).split("\n")) {
+				for (String buffLine:buffer.split("\n")) {
 					if (buffLine.trim().startsWith("@prefix")) {
 						prefixCacheTMP += buffLine+"\n";
 					} else if (!buffLine.trim().isEmpty()) {
@@ -987,10 +974,10 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 					outString = prefixCacheTMP + outString + "\n";
 				}
 			} else {
-				outString = sentBufferOut.remove(0);
+				outString = buffer;
 			}
 			if (!outString.endsWith("\n\n")) outString += "\n";
-			out.print(outString);
+			getOutputStream().write(ModelFactory.createDefaultModel().read(new StringReader(outString), null, "TTL"));
 		}
 	}
 
@@ -1018,7 +1005,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 				LOG.trace("restart "+i);
 				LOG.trace("OutBufferSize: "+sentBufferOut.size());
 				break;
-			} else 
+			} else
 				if (updateThreads.get(i).getState() == Thread.State.WAITING) {
 				synchronized(updateThreads.get(i)) {
 				sentBufferThreads.set(i, sentBufferThread);
@@ -1027,7 +1014,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 				}
 				LOG.trace("wake up "+i);
 				break;
-			} else 
+			} else
 				if (updateThreads.get(i).getState() == Thread.State.NEW) {
 				sentBufferThreads.set(i, sentBufferThread);
 				sentBufferOut.add(String.valueOf(i)); //add last sentences to the end of the output queue.
@@ -1035,7 +1022,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 				LOG.trace("start "+i);
 				LOG.trace("OutBufferSize: "+sentBufferOut.size());
 				break;
-			} else 
+			} else
 				if (updateThreads.get(i).getState() == Thread.State.TERMINATED) {
 				sentBufferThreads.set(i, sentBufferThread);
 				sentBufferOut.add(String.valueOf(i)); //add last sentences to the end of the output queue.
@@ -1045,7 +1032,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 				LOG.trace("OutBufferSize: "+sentBufferOut.size());
 				break;
 			}
-			
+
 			i++;
 			if (i >= updateThreads.size()) {
 				try {
@@ -1064,18 +1051,25 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 
 	public static void main(String[] args) throws IOException {
 		final CoNLLRDFUpdater updater;
+		final FintanStreamHandler<Model> inStream = new FintanStreamHandler<Model>();
+		final FintanStreamHandler<Model> outStream = new FintanStreamHandler<Model>();
+		final RDFStreamLoader streamLoader = new RDFStreamLoader();
+		final RDFStreamWriter streamWriter = new RDFStreamWriter();
 		try {
 			updater = new CoNLLRDFUpdaterFactory().buildFromCLI(args);
-			updater.setInputStream(System.in);
-			updater.setOutputStream(System.out);
+			streamLoader.setInputStream(System.in);
+			streamLoader.setOutputStream(inStream);
+			updater.setInputStream(inStream);
+			updater.setOutputStream(outStream);
+			streamWriter.setInputStream(outStream);
+			streamWriter.setOutputStream(System.out);
 		} catch (ParseException e) {
 			LOG.error(e);
 			System.exit(1);
 			return;
 		}
-		long start = System.currentTimeMillis();
-		// READ SENTENCES from System.in
-		updater.processSentenceStream();
-		LOG.debug((System.currentTimeMillis()-start)/1000 + " seconds");
+		new Thread(streamLoader).start();
+		new Thread(updater).start();
+		new Thread(streamWriter).start();
 	}
 }
