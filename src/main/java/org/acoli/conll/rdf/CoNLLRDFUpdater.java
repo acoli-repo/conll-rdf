@@ -15,7 +15,8 @@
  */
 package org.acoli.conll.rdf;
 
-import static org.acoli.conll.rdf.CoNLLRDFCommandLine.*;
+import static org.acoli.conll.rdf.CoNLLRDFCommandLine.readString;
+import static org.acoli.conll.rdf.CoNLLRDFCommandLine.readUrl;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -26,7 +27,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -205,7 +205,7 @@ public class CoNLLRDFUpdater extends RDFUpdater {
 		 */
 		private void loadBuffer(Triple<List<String>, String, List<String>> sentBufferThread) throws Exception { //TODO: adjust for TXN-Models
 			//check validity of current sentence
-			isValidUTF8(sentBufferThread.getMiddle(), "Input data encoding issue for \"" + sentBufferThread.getMiddle() + "\"");
+
 			//load ALL
 			try {
 //				memDataset.begin(ReadWrite.WRITE);
@@ -770,25 +770,12 @@ public class CoNLLRDFUpdater extends RDFUpdater {
 				BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(uri.toURL().openStream())));
 				for (String line; (line = br.readLine()) != null; sb.append(line));
 				result = sb.toString();
-				isValidUTF8(result, "Given URI input (" + uri.getPath() + ") is not UTF-8 encoded");
 			}
 		} catch (Exception ex) {
 			LOG.error("Excpetion while reading " + uri.getPath());
 			throw ex;
 		}
 		return result;
-	}
-
-	private static void isValidUTF8(String s, String message) {
-		try
-		{
-			s.getBytes("UTF-8");
-		}
-		catch (UnsupportedEncodingException e)
-		{
-		    LOG.error(message + " - Encoding error: " + e.getMessage());
-		    System.exit(-1);
-		}
 	}
 
 	/**
