@@ -20,13 +20,14 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.acoli.conll.rdf.CoNLLRDFFormatter.Mode;
 import org.acoli.conll.rdf.CoNLLRDFFormatter.Module;
+import org.acoli.fintan.core.FintanStreamComponentFactory;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class CoNLLRDFFormatterFactory extends CoNLLRDFComponentFactory {
+public class CoNLLRDFFormatterFactory implements FintanStreamComponentFactory {
 	static Logger LOG = LogManager.getLogger(CoNLLRDFFormatterFactory.class);
 
 	@Override
