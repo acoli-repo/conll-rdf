@@ -15,7 +15,7 @@ JAVAS="";
 for java in $(find $HOME/src/main/java -name "*.java"); do
 	class=$TARGET${java#$HOME/src/main/java}
 	class=${class%.java}.class
-	if [ ! -e $class ] || [ $java -nt $class ] || [ $1 = "-f" ]; then
+	if [ ! -e $class ] || [ $java -nt $class ] || [ " "$1 = " -f" ]; then
 		JAVAS="$JAVAS $java"
 	fi;
 done;
