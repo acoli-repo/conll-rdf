@@ -22,6 +22,7 @@ done;
 
 # NEW: build with Maven
 if echo $JAVAS | egrep '.' >/dev/null; then
+	cd $HOME;
 	mvn package;
 fi;
 
