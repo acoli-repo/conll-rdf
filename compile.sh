@@ -20,27 +20,33 @@ for java in $(find $HOME/src/main/java -name "*.java"); do
 	fi;
 done;
 
-# Copy properties files to target
-for propertiesFile in $(find $HOME/src/main/resources -name '*.properties'); do
-	cp -f -- "$propertiesFile" "$TARGET${propertiesFile#src/main/resources}" &> /dev/null;
-done;
-
-# Check if compiling is necessary
-if [ -n "$JAVAS" ]; then
-	# compile with maven whenever possible
-	if ( mvn -version &> /dev/null ); then
-		( cd $HOME && mvn compile &> /dev/null; );
-	else
-		# Change the paths to Windows-style paths if the script is running in cygwin
-		if [ $OSTYPE = "cygwin" ]; then
-			TARGET=$(cygpath -wa -- "$TARGET");
-			CLASSPATH=$(cygpath -pwa -- "$CLASSPATH");
-			JAVAS=$(for java in $JAVAS; do cygpath -wa -- "$java"; done);
-		fi;
-		# Compile only the outdated classes
-		javac -d $TARGET -classpath $CLASSPATH $JAVAS;
-	fi;
+# NEW: build with Maven
+if echo $JAVAS | egrep '.' >/dev/null; then
+	mvn package;
 fi;
+
+# OLD: pre-maven
+# # Copy properties files to target
+# for propertiesFile in $(find $HOME/src/main/resources -name '*.properties'); do
+# 	cp -f -- "$propertiesFile" "$TARGET${propertiesFile#src/main/resources}" &> /dev/null;
+# done;
+#
+# # Check if compiling is necessary
+# if [ -n "$JAVAS" ]; then
+# 	# compile with maven whenever possible
+# 	if ( mvn -version &> /dev/null ); then
+# 		( cd $HOME && mvn compile &> /dev/null; );
+# 	else
+# 		# Change the paths to Windows-style paths if the script is running in cygwin
+# 		if [ $OSTYPE = "cygwin" ]; then
+# 			TARGET=$(cygpath -wa -- "$TARGET");
+# 			CLASSPATH=$(cygpath -pwa -- "$CLASSPATH");
+# 			JAVAS=$(for java in $JAVAS; do cygpath -wa -- "$java"; done);
+# 		fi;
+# 		# Compile only the outdated classes
+# 		javac -d $TARGET -classpath $CLASSPATH $JAVAS;
+# 	fi;
+# fi;
 
 # debug
 # echo 'ARGS:' $*
