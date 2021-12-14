@@ -57,7 +57,8 @@ import org.apache.jena.update.Update;
 import org.apache.jena.update.UpdateAction;
 import org.apache.jena.update.UpdateFactory;
 import org.apache.jena.update.UpdateRequest;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 /**
@@ -65,7 +66,7 @@ import org.apache.log4j.Logger;
  *  @author Christian Faeth {@literal faeth@em.uni-frankfurt.de}
  */
 public class CoNLLRDFUpdater extends CoNLLRDFComponent {
-	static final Logger LOG = Logger.getLogger(CoNLLRDFUpdater.class);
+	static final Logger LOG = LogManager.getLogger(CoNLLRDFUpdater.class);
 
 	private final Dataset dataset;
 

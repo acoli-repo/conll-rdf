@@ -42,11 +42,13 @@ import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.update.UpdateFactory;
 import org.apache.jena.update.UpdateRequest;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
 
 class CoNLLRDFCommandLine {
-	private static final Logger LOG = Logger.getLogger(CoNLLRDFCommandLine.class);
+	private static final Logger LOG = LogManager.getLogger(CoNLLRDFCommandLine.class);
 	private final Logger logger;
 	private final String syntax;
 	private final String header;
@@ -110,12 +112,13 @@ class CoNLLRDFCommandLine {
 			System.exit(0);
 		}
 		if (cmd.hasOption("silent")) {
-			logger.setLevel(Level.WARN);
+			// Not part of the public API. See: https://logging.apache.org/log4j/2.x/faq.html#reconfig_level_from_code
+			Configurator.setLevel(logger.getName(), Level.WARN);
 		}
 
 		// READ LOGLEVEL
 		if (cmd.hasOption("loglevel")) {
-			logger.setLevel(Level.toLevel(cmd.getOptionValue("loglevel")));
+			Configurator.setLevel(logger.getName(), Level.toLevel(cmd.getOptionValue("loglevel")));
 		}
 		return cmd;
 	}

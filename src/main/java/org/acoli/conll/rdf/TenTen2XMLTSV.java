@@ -2,8 +2,10 @@ package org.acoli.conll.rdf;
 
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
 
 import java.io.*;
 import java.util.*;
@@ -14,7 +16,7 @@ public class TenTen2XMLTSV {
 
 
 	List<String> tagsContainingData = Arrays.asList("kwik", "left", "right");
-	private static Logger LOG = Logger.getLogger(TenTen2XMLTSV.class.getName());
+	private static Logger LOG = LogManager.getLogger(TenTen2XMLTSV.class.getName());
 	public boolean isKEEP() {
 		return KEEP;
 	}
@@ -281,8 +283,10 @@ public class TenTen2XMLTSV {
 			else
 				dataTags.add(argv[i]);
 		}
-		if (silent)
-			LOG.setLevel(Level.OFF);
+		if (silent) {
+			// Not part of the public API. See: https://logging.apache.org/log4j/2.x/faq.html#reconfig_level_from_code
+			Configurator.setLevel(LOG.getName(), Level.OFF);
+		}
 
 		LOG.info("synopsis: CoNLLStreamExtractor ELEMENT1[.. ELEMENTn] [--keep|-k] [--repair|-r] [--silent|-s]\n"+
 			"\tELEMENTi      Name of XML Node to extract embedded CoNLL from\n"+
