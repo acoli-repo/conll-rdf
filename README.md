@@ -125,7 +125,7 @@ It can write:
 * **Christian Fäth** - faeth@em.uni-frankfurt.de
 * **Benjamin Kosmehl** (2017-2018) - bkosmehl@gmail.com
 * **Luis Glaser** (2018-2020)
-* **Leo Gott** (2020-)
+* [**Leona 'leo' Gottfried**](https://github.com/leogott) (2020-)
 
 See also the list of [contributors](https://github.com/acoli-repo/conll-rdf/graphs/contributors) who participated in this project.
 
