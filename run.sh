@@ -18,7 +18,6 @@ IFS=$'\n\t'
 
 # store the path of the conll-rdf directory
 # $0 is a special variable containing the location of the script
-# unused atm, but I'm too proud of it to let go
 conll_dir="$(dirname -- "$(realpath -- "$0")")"
 # use like target_dir="${conll_dir}/target/classes"
 
@@ -39,7 +38,7 @@ shift 1;
 # For an explanation to the use of quotes, see the reference at the top of this file.
 quoted_args="${@@Q}"
 
-mvn_args=("--batch-mode" "--quiet")
+mvn_args=("--batch-mode" "--quiet" "--file=${conll_dir}")
 # Uncomment the following line for a full stack-trace
 # mvn_args=("--batch-mode" "--quiet" "-e")
 mvn_compile_goal=("compile")

@@ -7,4 +7,6 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-mvn clean compile -am --batch-mode --quiet -e
+conll_dir="$(dirname -- "$(realpath -- "$0")")"
+
+mvn clean compile -am --batch-mode --quiet  "--file=${conll_dir}" -e
