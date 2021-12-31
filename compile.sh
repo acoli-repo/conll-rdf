@@ -9,4 +9,4 @@
 
 conll_dir="$(dirname -- "$(realpath -- "$0")")"
 
-mvn clean compile -am --batch-mode --quiet  "--file=${conll_dir}" -e -DskipTests=true
+mvn clean install --also-make --batch-mode --quiet  "--file=${conll_dir}/parent" -e -DskipTests=true
