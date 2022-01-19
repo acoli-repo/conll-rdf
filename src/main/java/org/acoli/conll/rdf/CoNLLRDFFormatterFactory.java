@@ -23,10 +23,11 @@ import org.acoli.conll.rdf.CoNLLRDFFormatter.Module;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class CoNLLRDFFormatterFactory extends CoNLLRDFComponentFactory {
-	static Logger LOG = Logger.getLogger(CoNLLRDFFormatterFactory.class);
+	static Logger LOG = LogManager.getLogger(CoNLLRDFFormatterFactory.class);
 
 	@Override
 	public CoNLLRDFFormatter buildFromCLI(String[] args) throws IOException, ParseException {

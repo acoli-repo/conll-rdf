@@ -12,11 +12,12 @@ import java.util.List;
 
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
 
 public class CoNLLStreamExtractorFactoryTest {
-	static Logger LOG = Logger.getLogger(CoNLLStreamExtractorFactoryTest.class);
+	static Logger LOG = LogManager.getLogger(CoNLLStreamExtractorFactoryTest.class);
 
 	// throw ParseException if no arguments are provided
     @Test

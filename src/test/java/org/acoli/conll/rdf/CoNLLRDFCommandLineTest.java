@@ -15,17 +15,18 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 public class CoNLLRDFCommandLineTest {
-	private static final Logger LOG = Logger.getLogger(CoNLLRDFCommandLineTest.class);
+	private static final Logger LOG = LogManager.getLogger(CoNLLRDFCommandLineTest.class);
 
 	@Test
 	void silentOption() throws ParseException {
-		Logger logger = Logger.getLogger("silentOption");
+		Logger logger = LogManager.getLogger("silentOption");
 		CoNLLRDFCommandLine conllCli = new CoNLLRDFCommandLine("syntax", "description", new Option[] {}, logger);
 
 		conllCli.parseArgs(new String[] { "-silent" });
