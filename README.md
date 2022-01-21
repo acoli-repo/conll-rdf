@@ -30,19 +30,23 @@ Of course you can also use the provided classes within java as any other library
 
 ## Installing
 Download the repository from GitHub: `git clone https://github.com/acoli-repo/CoNLL-RDF.git`.
+Then use `git submodule update --init --recursive` to clone the fintan-core submodule.
 
-The source is compiled automatically once you run the tool via the `run.sh` bash script.
+The project is compiled automatically whenever you run the tool via the `./run.sh` bash script.  
+Experienced users may wish to modify the script to skip this for a small speed-up.
+
+You can manually (re)compile it by calling the `./compile.sh` script or by using maven directly with `mvn clean compile` from the project root.
 
 ### Requirements
-* JDK (OpenJDK or Java SE), version 1.8 or higher.
-  * run `java -version` to check if java is installed.
-  * run `javac -version` to check if your version of the compiler is sufficient.
-* Maven 3.3+ (Optional but highly recommended).
+* Apache Maven (Latest release recommended. Expected to work from 3.3+).
   * run `mvn -version` to check if Maven is installed.
-
-All required java libraries are contained in [lib/](./lib).
+  * Maven will use the JDK in your JAVA_HOME system variable, so the java version listed here can differ from the one in your PATH.
+* JDK (OpenJDK or Java SE), version 1.8 or higher.
+  * run `java -version` to check if java is installed and in your PATH.
+  * run `javac -version` to check if your version of the compiler is sufficient.
 
 ## Common Issues
+* if maven doesn't find/ use the correct java installation, [try setting your JAVA_HOME](https://www.baeldung.com/maven-different-jdk)
 * **if your pipelines broke with an update** in 2020-09 or soon after, you're likely calling the classes directly with `java`and not via `./run.sh`. You can change your scripts to call `./run.sh` (or copy the changes we made to `run.sh` into your scripts).
 * you might get an error like `bash: ./../test.sh: Permission denied` when trying to run a script. Use this command to change the filemode: `chmod +x <SCRIPT>`
 * an error starting like `ERROR CoNLLRDFUpdater :: SPARQL parse exception for Update No. 0: DIRECTUPDATE [...]` when running the RDFUpdater can be raised if the path to a sparql query is wrong. Check for extra or missing `../`.
@@ -68,9 +72,9 @@ This will create a new file `example.ttl` in conll-rdf by simply providing
 * the names of the CoNLL columns from left to right.
 
 ### run.sh
-`run.sh` is used to make things feel more bash-like. It determines the classpath, updates class files if necessary and runs the specified java class with the provided arguments.
+`run.sh` is a wrapper script to make things feel more bash-like. It updates class files if necessary and runs the specified java class with the provided arguments.
 * eg. `cat foo.ttl | ./run.sh CoNLLRDFFormatter > foo_formatted.ttl` would pipe `foo.ttl` through `CoNLLRDFFormatter` into `foo_formatted.ttl`.
-* In case the respective `.class` files cannot be found, `run.sh` calls `compile.sh` to compile the java classes from source. Of course, you may also run `compile.sh` independently.
+* If necessary `run.sh`, will compile java classes from source. You may also run `compile.sh` independently.
 
 ## Features
 In-depth information on all the classes of **conll-rdf** can be found in [the documentation.](doc/classes.md)
@@ -121,7 +125,7 @@ It can write:
 * **Christian Fäth** - faeth@em.uni-frankfurt.de
 * **Benjamin Kosmehl** (2017-2018) - bkosmehl@gmail.com
 * **Luis Glaser** (2018-2020)
-* **Leo Gott** (2020-)
+* [**Leona 'leo' Gottfried**](https://github.com/leogott) (2020-)
 
 See also the list of [contributors](https://github.com/acoli-repo/conll-rdf/graphs/contributors) who participated in this project.
 
