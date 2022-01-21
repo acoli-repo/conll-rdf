@@ -13,8 +13,10 @@
 # * set -u to fail on references to unbound variables
 # * set -o pipefail to carry the non-zero exit code of a pipeline
 # * IFS=$'\n\t' (InternalFieldSeperator) to not split arrays on spaces. Notice the $'...' syntax
-set -euo pipefail
-IFS=$'\n\t'
+# Uncomment the following two lines to enable (disabled because running this like `. run.sh`
+# would apply these settings to your console and terminate bash on error)
+# set -euo pipefail
+# IFS=$'\n\t'
 
 # store the path of the conll-rdf directory
 # $0 is a special variable containing the location of the script
