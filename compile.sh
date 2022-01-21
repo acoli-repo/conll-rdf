@@ -4,8 +4,8 @@
 # Please read the notice at the start of run.sh if you're not sure what you're seeing here.
 
 # Bash Strict Mode
-set -euo pipefail
-IFS=$'\n\t'
+# set -euo pipefail
+# IFS=$'\n\t'
 
 conll_dir="$(dirname -- "$(realpath -- "$0")")"
 
