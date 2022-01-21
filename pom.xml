@@ -95,11 +95,11 @@
           <descriptorRefs>
             <descriptorRef>jar-with-dependencies</descriptorRef>
           </descriptorRefs>
-          <!--<archive>
-            <manifest>
-              <mainClass>org.acoli.conll.rdf.CoNLLRDFCli</mainClass>
-            </manifest>
-          </archive>-->
+          <archive>
+            <manifestEntries>
+              <Multi-Release>true</Multi-Release>
+            </manifestEntries>
+          </archive>
         </configuration>
         <executions>
           <execution>
