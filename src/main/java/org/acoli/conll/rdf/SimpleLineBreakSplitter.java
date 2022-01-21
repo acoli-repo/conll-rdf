@@ -1,13 +1,16 @@
 package org.acoli.conll.rdf;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
+
+import org.apache.commons.cli.ParseException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class SimpleLineBreakSplitter extends CoNLLRDFComponent {
+	static final Logger LOG = LogManager.getLogger(SimpleLineBreakSplitter.class);
 
-
-	private void processSentenceStream() throws IOException {
+	@Override
+	protected void processSentenceStream() throws IOException {
 		String line;
 		int empty = 0;
 		while((line = getInputStream().readLine())!=null) {
@@ -24,33 +27,23 @@ public class SimpleLineBreakSplitter extends CoNLLRDFComponent {
 		getOutputStream().close();
 	}
 
-	@Override
-	public void run() {
-		try {
-			processSentenceStream();
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.exit(0);
-		}
-	}
-
-	@Override
-	public void start() {
-		run();
+	public void configureFromCommandLine(String[] args) throws IOException, ParseException {
+		// Nothing to do
 	}
 
 	public static void main(String[] args) throws IOException {
-		System.err.println("synopsis: SimpleLineBreakSplitter");
 		SimpleLineBreakSplitter splitter = new SimpleLineBreakSplitter();
 
+		try {
+			splitter.configureFromCommandLine(args);
+		} catch (ParseException e) {
+			LOG.error(e);
+			System.exit(1);
+		}
+
 		long start = System.currentTimeMillis();
-
-		splitter.setInputStream(new BufferedReader(new InputStreamReader(System.in)));
-		splitter.setOutputStream(System.out);
-
-		//READ SENTENCES from System.in
+		// READ SENTENCES from System.in
 		splitter.processSentenceStream();
-		System.err.println(((System.currentTimeMillis()-start)/1000 + " seconds"));
+		LOG.info((System.currentTimeMillis() - start) / 1000 + " seconds");
 	}
-
 }

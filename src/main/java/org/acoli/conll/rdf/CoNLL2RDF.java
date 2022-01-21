@@ -22,8 +22,6 @@ import java.util.regex.Pattern;
 import java.lang.reflect.*;
 import org.apache.jena.rdf.model.*;	// Jena 3.x
 //import com.hp.hpl.jena.rdf.model.*;		// Jena 2.x
-import org.apache.log4j.Logger;
-
 
 
 /**
@@ -47,9 +45,6 @@ public class CoNLL2RDF extends Format2RDF{
 		super(baseURI, fields);
 	}
 
-	
-	private static Logger LOG = Logger.getLogger(CoNLL2RDF.class.getName());
-	
 	/** @param argv baseURI field1 field2 ... (see variable <code>help</code> and method <code>conll2ttl</code>) */
 	public static void main(String[] argv) throws Exception {		
 		Format2RDF.main("CoNLL",argv);
@@ -93,6 +88,7 @@ public class CoNLL2RDF extends Format2RDF{
 						}
 					}
 					out.write(sentence+"\n");
+					out.flush();
 					predicates.clear();
 					sentence="";
 					tok=0;
@@ -176,8 +172,9 @@ public class CoNLL2RDF extends Format2RDF{
 			//out.write("\n");
 			for(String p : argsProperties)
 				out.write(p.trim()+"\n");
-			out.flush();			
 		}
+			out.flush();			
+			
 			if(tok>0) {
 				sent++;
 				tok=0;

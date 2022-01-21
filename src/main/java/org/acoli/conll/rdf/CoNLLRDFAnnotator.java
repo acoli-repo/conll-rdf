@@ -16,12 +16,12 @@
 package org.acoli.conll.rdf;
 
 import java.io.*;
-import java.net.*;
 import java.util.*;
-import org.apache.jena.rdf.model.*;		// Jena 2.x
-import org.apache.jena.update.*;
-import org.apache.log4j.Logger;
-import org.apache.jena.query.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.ParseException;
 
 
 /** a simple, shell-based annotator for CoNLL-RDF, requires Un*x shells with color highlighting<br/>
@@ -32,30 +32,39 @@ import org.apache.jena.query.*;
  *  @author Christian Chiarcos {@literal chiarcos@informatik.uni-frankfurt.de}
  */
 public class CoNLLRDFAnnotator extends CoNLLRDFFormatter {
+	private static Logger LOG = LogManager.getLogger(CoNLLRDFAnnotator.class);
 	
-		private static Logger LOG = Logger.getLogger(CoNLLRDFAnnotator.class.getName());
+	public static void main(String[] args) throws IOException {
+		BufferedReader in;
+		BufferedReader commands = new BufferedReader(new InputStreamReader(System.in));
+		try {
+			final CommandLine cmd = new CoNLLRDFCommandLine("CoNLLRDFAnnotator file.ttl",
+					"Manual, sentence-wise annotation of a canonically formatted CoNLL TTL File. Visualization like CoNLLRDFFormatter -grammar. Writes CoNLL-RDF to stdout (make sure to write this to a file, your annotation is only contained here)",
+					new Option[] {}, LOG).parseArgs(args);
 
-		public static void main(String[] argv) throws IOException {
-			LOG.info("synopsis: CoNLLRDFAnnotator file.ttl \n"
-					+ "read canonically formatted CoNLL TTL sentence-wise\n"
-					+ "visualize like CoNLLRDFFormatter -grammar\n"
-					+ "manual, text-based annotation\n"
-					+ "write CoNLL-RDF to stdout (make sure to write this to a file, your annotation is only contained here)");
+			List<String> argList = cmd.getArgList();
+			if (argList.isEmpty()) {
+				throw new ParseException("Missing required argument file.ttl.");
+			}
+			in = new BufferedReader(new FileReader(argList.remove(0)));
+		} catch (ParseException e) {
+			LOG.error(e);
+			System.exit(1);
+			return;
+		}
 
-			BufferedReader in = new BufferedReader(new FileReader(argv[0]));
 			String line;
 			String lastLine ="";
 			String buffer="";
 
-			BufferedReader cmds = new BufferedReader(new InputStreamReader(System.in));
-			String cmd = "";
+		String command = "";
 			String macros = "^([0-9]+) ([0-9]+) (.+)$\t$1/HEAD=$2/EDGE=$3\n";
 			while((line = in.readLine())!=null) {
 				line=line.replaceAll("[\t ]+"," ").trim();
 
 				if(!buffer.trim().equals(""))
 					if((line.startsWith("@") || line.startsWith("#")) && !lastLine.startsWith("@") && !lastLine.startsWith("#")) {
-						while(!cmd.trim().equals(">")) {
+					while(!command.trim().equals(">")) {
 							System.err.print(
 							  "actions ............................................................................................................\n"+
 							  "        : "+ANSI_BLUE+"$nr/$att=$val"+ANSI_RESET+"   for element number $nr, set CoNLL property $att to $val, e.g., \"1/POS=NOUN\"              :\n"+
@@ -73,16 +82,16 @@ public class CoNLLRDFAnnotator extends CoNLLRDFFormatter {
 								System.err.println("macros    "+ANSI_RED+macros.replaceAll("\n",ANSI_RESET+"\n          "+ANSI_RED).replaceAll("\t","\t"+ANSI_RESET+"=>\t"+ANSI_BLUE)+ANSI_RESET);
 							System.err.print("| ----------------------------\n| "+CoNLLRDFFormatter.extractCoNLLGraph(buffer,true).replaceAll("\n","\n| ")+"-----------------------------\n"+
 								"command: ");
-							cmd=cmds.readLine().trim();
-							cmd=applyMacros(macros,cmd);
-							if(cmd.equals(">")) {
+						command=commands.readLine().trim();
+						command=applyMacros(macros,command);
+						if(command.equals(">")) {
 								System.out.println(buffer+"\n");
 								buffer="";
-							} else if(cmd.equals("m")) {
+						} else if(command.equals("m")) {
 								System.err.print("left hand side (what is entered):               ");
-								String lhs = cmds.readLine().replaceAll("\t"," ");
+							String lhs = commands.readLine().replaceAll("\t"," ");
 								System.err.print("right hand side (or <ENTER> to delete macro):   ");
-								String rhs=cmds.readLine().replaceAll("\t"," ");
+							String rhs=commands.readLine().replaceAll("\t"," ");
 								if(rhs.equals("")) {
 									String tmp = "";
 									for(String macro : macros.split("\n"))
@@ -93,10 +102,10 @@ public class CoNLLRDFAnnotator extends CoNLLRDFFormatter {
 									macros=macros+lhs+"\t"+rhs+"\n";
 								}
 							} else {
-								buffer=updateBuffer(buffer,cmd);
+							buffer=updateBuffer(buffer,command);
 							}
 						}
-						cmd = "";
+					command = "";
 					}
 				//System.err.println(ANSI_RED+"> "+line+ANSI_RESET);
 				if(line.trim().startsWith("@") && !lastLine.trim().endsWith("."))
@@ -118,7 +127,7 @@ public class CoNLLRDFAnnotator extends CoNLLRDFFormatter {
 				//System.out.println();
 				lastLine=line;
 			}
-			cmds.close();
+		commands.close();
 			in.close();
 			LOG.info("done");
 	}

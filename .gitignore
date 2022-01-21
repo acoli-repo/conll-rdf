@@ -9,8 +9,8 @@ dependency-reduced-pom.xml
 buildNumber.properties
 
 # Eclipse
-# .classpath and .project should be excluded but are still required for non-maven compilation
 .classpath
+.factorypath
 .project
 .settings/
 .recommenders

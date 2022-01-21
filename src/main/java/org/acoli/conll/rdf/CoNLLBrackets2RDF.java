@@ -3,7 +3,8 @@ package org.acoli.conll.rdf;
 import java.io.*;
 import java.util.*;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** support for the bracketing notation as provided by PTB 
  *  at the moment, bracketing columns are auto-detected.
@@ -13,7 +14,7 @@ import org.apache.log4j.Logger;
  *  */
 abstract class CoNLLBrackets2RDF extends Format2RDF {
 
-	private static Logger LOG = Logger.getLogger(Format2RDF.class.getName());
+	private static Logger LOG = LogManager.getLogger(Format2RDF.class.getName());
 	
 	/** marks columns that contain brackets, judging from the first sentence that  */
 	protected final Boolean[] col2bracket;
