@@ -50,6 +50,7 @@ You can manually (re)compile it by calling the `./compile.sh` script or by using
 * **if your pipelines broke with an update** in 2020-09 or soon after, you're likely calling the classes directly with `java`and not via `./run.sh`. You can change your scripts to call `./run.sh` (or copy the changes we made to `run.sh` into your scripts).
 * you might get an error like `bash: ./../test.sh: Permission denied` when trying to run a script. Use this command to change the filemode: `chmod +x <SCRIPT>`
 * an error starting like `ERROR CoNLLRDFUpdater :: SPARQL parse exception for Update No. 0: DIRECTUPDATE [...]` when running the RDFUpdater can be raised if the path to a sparql query is wrong. Check for extra or missing `../`.
+* an error like `org.apache.jena.riot.RiotException: [line: 3, col: 12] Undefined prefix: rdfs` from CoNLLRDFUpdater even though the namespace in question is defined in the input: Make sure to use RDF 1.0 Turtle notation for prefixes (i.e., `@prefix bla: <...> .`), not the SPARQL-style notation (i.e., `PREFIX bla: <...>`) introduced with RDF 1.1 (cf. [issue #80](https://github.com/acoli-repo/conll-rdf/issues/80)). This can happen only if externally produced CoNLL-RDF data is consumed.
 
 ## Getting Started
 All relevant classes are in [src/](./src/org/acoli/conll/rdf). Documentation for them is found in [doc/](doc/).
