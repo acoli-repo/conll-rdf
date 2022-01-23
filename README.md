@@ -9,8 +9,6 @@ CoNLL-RDF can read and write any annotation format that fulfills the following c
 * empty lines as sentence separators (optional) 
 * comments and headlines marked by `#` (optional)
 
-In particular, it supports _all_ TSV formats used in previous shared tasks of the Conference of Natural Language Learning ([CoNLL](https://www.conll.org)), the formats of the Universal Dependencies ([UD: CoNLL-U, CoNLL-U Plus](https://universaldependencies.org/)), Universal Morphologies ([UniMorph](https://unimorph.github.io/)) and Universal Propositions ([UP: skel format](https://github.com/System-T/UniversalPropositions)) initiatives, and those of [SketchEngine](https://www.sketchengine.eu/) and [CWB](http://cwb.sourceforge.net/). Some of these formats introduce special notations that extend the basic TSV model (e.g., XML tags). CoNLL-RDF does support these, as well.
-
 ## Contents
 
   * [What it can do](#what-it-can-do)
@@ -137,9 +135,9 @@ It can write:
 	* an error starting like `ERROR CoNLLRDFUpdater :: SPARQL parse exception for Update No. 0: DIRECTUPDATE [...]` when running the RDFUpdater can be raised if the path to a sparql query is wrong. Check for extra or missing `../`.
 * *processing external data* (i.e., not produced by this library):
 	* an error like `org.apache.jena.riot.RiotException: [line: 3, col: 12] Undefined prefix: rdfs` from CoNLLRDFUpdater even though the namespace in question is defined in the input: Make sure to use RDF 1.0 Turtle notation for prefixes (i.e., `@prefix bla: <...> .`), not the SPARQL-style notation (i.e., `PREFIX bla: <...>`) introduced with RDF 1.1 (cf. [issue #80](https://github.com/acoli-repo/conll-rdf/issues/80)). This can happen only if externally produced CoNLL-RDF data is consumed.
-	* CoNLLRDFUpdater does not seem to get and process the expected matches, but execution of SPARQL Updates against a database backend works as expected. For every empty line in the input, CoNLLRDFUpdater will split the input into chunks and process each chunk in parallel (and in isolation from each other). Some Turtle formatters will insert empty lines between groups of triples that do not relate to the same subject, and, then, CoNLLRDFUpdater will process these groups in isolation from each other. To suppress this behavior, remove all empty lines before feeding the input into CoNLLRDFUpdater:
+	* CoNLLRDFUpdater does not seem to get and process the expected matches, but execution of SPARQL Updates against a database backend works as expected. For every empty or comment (`#`) line in the input, CoNLLRDFUpdater will split the input into chunks and process each chunk in parallel (and in isolation from each other). Some Turtle formatters will insert empty lines between groups of triples that do not relate to the same subject, and, then, CoNLLRDFUpdater will process these groups in isolation from each other. To suppress this behavior, remove all empty lines and comments before feeding the input into CoNLLRDFUpdater:
 
-			$> cat my-input.ttl | egrep '[^\s]' | run.sh CoNLLRDFUpdater ...
+			$> cat my-input.ttl | egrep '[^\s]' | grep -v '^#' | run.sh CoNLLRDFUpdater ...
 
 ## Acknowledgments
 
