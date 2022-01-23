@@ -21,8 +21,8 @@ In particular, it supports _all_ TSV formats used in previous shared tasks of th
   * [Troubleshooting](#troubleshooting)
   * [Acknowledgments](#acknowledgments)
 	  * [Authors and Maintainers](#authors-and-maintainers)
-	  * [Reference](#reference)
-	  * [Licenses](#licenses)
+	  * [License](#license)
+	  * [How to Cite](#how-to-cite)
 
 ## What it can do
 * convert _any_ CoNLL-like TSV format (e.g. `.conll`, `.conllu`, `.tsv`, `.skel`) to conll-rdf (`.ttl`).
@@ -169,10 +169,7 @@ With support from the following projects:
 
 See also the list of [contributors](https://github.com/acoli-repo/conll-rdf/graphs/contributors) who participated in this project.
 
-### Reference
-* Chiarcos C., Fäth C. (2017), CoNLL-RDF: Linked Corpora Done in an NLP-Friendly Way. In: Gracia J., Bond F., McCrae J., Buitelaar P., Chiarcos C., Hellmann S. (eds) Language, Data, and Knowledge. LDK 2017. pp 74-88.
-
-### Licenses
+### License
 This repository is being published under two licenses. Apache 2.0 is used for code, see [LICENSE.main](LICENSE.main.txt). CC-BY 4.0 for all data from universal dependencies and SPARQL scripts, see [LICENSE.data](LICENSE.data.txt).
 
 #### LICENCE.main (Apache 2.0)
@@ -194,4 +191,8 @@ This repository is being published under two licenses. Apache 2.0 is used for co
 	└── sparql/  
 ```
 
-Please cite *Chiarcos C., Fäth C. (2017), CoNLL-RDF: Linked Corpora Done in an NLP-Friendly Way. In: Gracia J., Bond F., McCrae J., Buitelaar P., Chiarcos C., Hellmann S. (eds) Language, Data, and Knowledge. LDK 2017. pp 74-88*.
+### How to Cite
+
+When redistributing code or using CoNLL-RDF in scientific publications, please refer to
+
+* Chiarcos C., Fäth C. (2017), CoNLL-RDF: Linked Corpora Done in an NLP-Friendly Way. In: Gracia J., Bond F., McCrae J., Buitelaar P., Chiarcos C., Hellmann S. (eds) Language, Data, and Knowledge. LDK 2017. pp 74-88.
