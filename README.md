@@ -135,9 +135,15 @@ It can write:
 	* an error starting like `ERROR CoNLLRDFUpdater :: SPARQL parse exception for Update No. 0: DIRECTUPDATE [...]` when running the RDFUpdater can be raised if the path to a sparql query is wrong. Check for extra or missing `../`.
 * *processing external data* (i.e., not produced by this library):
 	* an error like `org.apache.jena.riot.RiotException: [line: 3, col: 12] Undefined prefix: rdfs` from CoNLLRDFUpdater even though the namespace in question is defined in the input: Make sure to use RDF 1.0 Turtle notation for prefixes (i.e., `@prefix bla: <...> .`), not the SPARQL-style notation (i.e., `PREFIX bla: <...>`) introduced with RDF 1.1 (cf. [issue #80](https://github.com/acoli-repo/conll-rdf/issues/80)). This can happen only if externally produced CoNLL-RDF data is consumed.
-	* CoNLLRDFUpdater does not seem to get and process the expected matches, but execution of SPARQL Updates against a database backend works as expected. For every empty or comment (`#`) line in the input, CoNLLRDFUpdater will split the input into chunks and process each chunk in parallel (and in isolation from each other). Some Turtle formatters will insert empty lines between groups of triples that do not relate to the same subject, and, then, CoNLLRDFUpdater will process these groups in isolation from each other. To suppress this behavior, remove all empty lines and comments before feeding the input into CoNLLRDFUpdater:
+	* CoNLLRDFUpdater does not seem to get and process the expected matches, but execution of SPARQL Updates against a database backend works as expected. This can be a segmentation issue in the original data. For every empty or comment (`#`) line in the input, CoNLLRDFUpdater will split the input into chunks and process each chunk in parallel. Some Turtle formatters will insert empty lines between groups of triples that do not relate to the same subject, and, then, CoNLLRDFUpdater will process these groups in isolation, so that context matches are being disabled. To suppress this behavior, remove all empty lines and comments before feeding the input into CoNLLRDFUpdater:
 
 			$> cat my-input.ttl | egrep '[^\s]' | grep -v '^#' | run.sh CoNLLRDFUpdater ...
+			
+	As a side-effect, this will disable parallelization. If this is not possible (e.g., because you're processing large-scale data), you can try to run CoNLLRDFUpdater over a sliding context window (but note that preceding and following context reside in separate named graphs [`https://github.com/acoli-repo/conll-rdf/lookback` and `https://github.com/acoli-repo/conll-rdf/lookahead`], so that your SPARQL updates must be adjusted):
+	
+			$> cat my-input.ttl | run.sh CoNLLRDFUpdater -lookahead 10 -lookback 10 ...
+			
+	In the example, context is limited to 10 preceding and 10 following chunks. If neither of these options are applicable, it is necessary to segment the input before feeding it inti 
 
 ## Acknowledgments
 
