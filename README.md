@@ -149,7 +149,7 @@ With support from the following projects:
 
 * Linked Open Dictionaries ([LiODi](http://www.acoli.informatik.uni-frankfurt.de/liodi/))
   * funded by the German Federal Ministry of Education and Research (BMBF, 2015-2022, grant agreement 01UG1631)
-  * initial design
+  * initial design and implementation; use case resource transformation and linking
 * Specialised Information Service Linguistics ([FID](https://www.ub.uni-frankfurt.de/projekte/fid-linguistik_en.html))
   * funded by the German Research Foundation (DFG, 2017-2022, grant agreement CH1413/2-1)
   * use case: indexing and classifying CoNLL corpora
