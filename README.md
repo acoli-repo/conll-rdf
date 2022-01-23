@@ -143,8 +143,10 @@ It can write:
 
 ## Acknowledgments
 
-This repository has been created in context of
-* Applied Computational Linguistics ([ACoLi](http://acoli.cs.uni-frankfurt.de))
+CoNLL-RDF has been created at the Applied Computational Linguistics ([ACoLi](http://acoli.cs.uni-frankfurt.de)) Lab at Goethe University Frankfurt, Germany.
+
+With support from the following projects:
+
 * Specialised Information Service Linguistics ([FID](https://www.ub.uni-frankfurt.de/projekte/fid-linguistik_en.html))
   * funded by the German Research Foundation (DFG, funding code CH1413/2-1)
 * Linked Open Dictionaries ([LiODi](http://www.acoli.informatik.uni-frankfurt.de/liodi/))
