@@ -147,16 +147,18 @@ CoNLL-RDF has been created at the Applied Computational Linguistics ([ACoLi](htt
 
 With support from the following projects:
 
-* Specialised Information Service Linguistics ([FID](https://www.ub.uni-frankfurt.de/projekte/fid-linguistik_en.html))
-  * funded by the German Research Foundation (DFG, funding code CH1413/2-1)
 * Linked Open Dictionaries ([LiODi](http://www.acoli.informatik.uni-frankfurt.de/liodi/))
-  * funded by the German Federal Ministry of Education and Research (BMBF, funding code 01UG1631)
+  * funded by the German Federal Ministry of Education and Research (BMBF, 2015-2022, grant agreement 01UG1631)
+  * initial design
+* Specialised Information Service Linguistics ([FID](https://www.ub.uni-frankfurt.de/projekte/fid-linguistik_en.html))
+  * funded by the German Research Foundation (DFG, 2017-2022, grant agreement CH1413/2-1)
+  * use case: indexing and classifying CoNLL corpora
 * QuantQual@CEDIFOR ([QuantQual](http://acoli.cs.uni-frankfurt.de/projects.html#quantqual))
-  * funded by the Centre for the Digital Foundation of Research in the Humanities, Social and Educational Science (CEDIFOR, funding code 01UG1416A)
+  * funded by the Centre for the Digital Foundation of Research in the Humanities, Social and Educational Science (CEDIFOR, grant agreement 01UG1416A)
+  * use case: linguistic annotation with CoNLL-RDF
 * Prêt-á-LLOD. Ready-to-use Multilingual Linked Language Data for Knowledge Services across Sectors ([Pret-a-LLOD](https://cordis.europa.eu/project/id/825182/results))
   * Research and Innovation Action of the H2020 programme (ERC, grant agreement 825182)
   * In this project, CoNLL-RDF has been applied/developed/restructured to serve as backend of the Flexible Integrated Transformation and Annotation Engineering ([FINTAN](https://github.com/Pret-a-LLOD/Fintan)) Platform.
-
 
 ### Authors and Maintainers
 * **Christian Chiarcos** - chiarcos@informatik.uni-frankfurt.de
