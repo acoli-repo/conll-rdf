@@ -17,14 +17,8 @@ In particular, it supports _all_ TSV formats used in previous shared tasks of th
   * [How it works](#how-it-works)
   * [Installing](#installing)
   * [Getting Started](#getting-started)
-  * [Common Issues](#common-issues)
   * [Features](#features)
-    + [CoNLLRDFManager](#conllrdfmanager)
-    + [CoNLLStreamExtractor](#conllstreamextractor)
-    + [CoNLLRDFUpdater](#conllrdfupdater)
-    + [CoNLLRDFFormatter](#conllrdfformatter)
-    + [CoNLLRDFAnnotator](#conllrdfannotator)
-    + [Other](#other)
+  * [Common Issues](#common-issues)
   * [Authors and Maintainers](#authors-and-maintainers)
   * [Reference](#reference)
   * [Acknowledgments](#acknowledgments)
@@ -89,16 +83,6 @@ This will create a new file `example.ttl` in conll-rdf by simply providing
 * eg. `cat foo.ttl | ./run.sh CoNLLRDFFormatter > foo_formatted.ttl` would pipe `foo.ttl` through `CoNLLRDFFormatter` into `foo_formatted.ttl`.
 * If necessary `run.sh`, will compile java classes from source. You may also run `compile.sh` independently.
 
-## Common Issues
-* if maven doesn't find/ use the correct java installation, [try setting your JAVA_HOME](https://www.baeldung.com/maven-different-jdk)
-* **if your pipelines broke with an update** in 2020-09 or soon after, you're likely calling the classes directly with `java`and not via `./run.sh`. You can change your scripts to call `./run.sh` (or copy the changes we made to `run.sh` into your scripts).
-* you might get an error like `bash: ./../test.sh: Permission denied` when trying to run a script. Use this command to change the filemode: `chmod +x <SCRIPT>`
-* an error starting like `ERROR CoNLLRDFUpdater :: SPARQL parse exception for Update No. 0: DIRECTUPDATE [...]` when running the RDFUpdater can be raised if the path to a sparql query is wrong. Check for extra or missing `../`.
-* when applying CoNLLRDFUpdater to external CoNLL-RDF data (i.e., not produced by this library):
-	* an error like `org.apache.jena.riot.RiotException: [line: 3, col: 12] Undefined prefix: rdfs` from CoNLLRDFUpdater even though the namespace in question is defined in the input: Make sure to use RDF 1.0 Turtle notation for prefixes (i.e., `@prefix bla: <...> .`), not the SPARQL-style notation (i.e., `PREFIX bla: <...>`) introduced with RDF 1.1 (cf. [issue #80](https://github.com/acoli-repo/conll-rdf/issues/80)). This can happen only if externally produced CoNLL-RDF data is consumed.
-	* CoNLLRDFUpdater does not seem to get and process the expected matches, but execution of SPARQL Updates against a database backend works as expected. For every empty line in the input, CoNLLRDFUpdater will split the input into chunks and process each chunk in parallel (and in isolation from each other). Some Turtle formatters will insert empty lines between groups of triples that do not relate to the same subject, and, then, CoNLLRDFUpdater will process these groups in isolation from each other. To suppress this behavior, remove all empty lines before feeding the input into CoNLLRDFUpdater:
-       		$> cat my-input.ttl | egrep '[^\s]' | run.sh CoNLLRDFUpdater ...
-
 ## Features
 In-depth information on all the classes of **conll-rdf** can be found in [the documentation.](doc/classes.md)
 
@@ -142,6 +126,17 @@ It can write:
 * `CoNLL2RDF` contains the central conversion functionality. For practical uses, interface with its functionality through CoNLLStreamExtractor. Arguments to CoNLLStreamExtractor will be passed through.
 * `CoNLLRDFViz` is an auxiliary class for the future development of debugging and visualizing complex SPARQL Update chains in their effects on selected pieces of CoNLL(-RDF) data
 * conll-rdf assumes UTF-8.
+
+## Common Issues
+* if maven doesn't find/ use the correct java installation, [try setting your JAVA_HOME](https://www.baeldung.com/maven-different-jdk)
+* **if your pipelines broke with an update** in 2020-09 or soon after, you're likely calling the classes directly with `java`and not via `./run.sh`. You can change your scripts to call `./run.sh` (or copy the changes we made to `run.sh` into your scripts).
+* you might get an error like `bash: ./../test.sh: Permission denied` when trying to run a script. Use this command to change the filemode: `chmod +x <SCRIPT>`
+* an error starting like `ERROR CoNLLRDFUpdater :: SPARQL parse exception for Update No. 0: DIRECTUPDATE [...]` when running the RDFUpdater can be raised if the path to a sparql query is wrong. Check for extra or missing `../`.
+* when applying CoNLLRDFUpdater to external CoNLL-RDF data (i.e., not produced by this library):
+	* an error like `org.apache.jena.riot.RiotException: [line: 3, col: 12] Undefined prefix: rdfs` from CoNLLRDFUpdater even though the namespace in question is defined in the input: Make sure to use RDF 1.0 Turtle notation for prefixes (i.e., `@prefix bla: <...> .`), not the SPARQL-style notation (i.e., `PREFIX bla: <...>`) introduced with RDF 1.1 (cf. [issue #80](https://github.com/acoli-repo/conll-rdf/issues/80)). This can happen only if externally produced CoNLL-RDF data is consumed.
+	* CoNLLRDFUpdater does not seem to get and process the expected matches, but execution of SPARQL Updates against a database backend works as expected. For every empty line in the input, CoNLLRDFUpdater will split the input into chunks and process each chunk in parallel (and in isolation from each other). Some Turtle formatters will insert empty lines between groups of triples that do not relate to the same subject, and, then, CoNLLRDFUpdater will process these groups in isolation from each other. To suppress this behavior, remove all empty lines before feeding the input into CoNLLRDFUpdater:
+
+			$> cat my-input.ttl | egrep '[^\s]' | run.sh CoNLLRDFUpdater ...
 
 ## Authors and Maintainers
 * **Christian Chiarcos** - chiarcos@informatik.uni-frankfurt.de
