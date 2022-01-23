@@ -143,7 +143,7 @@ It can write:
 	
 			$> cat my-input.ttl | run.sh CoNLLRDFUpdater -lookahead 10 -lookback 10 ...
 			
-		In the example, context is limited to 10 preceding and 10 following chunks. If neither of these options are applicable, it is necessary to segment the input before feeding it inti 
+		In the example, context is limited to 10 preceding and 10 following chunks. If neither of these options are applicable, it is necessary to segment the input before feeding it into CoNLL-RDF.
 
 ## Acknowledgments
 
