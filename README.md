@@ -139,11 +139,11 @@ It can write:
 
 			$> cat my-input.ttl | egrep '[^\s]' | grep -v '^#' | run.sh CoNLLRDFUpdater ...
 			
-	As a side-effect, this will disable parallelization. If this is not possible (e.g., because you're processing large-scale data), you can try to run CoNLLRDFUpdater over a sliding context window (but note that preceding and following context reside in separate named graphs [`https://github.com/acoli-repo/conll-rdf/lookback` and `https://github.com/acoli-repo/conll-rdf/lookahead`], so that your SPARQL updates must be adjusted):
+		As a side-effect, this will disable parallelization. If this is not possible (e.g., because you're processing large-scale data), you can try to run CoNLLRDFUpdater over a sliding context window (but note that preceding and following context reside in separate named graphs [`https://github.com/acoli-repo/conll-rdf/lookback` and `https://github.com/acoli-repo/conll-rdf/lookahead`], so that your SPARQL updates must be adjusted):
 	
 			$> cat my-input.ttl | run.sh CoNLLRDFUpdater -lookahead 10 -lookback 10 ...
 			
-	In the example, context is limited to 10 preceding and 10 following chunks. If neither of these options are applicable, it is necessary to segment the input before feeding it inti 
+		In the example, context is limited to 10 preceding and 10 following chunks. If neither of these options are applicable, it is necessary to segment the input before feeding it inti 
 
 ## Acknowledgments
 
