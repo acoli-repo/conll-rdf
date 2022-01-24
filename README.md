@@ -145,7 +145,8 @@ It can write:
 			
 		Note that preceding and following context reside in separate named graphs [`https://github.com/acoli-repo/conll-rdf/lookback` and `https://github.com/acoli-repo/conll-rdf/lookahead`], so that your SPARQL updates must be adjusted, e.g., by importing these named graphs into the default graph. As a side-effect, this can lead to repetitions in the generated output. If neither of these options are applicable, it is necessary to segment the input properly before feeding it into CoNLL-RDF.
 * *CoNLL export* with CoNLLRDFFormatter
-	* CoNLLRDFFormatter outputs CoNLL data, but out of order. The ordering algorithm requires all CoNLL words to be linked by `conll:HEAD+` with the sentence object. This can happen if a word does not have a `conll:HEAD` property or if its value if not the URI of a `nif:Sentence`. If the `conll:HEAD` property is missing or contains a literal (`0` or `_` instead of, say, `:s525_0`), this is the likely result (cf. [issue #50](https://github.com/acoli-repo/conll-rdf/issues/50))
+	* CoNLLRDFFormatter `-conll` outputs CoNLL data, but out of order. The ordering algorithm requires all CoNLL words to be linked by `conll:HEAD+` with the sentence object. This can happen if a word does not have a `conll:HEAD` property or if its value if not the URI of a `nif:Sentence`. If the `conll:HEAD` property is missing or contains a literal (`0` or `_` instead of, say, `:s525_0`), this is the likely result (cf. [issue #50](https://github.com/acoli-repo/conll-rdf/issues/50))
+	* `org.apache.jena.query.QueryParseException` from CoNLLRDFFormatter with `-conll`: Certain punctuation symbols in column names/conll properties (e.g., `-`) can break the internal query generation. Suggestion: use only `[A-Za-z_]*`.
 
 ## Acknowledgments
 
