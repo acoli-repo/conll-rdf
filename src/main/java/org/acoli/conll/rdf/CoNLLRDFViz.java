@@ -33,7 +33,8 @@ import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.ResourceRequiredException;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * auxiliary class to develop DOT/graphviz viz for CoNLL-RDF<br/>
@@ -41,7 +42,7 @@ import org.apache.log4j.Logger;
  * @author Christian Chiarcos {@literal chiarcos@informatik.uni-frankfurt.de}
  */
 public class CoNLLRDFViz {
-	private static final Logger LOG = Logger.getLogger(CoNLLRDFViz.class.getName());
+	private static final Logger LOG = LogManager.getLogger(CoNLLRDFViz.class.getName());
 
 	protected static String dotId(Resource r) {
 		if (r.isAnon())

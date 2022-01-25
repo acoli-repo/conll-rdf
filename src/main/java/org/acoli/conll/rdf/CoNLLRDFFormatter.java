@@ -18,7 +18,8 @@ package org.acoli.conll.rdf;
 import java.io.*;
 import java.util.*;
 import org.apache.jena.rdf.model.*;		// Jena 2.x
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.commons.cli.ParseException;
 import org.apache.jena.query.*;
 
@@ -30,7 +31,7 @@ import org.apache.jena.query.*;
  */
 public class CoNLLRDFFormatter extends CoNLLRDFComponent {
 	
-	protected static Logger LOG = Logger.getLogger(CoNLLRDFFormatter.class.getName());
+	protected static Logger LOG = LogManager.getLogger(CoNLLRDFFormatter.class.getName());
 		
 	public static final String ANSI_RESET    = "\u001B[0m";
 	public static final String ANSI_BRIGHTER = "\u001B[1m";

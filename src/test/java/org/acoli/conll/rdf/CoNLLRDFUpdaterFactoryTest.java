@@ -6,7 +6,7 @@ import java.io.*;
 
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Level;
+import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 

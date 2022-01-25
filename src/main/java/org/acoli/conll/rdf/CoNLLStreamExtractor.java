@@ -22,7 +22,8 @@ import java.util.*;
 import org.apache.jena.rdf.listeners.ChangedListener;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.update.*;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -36,7 +37,7 @@ import org.apache.jena.query.*;
  *  @author Christian Faeth {@literal faeth@em.uni-frankfurt.de}
  */
 public class CoNLLStreamExtractor extends CoNLLRDFComponent {
-	private static Logger LOG = Logger.getLogger(CoNLLStreamExtractor.class.getName());
+	private static Logger LOG = LogManager.getLogger(CoNLLStreamExtractor.class.getName());
 	private String baseURI;
 	private List<String> columns = new ArrayList<String>();
 	private boolean readColumnComment = false;

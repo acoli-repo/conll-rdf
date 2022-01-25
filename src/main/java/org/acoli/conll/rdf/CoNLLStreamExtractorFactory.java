@@ -12,10 +12,11 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.tuple.*;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class CoNLLStreamExtractorFactory extends CoNLLRDFComponentFactory {
-	static Logger LOG = Logger.getLogger(CoNLLStreamExtractorFactory.class);
+	static Logger LOG = LogManager.getLogger(CoNLLStreamExtractorFactory.class);
 
 	@Override
 	public CoNLLStreamExtractor buildFromCLI(String[] args) throws IOException, ParseException {

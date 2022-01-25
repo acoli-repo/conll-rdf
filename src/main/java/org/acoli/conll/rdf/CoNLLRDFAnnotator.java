@@ -17,7 +17,8 @@ package org.acoli.conll.rdf;
 
 import java.io.*;
 import java.util.*;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
@@ -31,7 +32,7 @@ import org.apache.commons.cli.ParseException;
  *  @author Christian Chiarcos {@literal chiarcos@informatik.uni-frankfurt.de}
  */
 public class CoNLLRDFAnnotator extends CoNLLRDFFormatter {
-	private static Logger LOG = Logger.getLogger(CoNLLRDFAnnotator.class);
+	private static Logger LOG = LogManager.getLogger(CoNLLRDFAnnotator.class);
 	
 	public static void main(String[] args) throws IOException {
 		BufferedReader in;

@@ -22,7 +22,8 @@ import java.util.regex.Pattern;
 import java.lang.reflect.*;
 import org.apache.jena.rdf.model.*;	// Jena 3.x
 //import com.hp.hpl.jena.rdf.model.*;		// Jena 2.x
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 
@@ -38,7 +39,7 @@ import org.apache.log4j.Logger;
  **/
 abstract class Format2RDF {
 	
-	private static Logger LOG = Logger.getLogger(Format2RDF.class.getName());
+	private static Logger LOG = LogManager.getLogger(Format2RDF.class.getName());
 	
 	/** can be null */
 	protected final BufferedWriter out;

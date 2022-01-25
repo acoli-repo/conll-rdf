@@ -15,10 +15,11 @@ import org.apache.commons.cli.*;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class CoNLLRDFUpdaterFactory extends CoNLLRDFComponentFactory {
-	static Logger LOG = Logger.getLogger(CoNLLRDFUpdaterFactory.class);
+	static Logger LOG = LogManager.getLogger(CoNLLRDFUpdaterFactory.class);
 	@Override
 	public CoNLLRDFUpdater buildFromCLI(String[] args) throws IOException, ParseException {
 		CoNLLRDFUpdater updater = new CoNLLRDFUpdater();

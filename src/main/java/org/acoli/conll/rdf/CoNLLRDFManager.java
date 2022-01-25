@@ -23,10 +23,11 @@ import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.apache.commons.cli.ParseException;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class CoNLLRDFManager {
-	static Logger LOG = Logger.getLogger(CoNLLRDFManager.class);
+	static Logger LOG = LogManager.getLogger(CoNLLRDFManager.class);
 
 	static Map<String,Supplier<? extends CoNLLRDFComponentFactory>> classFactoryMap;
 	static {
