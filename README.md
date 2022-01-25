@@ -99,6 +99,11 @@ Synopsis: `CoNLLStreamExtractor baseURI FIELD1[.. FIELDn] [-s SPARQL_SELECT]`
 It can also output `.dot` graph-files (or triples `stdout`).  
 Synopsis: `CoNLLRDFUpdater -custom [-model URI [GRAPH]] [-updates [UPDATE]]`
 
+`CoNLLRDFUpdater` allows to perform graph rewriting using SPARQL update scripts. Note that in addition to standard SPARQL 1.1 features (pattern matching, property paths, regular expressions), we support the following extensions:
+
+- special functions for iterations over lists, splitting and manipulating strings ([from Apache Jena](https://jena.apache.org/documentation/query/library-propfunc.html))
+- iterations (loops) over SPARQL Updates (note that this makes our usage of SPARQL [Turing-complete](https://arxiv.org/pdf/2004.01816.pdf))
+
 #### CoNLLRDFFormatter
 `CoNLLRDFFormatter` expects conll-rdf in `.ttl` and writes to different formats. Can also visualize your data.  
 Synopsis: ```CoNLLRDFFormatter [-rdf [COLS]] [-debug] [-grammar] [-semantics] [-conll COLS] [-query SPARQL]```
