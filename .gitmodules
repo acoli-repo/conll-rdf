@@ -1,0 +1,3 @@
+[submodule "fintan-core"]
+	path = fintan-core
+	url = https://github.com/acoli-repo/fintan-core

@@ -4,9 +4,14 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.acoli.conll.rdf</groupId>
+  <parent>
+    <groupId>org.acoli.conll.rdf</groupId>
+    <artifactId>conll-rdf-parent</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <relativePath>parent/pom.xml</relativePath>
+  </parent>
+
   <artifactId>conll-rdf</artifactId>
-  <version>1.0-SNAPSHOT</version>
 
   <name>conll-rdf</name>
   <url>https://github.com/acoli-repo/conll-rdf</url>
@@ -18,6 +23,11 @@
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>org.acoli.fintan</groupId>
+      <artifactId>fintan-core</artifactId>
+      <version>0.0.1-SNAPSHOT</version>
+    </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
