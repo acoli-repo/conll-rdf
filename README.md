@@ -127,43 +127,45 @@ It can write:
 
 ## Troubleshooting
 
+If you observe one of the problems below, see here for explanations and solutions. If this doesn't help, see [issues](https://github.com/acoli-repo/conll-rdf/issues) for similar problems and possible solutions. If you find none, please consider submitting an issue yourself and provide data snippets for replication.
+
 * *during installation*
-	* PROBLEM: maven doesn't find/use the correct java installation
-		* SOLUTION: [try setting your JAVA_HOME](https://www.baeldung.com/maven-different-jdk)
+	* maven doesn't find/use the correct java installation
+		* **solution**: [try setting your JAVA_HOME](https://www.baeldung.com/maven-different-jdk)
 * *running pipelines*
-	* PROBLEM: **your pipelines broke with an update** in 2020-09 or soon after
-		* EXPLANATION: you're likely calling the classes directly with `java`and not via `./run.sh`. 
-		* SOLUTION: You can change your scripts to call `./run.sh` (or copy the changes we made to `run.sh` into your scripts).
-	* PROBLEM: an error like `bash: ./../test.sh: Permission denied` when trying to run a script
-		* EXPLANATION: need execution rights
-		* SOLUTION: Use this command to change the filemode: `$> chmod +x <SCRIPT>`
-	* PROBLEM: an error starting like `ERROR CoNLLRDFUpdater :: SPARQL parse exception for Update No. 0: DIRECTUPDATE [...]` when running the RDFUpdater
-		* POSSIBLE EXPLANATION: in most cases, path to a SPARQL query is wrong
-		* SOLUTION: Check for extra or missing `../`.
+	* your pipelines broke with an update in 2020-09 or soon after
+		* **explanation**: you're likely calling the classes directly with `java`and not via `./run.sh`. 
+		* **solution**: You can change your scripts to call `./run.sh` (or copy the changes we made to `run.sh` into your scripts).
+	* an error like `bash: ./../test.sh: Permission denied` when trying to run a script
+		* **explantion**: need execution rights
+		* **explanation**: Use this command to change the filemode: `$> chmod +x <SCRIPT>`
+	* an error starting like `ERROR CoNLLRDFUpdater :: SPARQL parse exception for Update No. 0: DIRECTUPDATE [...]` when running the RDFUpdater
+		* **possible explanation**: in most cases, path to a SPARQL query is wrong
+		* **solution**: Check for extra or missing `../`.
 * *processing external data* (i.e., not produced by this library):
-	* PROBLEM: an error like `org.apache.jena.riot.RiotException: [line: 3, col: 12] Undefined prefix: rdfs` from CoNLLRDFUpdater even though the namespace in question is defined in the input
-		* POSSIBLE EXPLANATION: the data SPARQL-style prefix declarations 
-		* SOLUTION: Make sure to use RDF 1.0 Turtle notation for prefixes (i.e., `@prefix bla: <...> .`), not the SPARQL-style notation (i.e., `PREFIX bla: <...>`) introduced with RDF 1.1 (cf. [issue #80](https://github.com/acoli-repo/conll-rdf/issues/80)). 
-	* PROBLEM: CoNLLRDFUpdater does not seem to get and process the expected matches, but execution of SPARQL Updates against a database backend works as expected.
-		* POSSIBLE EXPLANATION: This can be a segmentation issue in the original data. For every empty or comment (`#`) line in the input, CoNLLRDFUpdater will split the input into chunks and process each chunk in parallel. Some Turtle formatters will insert empty lines between groups of triples that do not relate to the same subject, and, then, CoNLLRDFUpdater will process these groups in isolation, so that context matches are being disabled. 
-		* SOLUTION A: Remove all empty lines and comments before feeding the input into CoNLLRDFUpdater:
+	* an error like `org.apache.jena.riot.RiotException: [line: 3, col: 12] Undefined prefix: rdfs` from CoNLLRDFUpdater even though the namespace in question is defined in the input
+		* **possible explanation**: the data uses SPARQL-style prefix declarations 
+		* **solution**: Make sure to use RDF 1.0 Turtle notation for prefixes (i.e., `@prefix bla: <...> .`), not the SPARQL-style notation (i.e., `PREFIX bla: <...>`) introduced with RDF 1.1 (cf. [issue #80](https://github.com/acoli-repo/conll-rdf/issues/80)). 
+	* CoNLLRDFUpdater does not seem to get and process the expected matches, but execution of SPARQL Updates against a database backend works as expected.
+		* **possible explanation**: This can be a segmentation issue in the original data. For every empty or comment (`#`) line in the input, CoNLLRDFUpdater will split the input into chunks and process each chunk in parallel. Some Turtle formatters will insert empty lines between groups of triples that do not relate to the same subject, and, then, CoNLLRDFUpdater will process these groups in isolation, so that context matches are being disabled. 
+		* **solution**: Remove all empty lines and comments before feeding the input into CoNLLRDFUpdater:
 
 				$> cat my-input.ttl | egrep '[^\s]' | grep -v '^#' | run.sh CoNLLRDFUpdater ...
 			
 			As a side-effect, this will disable parallelization. 
-		* SOLUTION B: If (A) is not possible (e.g., because you're processing large-scale data), you can try to run CoNLLRDFUpdater over a sliding context window of, say, 10 chunks per direction:
+		* **solution**: If the solution above is not possible (e.g., because you're processing large-scale data), you can try to run CoNLLRDFUpdater over a sliding context window of, say, 10 chunks per direction:
 	
 				$> cat my-input.ttl | run.sh CoNLLRDFUpdater -lookahead 10 -lookback 10 ...
 			
 			Note that preceding and following context reside in separate named graphs [`https://github.com/acoli-repo/conll-rdf/lookback` and `https://github.com/acoli-repo/conll-rdf/lookahead`], so that your SPARQL updates must be adjusted, e.g., by importing these named graphs into the default graph. As a side-effect, this can lead to repetitions in the generated output.
-		* SOLUTION C: If neither of these options are applicable, it is necessary to segment the input properly before feeding it into CoNLL-RDF.
+		* **solution**: If neither of these options are applicable, it is necessary to segment the input properly before feeding it into CoNLL-RDF.
 * *CoNLL export* with CoNLLRDFFormatter
-	* PROBLEM: CoNLLRDFFormatter `-conll` outputs CoNLL data out of order
-		* POSSIBLE EXPLANATION: The ordering algorithm requires all CoNLL words to be linked by `conll:HEAD+` with the sentence object. This can happen if a word does not have a `conll:HEAD` property or if its value if not the URI of a `nif:Sentence`. If the `conll:HEAD` property is missing or contains a literal (`0` or `_` instead of, say, `:s525_0`), this is the likely result (cf. [issue #50](https://github.com/acoli-repo/conll-rdf/issues/50))
-		* SOLUTION: Make sure every word has a single `conll:HEAD` property, that these URIs correspond to words and sentences, and that the root elements point to the sentence URI. If this is the case, check whether the words are connected by `nif:nextWord`. 
-	* PROBLEM: an `org.apache.jena.query.QueryParseException` from CoNLLRDFFormatter with `-conll`
-		* EXPLANATION: Certain punctuation symbols in column names/conll properties (e.g., `-`) can break the internal query generation. 
-		* SOLUTION: Use only `[A-Za-z_]+` for CoNLL column labels.
+	* CoNLLRDFFormatter `-conll` outputs CoNLL data out of order
+		* **possible explanation**: The ordering algorithm requires all CoNLL words to be linked by `conll:HEAD+` with the sentence object. This can happen if a word does not have a `conll:HEAD` property or if its value if not the URI of a `nif:Sentence`. If the `conll:HEAD` property is missing or contains a literal (`0` or `_` instead of, say, `:s525_0`), this is the likely result (cf. [issue #50](https://github.com/acoli-repo/conll-rdf/issues/50))
+		* **solution**: Make sure every word has a single `conll:HEAD` property, that these URIs correspond to words and sentences, and that the root elements point to the sentence URI. If this is the case, check whether the words are connected by `nif:nextWord`. 
+	* an `org.apache.jena.query.QueryParseException` from CoNLLRDFFormatter with `-conll`
+		* **explanation**: Certain punctuation symbols in column names/conll properties (e.g., `-`) can break the internal query generation. 
+		* **solution**: Use only `[A-Za-z_]+` for CoNLL column labels.
 
 ## Acknowledgments
 
