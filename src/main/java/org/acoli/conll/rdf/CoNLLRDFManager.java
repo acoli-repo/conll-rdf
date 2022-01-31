@@ -22,11 +22,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
+import org.acoli.fintan.core.FintanManager;
 import org.acoli.fintan.core.FintanStreamComponent;
 import org.acoli.fintan.core.FintanStreamComponentFactory;
 
-public class CoNLLRDFManager {
+public class CoNLLRDFManager extends FintanManager {
 	static Logger LOG = LogManager.getLogger(CoNLLRDFManager.class);
 
 	static Map<String,Supplier<? extends FintanStreamComponentFactory>> classFactoryMap;
@@ -83,20 +83,18 @@ public class CoNLLRDFManager {
 
 	void setComponentStack(ArrayList<FintanStreamComponent> componentStack) {
 		this.componentStack = componentStack;
-	}	
+	}
 
 	public static void main(String[] args) throws IOException {
-		final CoNLLRDFManager manager;
 		try {
-			manager = new CoNLLRDFManagerFactory().buildFromCLI(args);
-			manager.buildComponentStack();
-		} catch (ParseException e) {
+			FintanManager.main(args);
+		} catch (IOException e) {
+			throw e;
+		}catch (Exception e) {
 			LOG.error(e);
 			System.exit(1);
 			return;
 		}
-
-		manager.start();
 	}
 
 	protected static InputStream parseConfAsInputStream(String confEntry) throws IOException {
