@@ -131,7 +131,7 @@ public class CoNLLRDFManager extends FintanManager {
 		return output;
 	}
 
-	public void buildComponentStack() throws IOException, ParseException {
+	public void buildComponentStack() throws IOException {
 		//READ PIPELINE PARAMETER
 		/*
 		JsonNode pipelineNode = config.get("pipeline");
