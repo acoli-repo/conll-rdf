@@ -9,7 +9,9 @@ import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
+@Timeout(5)
 public class CoNLLRDFUpdaterFactoryTest {
 	// throw ParseException if no arguments are provided
 	@Test
