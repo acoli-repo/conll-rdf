@@ -709,7 +709,7 @@ public class CoNLLRDFUpdater extends RDFUpdater {
 				updateScript = readUrl(url);
 			} catch (MalformedURLException e) {
 				LOG.trace(e);
-				LOG.debug("Update is not a valid URL " + updateScriptRaw); // this occurs if the update is verbatim
+				LOG.debug("Update is not a valid URL {}", updateScriptRaw); // this occurs if the update is verbatim
 			} catch (IOException e) {
 				throw new IOException("Failed to open input stream from URL " + updateScriptRaw, e);
 			}
