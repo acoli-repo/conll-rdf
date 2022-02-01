@@ -15,7 +15,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.jena.rdf.model.Model;
-import org.apache.log4j.Logger;
 import org.junit.jupiter.api.Test;
 
 public class CoNLLStreamExtractorFactoryTest {
