@@ -67,19 +67,19 @@ public class CoNLLRDFAnnotator extends CoNLLRDFFormatter {
 					while(!command.trim().equals(">")) {
 							System.err.print(
 							  "actions ............................................................................................................\n"+
-							  "        : "+ANSI_BLUE+"$nr/$att=$val"+ANSI_RESET+"   for element number $nr, set CoNLL property $att to $val, e.g., \"1/POS=NOUN\"              :\n"+
+							  "        : "+ANSI.BLUE+"$nr/$att=$val"+ANSI.RESET+"   for element number $nr, set CoNLL property $att to $val, e.g., \"1/POS=NOUN\"              :\n"+
 								//"        :                 $nr element number (starting with 1), e.g., 1 for the first                              :\n"+
 								//"        :                 $att local name of a CoNLL property, e.g., POS                                           :\n"+
 								//"        :                 $val string value of the CoNLL property, e.g., NOUN                                      :\n"+
 								"        :                 for HEAD, enter the number of the head node, will be expanded to URI                     :\n"+
-								"        : "+ANSI_BLUE+"$nr/$p1[/$p2..]"+ANSI_RESET+" multiple $att=$val patterns $p1, $p2, ... for $nr can be provided as ,-separated list    :\n"+
+								"        : "+ANSI.BLUE+"$nr/$p1[/$p2..]"+ANSI.RESET+" multiple $att=$val patterns $p1, $p2, ... for $nr can be provided as ,-separated list    :\n"+
 								"        :                 e.g., \"1/HEAD=0/EDGE=root\"; NOTE: $val must not contain /                                :\n"+
-								"        : "+ANSI_BLUE+">"+ANSI_RESET+"               write and go to next sentence                                                            :\n"+
-								"        : "+ANSI_BLUE+"m"+ANSI_RESET+"               define or undefine a macro (a regex for preprocessing your input)                        :\n"+
-								"        : "+ANSI_BLUE+"<CTRL>+C"+ANSI_RESET+"        quit                                                                                     :\n"+
+								"        : "+ANSI.BLUE+">"+ANSI.RESET+"               write and go to next sentence                                                            :\n"+
+								"        : "+ANSI.BLUE+"m"+ANSI.RESET+"               define or undefine a macro (a regex for preprocessing your input)                        :\n"+
+								"        : "+ANSI.BLUE+"<CTRL>+C"+ANSI.RESET+"        quit                                                                                     :\n"+
 								"        :..........................................................................................................:\n");
 						  if(macros.trim().length()>0)
-								System.err.println("macros    "+ANSI_RED+macros.replaceAll("\n",ANSI_RESET+"\n          "+ANSI_RED).replaceAll("\t","\t"+ANSI_RESET+"=>\t"+ANSI_BLUE)+ANSI_RESET);
+								System.err.println("macros    "+ANSI.RED+macros.replaceAll("\n",ANSI.RESET+"\n          "+ANSI.RED).replaceAll("\t","\t"+ANSI.RESET+"=>\t"+ANSI.BLUE)+ANSI.RESET);
 							System.err.print("| ----------------------------\n| "+CoNLLRDFFormatter.extractCoNLLGraph(buffer,true).replaceAll("\n","\n| ")+"-----------------------------\n"+
 								"command: ");
 						command=commands.readLine().trim();
@@ -107,7 +107,7 @@ public class CoNLLRDFAnnotator extends CoNLLRDFFormatter {
 						}
 					command = "";
 					}
-				//System.err.println(ANSI_RED+"> "+line+ANSI_RESET);
+				//System.err.println(ANSI.RED+"> "+line+ANSI.RESET);
 				if(line.trim().startsWith("@") && !lastLine.trim().endsWith("."))
 					//System.out.print("\n");
 					buffer=buffer+"\n";
@@ -140,7 +140,7 @@ public class CoNLLRDFAnnotator extends CoNLLRDFFormatter {
 			cmd=cmd.replaceAll(lhs,rhs);
 		}
 		if(!cmd.equals(orig))
-			System.err.println("macro expansion: "+ANSI_RED+orig+ANSI_RESET+"\t=>\t"+ANSI_BLUE+cmd+ANSI_RESET);
+			System.err.println("macro expansion: "+ANSI.RED+orig+ANSI.RESET+"\t=>\t"+ANSI.BLUE+cmd+ANSI.RESET);
 		return cmd;
 	}
 

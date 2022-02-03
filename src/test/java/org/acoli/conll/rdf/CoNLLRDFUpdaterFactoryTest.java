@@ -9,7 +9,9 @@ import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
+@Timeout(5)
 public class CoNLLRDFUpdaterFactoryTest {
 	// throw ParseException if no arguments are provided
 	@Test
@@ -117,7 +119,7 @@ public class CoNLLRDFUpdaterFactoryTest {
 	}
 
 	@Test
-	void setGraphsoutWithoutID() throws IOException, ParseException {
+	void setGraphsoutWithoutID() throws IOException, ParseException, InterruptedException {
 		final CoNLLRDFUpdater updater = new CoNLLRDFUpdaterFactory().buildFromCLI(new String[] { "-graphsout", "graphsdir" });
 		assertArrayEquals(new String[] {}, updater.getGraphOutputSentences());
 		assertNotNull(updater.getGraphOutputDir());
@@ -126,7 +128,7 @@ public class CoNLLRDFUpdaterFactoryTest {
 				+ "\n@prefix nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#> ."
 				+ "\n@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ." + "\n:s1_0 a nif:Sentence ."
 				+ "\n:s2_0 a nif:Sentence .";
-		updater.setInputStream(IOUtils.toInputStream(rdfSentence, "UTF-8"));
+		CoNLLRDFTestUtil.connectStreamComponent(updater, IOUtils.toInputStream(rdfSentence, "UTF-8"), System.out);
 		updater.processSentenceStream();
 		assertArrayEquals(new String[] { "s1_0" }, updater.getGraphOutputSentences());
 	}
@@ -148,7 +150,7 @@ public class CoNLLRDFUpdaterFactoryTest {
 	}
 
 	@Test
-	void setTriplesoutWithoutID() throws IOException, ParseException {
+	void setTriplesoutWithoutID() throws IOException, ParseException, InterruptedException {
 		final CoNLLRDFUpdater updater = new CoNLLRDFUpdaterFactory().buildFromCLI(new String[] { "-triplesout", "triplesdir" });
 		assertArrayEquals(new String[] {}, updater.getTriplesOutputSentences());
 		assertNotNull(updater.getTriplesOutputDir());
@@ -157,7 +159,7 @@ public class CoNLLRDFUpdaterFactoryTest {
 				+ "\n@prefix nif: <http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#> ."
 				+ "\n@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ." + "\n:s1_0 a nif:Sentence ."
 				+ "\n:s2_0 a nif:Sentence .";
-		updater.setInputStream(IOUtils.toInputStream(rdfSentence, "UTF-8"));
+		CoNLLRDFTestUtil.connectStreamComponent(updater, IOUtils.toInputStream(rdfSentence, "UTF-8"), System.out);
 		updater.processSentenceStream();
 		assertArrayEquals(new String[] { "s1_0" }, updater.getTriplesOutputSentences());
 	}

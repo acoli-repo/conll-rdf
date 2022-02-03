@@ -1,12 +1,9 @@
 package org.acoli.conll.rdf;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
@@ -25,11 +22,14 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.acoli.fintan.core.FintanManager;
+import org.acoli.fintan.core.FintanStreamComponent;
+import org.acoli.fintan.core.FintanStreamComponentFactory;
 
-public class CoNLLRDFManager {
+public class CoNLLRDFManager extends FintanManager {
 	static Logger LOG = LogManager.getLogger(CoNLLRDFManager.class);
 
-	static Map<String,Supplier<? extends CoNLLRDFComponentFactory>> classFactoryMap;
+	static Map<String,Supplier<? extends FintanStreamComponentFactory>> classFactoryMap;
 	static {
 		classFactoryMap = new HashMap<>();
 		classFactoryMap.put(CoNLLStreamExtractor.class.getSimpleName(), () -> new CoNLLStreamExtractorFactory());
@@ -43,7 +43,7 @@ public class CoNLLRDFManager {
 	private OutputStream output;
 	private JsonNode[] pipeline;
 	private JsonNode config;
-	private ArrayList<CoNLLRDFComponent> componentStack = new ArrayList<CoNLLRDFComponent>();
+	private ArrayList<FintanStreamComponent> componentStack = new ArrayList<FintanStreamComponent>();
 
 	public InputStream getInput() {
 		return input;
@@ -77,26 +77,24 @@ public class CoNLLRDFManager {
 		this.config = config;
 	}
 
-	ArrayList<CoNLLRDFComponent> getComponentStack() {
+	ArrayList<FintanStreamComponent> getComponentStack() {
 		return componentStack;
 	}
 
-	void setComponentStack(ArrayList<CoNLLRDFComponent> componentStack) {
+	void setComponentStack(ArrayList<FintanStreamComponent> componentStack) {
 		this.componentStack = componentStack;
-	}	
+	}
 
 	public static void main(String[] args) throws IOException {
-		final CoNLLRDFManager manager;
 		try {
-			manager = new CoNLLRDFManagerFactory().buildFromCLI(args);
-			manager.buildComponentStack();
-		} catch (ParseException e) {
+			FintanManager.main(args);
+		} catch (IOException e) {
+			throw e;
+		}catch (Exception e) {
 			LOG.error(e);
 			System.exit(1);
 			return;
 		}
-
-		manager.start();
 	}
 
 	protected static InputStream parseConfAsInputStream(String confEntry) throws IOException {
@@ -133,7 +131,7 @@ public class CoNLLRDFManager {
 		return output;
 	}
 
-	public void buildComponentStack() throws IOException, ParseException {
+	public void buildComponentStack() throws IOException {
 		//READ PIPELINE PARAMETER
 		/*
 		JsonNode pipelineNode = config.get("pipeline");
@@ -149,21 +147,21 @@ public class CoNLLRDFManager {
 		linkComponents(componentStack, input, output);
 	}
 
-	static ArrayList<CoNLLRDFComponent> parsePipeline(Iterable<JsonNode> pipelineArray) throws IOException, ParseException {
-		ArrayList<CoNLLRDFComponent> componentArray = new ArrayList<>();
+	static ArrayList<FintanStreamComponent> parsePipeline(Iterable<JsonNode> pipelineArray) throws IOException, ParseException {
+		ArrayList<FintanStreamComponent> componentArray = new ArrayList<>();
 
 		for (JsonNode pipelineElement:pipelineArray) {
 			if (!pipelineElement.getNodeType().equals(JsonNodeType.OBJECT)) {
 				throw new IllegalArgumentException("Elements of \"pipeline\" have to be obejct-type");
 			}
 
-			// Create CoNLLRDFComponents (StreamExtractor, Updater, Formatter ...)
+			// Create FintanStreamComponents (StreamExtractor, Updater, Formatter ...)
 			String className = pipelineElement.required("class").asText();
 			if (!classFactoryMap.containsKey(className)) {
 				throw new IllegalArgumentException( "Unknown class: " + className);
 			}
 
-			CoNLLRDFComponent component = classFactoryMap.get(className).get().buildFromJsonConf((ObjectNode) pipelineElement);
+			FintanStreamComponent component = classFactoryMap.get(className).get().buildFromJsonConf((ObjectNode) pipelineElement);
 			componentArray.add(component);
 		}
 		return componentArray;
@@ -175,9 +173,9 @@ public class CoNLLRDFManager {
 	 * @param input Link this to the first component
 	 * @param output Link last component to this.
 	 */
-	static void linkComponents(List<CoNLLRDFComponent> componentArray, InputStream input, OutputStream output) throws IOException {
-		CoNLLRDFComponent prevComponent = null;
-		for (CoNLLRDFComponent component : componentArray) {
+	static void linkComponents(List<FintanStreamComponent> componentArray, InputStream input, OutputStream output) throws IOException {
+		FintanStreamComponent prevComponent = null;
+		for (FintanStreamComponent component : componentArray) {
 			if (prevComponent == null) {
 				// link input to first component
 				component.setInputStream(input);
@@ -196,7 +194,7 @@ public class CoNLLRDFManager {
 	}
 
 	public void start() {
-		for (CoNLLRDFComponent component:componentStack) {
+		for (FintanStreamComponent component:componentStack) {
 			Thread t = new Thread(component);
 	        t.start();
 		}
