@@ -765,7 +765,7 @@ public class CoNLLRDFUpdater extends RDFUpdater {
 		initThreads();
 		running = true;
 		Model model;
-		String prefixCache = new String();
+		String prefixCache = "";
 
 		while((model = getInputStream().read()) != null) {
 			prefixCache = processModel(prefixCache, model);
@@ -774,7 +774,7 @@ public class CoNLLRDFUpdater extends RDFUpdater {
 
 		// LOOKAHEAD work down remaining buffer
 		while (sentBufferLookahead.size()>0) {
-			executeThread(sentBufferLookahead.remove(0));
+			executeThreadWithLookaround(sentBufferLookahead.remove(0));
 			if (lookback_snts > 0) {
 				while (sentBufferLookback.size() >= lookback_snts + sentBufferLookahead.size()) sentBufferLookback.remove(0);
 			}
@@ -831,9 +831,9 @@ public class CoNLLRDFUpdater extends RDFUpdater {
 		// and the previous line did not start with @ or #
 		// check if the buffer contains a ttl prefix
 
-		// TODO model.getNsPrefixMap()
+		// Map<String, String> prefixMap = model.getNsPrefixMap();
 		if (buffer.contains("@prefix"))  {
-			prefixCache = new String();
+			prefixCache = "";
 			for (String buffLine:buffer.split("\n")) {
 				if (buffLine.trim().startsWith("@prefix")) {
 					prefixCache += buffLine+"\n";
@@ -847,13 +847,13 @@ public class CoNLLRDFUpdater extends RDFUpdater {
 		if ((graphOutputDir != null) && (graphOutputSentences.isEmpty())) {
 			String sentID = readFirstSentenceID(model);
 			graphOutputSentences.add(sentID);
-			LOG.debug("Graph Output defaults to first sentence: " + sentID);
+			LOG.debug("Graph Output defaults to first sentence: {}", sentID);
 		}
 		// TRIPLES OUTPUT determine first sentence's id, if none were specified
 		if ((triplesOutputDir != null) && (triplesOutputSentences.isEmpty())) {
 			String sentID = readFirstSentenceID(model);
 			triplesOutputSentences.add(sentID);
-			LOG.debug("Triples Output defaults to first sentence: " + sentID);
+			LOG.debug("Triples Output defaults to first sentence: {}", sentID);
 		}
 
 		//lookahead
@@ -863,7 +863,7 @@ public class CoNLLRDFUpdater extends RDFUpdater {
 			//READY TO PROCESS
 			// remove first sentence from buffer and process it.
 			// !!if lookahead = 0 then only current buffer is in sentBufferLookahead!!
-			executeThread(sentBufferLookahead.remove(0));
+			executeThreadWithLookaround(sentBufferLookahead.remove(0));
 		}
 
 		//lookback
@@ -933,18 +933,18 @@ public class CoNLLRDFUpdater extends RDFUpdater {
 		}
 	}
 
-	private void executeThread(String buffer) {
-		MutableTriple<List<String>, String, List<String>>sentBufferThread =
-				new MutableTriple<List<String>, String, List<String>>(
-				new ArrayList<String>(), new String(), new ArrayList<String>());
+	private void executeThreadWithLookaround(String buffer) {
 		//sentBufferLookback only needs to be filled up to the current sentence.
 		//All other sentences are for further lookahead iterations
-//		sentBufferThread.getLeft().addAll(sentBufferLookback);
+		ArrayList<String> reducedSentenceBufferLookback = new ArrayList<>();
 		for (int i = 0; i < sentBufferLookback.size() - sentBufferLookahead.size(); i++) {
-			sentBufferThread.getLeft().add(sentBufferLookback.get(i));
+			reducedSentenceBufferLookback.add(sentBufferLookback.get(i));
 		}
-		sentBufferThread.setMiddle(buffer);
-		sentBufferThread.getRight().addAll(sentBufferLookahead);
+		executeThread(reducedSentenceBufferLookback, buffer, sentBufferLookahead);
+	}
+
+	private void executeThread(List<String> lookback, String buffer, List<String> lookahead) {
+		MutableTriple<List<String>, String, List<String>> sentBufferThread = new MutableTriple<>(lookback, buffer, lookahead);
 		int i = 0;
 
 		while(i < updateThreads.size()) {
