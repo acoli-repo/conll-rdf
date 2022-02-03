@@ -48,7 +48,11 @@ mvn_exec_goal=("exec:java" "-Dexec.mainClass=org.acoli.conll.rdf.$class_name" "-
 
 all_args=("${mvn_args[@]}" "${mvn_compile_goal[@]}" "${mvn_exec_goal[@]}")
 
-mvn "${all_args[@]}"
+mvn "${all_args[@]}" |
+	# the following is a hack to allow CoNLLRDFUpdater to process output of CoNLLBrackets2RDF
+	# currently, CoNLLRDFUpdater supportes the historical Turtle 1.0 prefix only
+	# TODO: fix this in CoNLLRDFUpdater, this is a hack, only
+	sed -e s/'^[\t ]*PREFIX \(.*\)$'/'@prefix \1 .'/g
 
 # The following commands were pretty useful in debugging the code above
 # echo ${#mvn_exec_goal[@]} # echo the size of the array
