@@ -9,4 +9,4 @@ conll_dir="$(dirname -- "$(realpath -- "$0")")"
 # Package conll-rdf as a jar-with dependencies, which can then be run as follows:
 # java -cp target/conll-rdf-1.0-SNAPSHOT-jar-with-dependencies.jar org.acoli.conll.rdf.CoNLLStreamExtractor uri id word
 # Make sure JAVA_HOME is set to the correct version while compiling, if encountering errors like class not found
-mvn clean compile package --batch-mode --quiet --file="${conll_dir}" -DskipTests
+mvn clean install package --batch-mode --quiet --file="${conll_dir}" -DskipTests
