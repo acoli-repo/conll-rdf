@@ -43,10 +43,11 @@ Of course you can also use the provided classes within java as any other library
 Download the repository from GitHub: `git clone https://github.com/acoli-repo/CoNLL-RDF.git`.
 Then use `git submodule update --init --recursive` to clone the fintan-core submodule.
 
-The project is compiled automatically whenever you run the tool via the `./run.sh` bash script.  
-Experienced users may wish to modify the script to skip this for a small speed-up.
+The project needs to be compiled once by running the `./compile.sh` bash script, which creates a stand-alone jar in the `target/` folder, and also installs conll-rdf into the local maven repo.
 
-You can manually (re)compile it by calling the `./compile.sh` script or by using maven directly with `mvn clean compile` from the project root.
+It compiles automatically whenever you run the tool via the `./run-via-maven.sh` bash script, which is meant mainly for quick development and doesn't package the jar. (Read the comments in the file for more info.)
+
+You can manually (re)compile conll-rdf by calling the `./compile.sh` script or by using maven directly with `mvn clean package` from the project root.
 
 #### Requirements
 * Apache Maven (Latest release recommended. Expected to work from 3.3+).
@@ -77,9 +78,9 @@ This will create a new file `example.ttl` in conll-rdf by simply providing
 * the names of the CoNLL columns from left to right.
 
 #### run.sh
-`run.sh` is a wrapper script to make things feel more bash-like. It updates class files if necessary and runs the specified java class with the provided arguments.
+`run.sh` is a wrapper script to make things feel more bash-like. It runs the specified java class with the provided arguments.
 * eg. `cat foo.ttl | ./run.sh CoNLLRDFFormatter > foo_formatted.ttl` would pipe `foo.ttl` through `CoNLLRDFFormatter` into `foo_formatted.ttl`.
-* If necessary `run.sh`, will compile java classes from source. You may also run `compile.sh` independently.
+* `run.sh`, will not compile java classes. Run `compile.sh` in advance, or swap in `rin-via-maven.sh`, which does.
 
 ### Features
 In-depth information on all the classes of **conll-rdf** can be found in [the documentation.](doc/classes.md)
@@ -213,7 +214,8 @@ This repository is being published under two licenses. Apache 2.0 is used for co
 │	├── link-ud.sh  
 │	└── parse-ud.sh  
 ├── compile.sh  
-└── run.sh  
+├── run.sh  
+└── run-via-maven.sh  
 ```
 #### LICENCE.data (CC-BY 4.0)
 ```
