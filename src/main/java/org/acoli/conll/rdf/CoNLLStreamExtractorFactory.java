@@ -83,6 +83,9 @@ public class CoNLLStreamExtractorFactory extends CoNLLRDFComponentFactory {
 		for (JsonNode col:conf.withArray("columns")) {
 			ex.getColumns().add(col.asText());
 		}
+		if (conf.hasNonNull("delimiter")) {
+			ex.setSegmentDelimiter(conf.get("delimiter").asText());
+		}
 
 		return ex;
 	}

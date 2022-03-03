@@ -43,6 +43,17 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 	private boolean readColumnComment = false;
 	private String select = null;
 	List<Pair<String, String>> updates = new ArrayList<Pair<String, String>>();
+	
+	//@Leo: added for improved Fintan support
+	private String segmentDelimiter;
+
+	public String getSegmentDelimiter() {
+		return segmentDelimiter;
+	}
+
+	public void setSegmentDelimiter(String segmentDelimiter) {
+		this.segmentDelimiter = segmentDelimiter;
+	}
 
 	public String getBaseURI() {
 		return baseURI;
@@ -118,6 +129,10 @@ public class CoNLLStreamExtractor extends CoNLLRDFComponent {
 							comments.clear();
 						}
 						print(m,select, out);
+						if(segmentDelimiter != null) {
+							out.write("\n"+segmentDelimiter+"\n");
+							out.flush();
+						}
 					}
 					buffer="";
 				} else
