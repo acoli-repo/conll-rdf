@@ -62,8 +62,10 @@ public class CoNLLRDFAnnotator extends CoNLLRDFFormatter {
 			while((line = in.readLine())!=null) {
 				line=line.replaceAll("[\t ]+"," ").trim();
 
-				if(!buffer.trim().equals(""))
-					if((line.startsWith("@") || line.startsWith("#")) && !lastLine.startsWith("@") && !lastLine.startsWith("#")) {
+				if(!buffer.trim().equals("") && 
+					(line.startsWith("@") || line.startsWith("PREFIX") || line.startsWith("#")) &&
+					!(lastLine.startsWith("@") || lastLine.startsWith("PREFIX") || lastLine.startsWith("#"))
+				) {
 					while(!command.trim().equals(">")) {
 							System.err.print(
 							  "actions ............................................................................................................\n"+
@@ -108,7 +110,7 @@ public class CoNLLRDFAnnotator extends CoNLLRDFFormatter {
 					command = "";
 					}
 				//System.err.println(ANSI_RED+"> "+line+ANSI_RESET);
-				if(line.trim().startsWith("@") && !lastLine.trim().endsWith("."))
+				if((line.trim().startsWith("@") || line.trim().startsWith("PREFIX")) && !lastLine.trim().endsWith("."))
 					//System.out.print("\n");
 					buffer=buffer+"\n";
 
