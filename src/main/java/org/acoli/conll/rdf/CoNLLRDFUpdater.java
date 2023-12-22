@@ -35,6 +35,8 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -800,8 +802,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 		initThreads();
 		running = true;
 
-		
-		String prefixCache = new String();
+		Map<String,String> prefix2declaration = new LinkedHashMap<String,String>();
 		String line;
 		String lastLine ="";
 		String buffer="";
@@ -818,15 +819,29 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 				// and the previous line did not start with @ or # or PREFIX
 				// check if the buffer contains a ttl prefix
 				if (buffer.contains("@prefix") || buffer.contains("PREFIX"))  {
-					prefixCache = new String();
+					String newbuffer="";
 					for (String buffLine:buffer.split("\n")) {
 						if (buffLine.trim().startsWith("@prefix") || buffLine.trim().startsWith("PREFIX")) {
-							prefixCache += buffLine+"\n";
+							String prefix = buffLine.replaceAll("^.*(PREFIX|@prefix)\\s*","").replaceAll("\\s.*","");
+							prefix2declaration.put(prefix,buffLine+"\n");
+						} else {
+							newbuffer=newbuffer+buffLine+"\n";
 						}
 					}
-				} else {
-					buffer = prefixCache+buffer;
+					buffer=newbuffer;
 				}
+			}
+
+			if(!buffer.replaceAll("#[^\\n]*","").trim().equals("") && 
+				((line.startsWith("@") || line.startsWith("#")) || (line.startsWith("PREFIX")))
+			) {
+				buffer=buffer.trim();
+				List pfxlines=Arrays.asList(prefix2declaration.values());
+				Collections.reverse(pfxlines);
+				for(Object pfxline: pfxlines) {
+					buffer = pfxline.toString().replaceAll("[\\[\\],]","\n").trim()+"\n"+buffer;
+				}
+				buffer="\n\n"+buffer+"\n\n";
 
 				// GRAPH OUTPUT determine first sentence's id, if none were specified
 				if ((graphOutputDir != null) && (graphOutputSentences.isEmpty())) {
@@ -834,6 +849,7 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 					graphOutputSentences.add(sentID);
 					LOG.debug("Graph Output defaults to first sentence: " + sentID);
 				}
+
 				// TRIPLES OUTPUT determine first sentence's id, if none were specified
 				if ((triplesOutputDir != null) && (triplesOutputSentences.isEmpty())) {
 					String sentID = readFirstSentenceID(buffer);
@@ -866,9 +882,16 @@ public class CoNLLRDFUpdater extends CoNLLRDFComponent {
 		}
 
 		// FINAL SENTENCE (with prefixes if necessary)
-		if (!(buffer.contains("@prefix") || buffer.contains("PREFIX")))  {
-			buffer = prefixCache+buffer;
+		if (! buffer.trim().equals("")) {
+			buffer=buffer.trim();
+			List pfxlines=Arrays.asList(prefix2declaration.values());
+			Collections.reverse(pfxlines);
+			for(Object pfxline: pfxlines) {
+				buffer = pfxline.toString().replaceAll("[\\[\\],]","\n").trim()+"\n"+buffer;
+			}
+			buffer="\n\n"+buffer+"\n\n";
 		}
+
 
 		// To address the edge case of no comments or prefixes occuring after the first sentence of a stream
 		// GRAPH OUTPUT determine first sentence's id, if none were specified
