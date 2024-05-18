@@ -10,13 +10,13 @@ package_jar="${target_dir}/conll-rdf-1.0-SNAPSHOT-jar-with-dependencies.jar"
 
 # if the number of arguments is equal to 0, no class name is provided
 if [ $# -eq 0 ]; then
-	echo "Please give the name of the conll-rdf class you want to run"
+	echo "[ERROR] CoNLL-RDF: Please give the name of the conll-rdf class you want to run"
 	exit 1
 fi
 
 # Check for presence of packaged jar
 if [ ! -e "${package_jar}" ]; then
-    echo "Please make sure to run package.sh first, and verify the jar-with-dependencies is present in the target folder"
+    echo "[ERROR] CoNLL-RDF: Please make sure to run conll-rdf/compile.sh first, and verify the jar-with-dependencies is present in the target folder"
     exit 1
 fi
 
